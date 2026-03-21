@@ -10,13 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     navButtons.forEach(btn => btn.addEventListener('click', () => {
-        navButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        navButtons.forEach(b => b.classList.remove('active')); 
+        btn.classList.add('active');
         Object.values(views).forEach(v => v.classList.add('hidden')); 
         views[btn.getAttribute('data-target')].classList.remove('hidden');
     }));
 
     // ==========================================
-    // 2. LÓGICA DE MODS Y MODRINTH API
+    // 2. VARIABLES DE MODS Y MODRINTH API
     // ==========================================
     const searchInput = document.getElementById('mod-search-input');
     const sortSelect = document.getElementById('mod-sort-select');
@@ -41,7 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchRealMods(false);
     };
 
-    // CHIPS LOGIC
+    // Diccionario para iconos de etiquetas (tags)
+    const tagIcons = {
+        'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
+        'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
+        'worldgen': '<i class="ph-fill ph-tree"></i>', 'equipment': '<i class="ph-fill ph-shield"></i>',
+        'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
+    };
+
+    // ==========================================
+    // 3. FUNCIONES DE BÚSQUEDA Y RENDERIZADO
+    // ==========================================
     chips.forEach(chip => {
         chip.addEventListener('click', (e) => {
             chips.forEach(c => c.classList.remove('active'));
@@ -55,13 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightboxImg = document.getElementById('lightbox-img');
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
-    // DICCIONARIO PARA ICONOS DE ETIQUETAS (TAGS)
-    const tagIcons = {
-        'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
-        'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
-        'worldgen': '<i class="ph-fill ph-tree"></i>', 'equipment': '<i class="ph-fill ph-shield"></i>',
-        'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
-    };
+    const chipsContainer = document.getElementById('category-chips-container');
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            filterButtons.forEach(b => b.classList.remove('active')); 
+            e.currentTarget.classList.add('active');
+            currentFilter = e.currentTarget.dataset.filter; 
+            
+            if(currentFilter === 'mod') {
+                if(chipsContainer) chipsContainer.style.display = 'flex';
+            } else {
+                if(chipsContainer) chipsContainer.style.display = 'none';
+                currentCategory = ""; 
+                chips.forEach(c => c.classList.remove('active'));
+                if(chips.length) chips[0].classList.add('active');
+            }
+            fetchRealMods(false);
+        });
+    });
 
     async function fetchRealMods(isAppend = false) {
         if (!isAppend) {
@@ -76,9 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let queryType = currentFilter === 'library' ? 'mod' : currentFilter;
             let facets = [[`versions:${versionSelect.value}`], [`project_type:${queryType}`]];
             
-            if (queryType === 'mod') {
-                facets.push([`categories:${loaderSelect.value}`]);
-            }
+            if (queryType === 'mod') facets.push([`categories:${loaderSelect.value}`]);
 
             if (currentFilter === 'mod') {
                 facets.push(["categories!=library"]); 
@@ -103,29 +123,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         btnLoadMore.classList.remove('hidden');
                         btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más';
                     }
-                } else { if(btnLoadMore) btnLoadMore.classList.add('hidden'); }
+                } else { 
+                    if(btnLoadMore) btnLoadMore.classList.add('hidden'); 
+                }
             }
-        } catch (error) { if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; }
+        } catch (error) { 
+            if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API Modrinth.</div>'; 
+        }
     }
-
-    const chipsContainer = document.getElementById('category-chips-container');
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            filterButtons.forEach(b => b.classList.remove('active')); 
-            e.currentTarget.classList.add('active');
-            currentFilter = e.currentTarget.dataset.filter; 
-            
-            if(currentFilter === 'mod') {
-                if(chipsContainer) chipsContainer.style.display = 'flex';
-            } else {
-                if(chipsContainer) chipsContainer.style.display = 'none';
-                currentCategory = ""; 
-                chips.forEach(c => c.classList.remove('active'));
-                if(chips.length) chips[0].classList.add('active');
-            }
-            fetchRealMods(false);
-        });
-    });
 
     async function getRequiredDependencies(projectId, version, loader) {
         try {
@@ -257,17 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             depsContainer.innerHTML = depsHtml;
 
-                            document.querySelectorAll('.tilt-card').forEach(tiltCard => {
-                                tiltCard.addEventListener('mousemove', e => {
-                                    const rect = tiltCard.getBoundingClientRect();
-                                    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-                                    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -15; 
-                                    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 15;
-                                    tiltCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
-                                });
-                                tiltCard.addEventListener('mouseleave', () => { tiltCard.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`; });
-                            });
-
                             document.getElementById('btn-detail-add-all').onclick = () => {
                                 processAddAll(mod, depProjs);
                                 document.getElementById('mod-details-modal').classList.add('hidden');
@@ -333,52 +327,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // NUEVA FUNCIÓN MEJORADA: UPDATE CART UI
+    // 4. CARRITO Y UI
     // ==========================================
     function updateCartUI() {
         cartList.innerHTML = '';
         if (modpackCart.length === 0) {
             document.getElementById('empty-cart-msg').style.display = 'block';
-            if(btnOpenSaveModal) btnOpenSaveModal.disabled = true; return;
-        }
-        document.getElementById('empty-cart-msg').style.display = 'none';
-        if(btnOpenSaveModal) btnOpenSaveModal.disabled = false;
+            if(btnOpenSaveModal) btnOpenSaveModal.disabled = true; 
+        } else {
+            document.getElementById('empty-cart-msg').style.display = 'none';
+            if(btnOpenSaveModal) btnOpenSaveModal.disabled = false;
 
-        modpackCart.forEach((item, index) => {
-            const li = document.createElement('li'); 
-            li.className = `cart-item`; 
-            
-            // Lógica visual dependiendo del tipo
-            let iconClass = 'ph-puzzle-piece';
-            let typeColor = 'var(--accent)';
-            let typeText = 'Mod';
-            
-            if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
-            else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
-            else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
+            modpackCart.forEach((item, index) => {
+                const li = document.createElement('li'); 
+                li.className = `cart-item`; 
+                
+                // Lógica visual dependiendo del tipo
+                let iconClass = 'ph-puzzle-piece';
+                let typeColor = 'var(--accent)';
+                let typeText = 'Mod';
+                
+                if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
+                else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
+                else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
 
-            li.innerHTML = `
-                <div class="cart-item-info">
-                    <div class="cart-item-icon" style="display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
-                        <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
+                li.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-icon" style="display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
+                            <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div class="cart-item-text">
+                            <span class="cart-item-title" title="${item.title}">${item.title}</span>
+                            <span class="cart-item-type" style="color: ${typeColor};">${typeText}</span>
+                        </div>
                     </div>
-                    <div class="cart-item-text">
-                        <span class="cart-item-title" title="${item.title}">${item.title}</span>
-                        <span class="cart-item-type" style="color: ${typeColor};">${typeText}</span>
-                    </div>
-                </div>
-                <button class="btn-remove" data-index="${index}" title="Quitar"><i class="ph-bold ph-trash"></i></button>
-            `;
-            cartList.appendChild(li);
-        });
-
-        document.querySelectorAll('.btn-remove').forEach(btn => {
-            btn.addEventListener('click', function() {
-                modpackCart.splice(this.dataset.index, 1);
-                updateCartUI(); 
-                fetchRealMods(false);
+                    <button class="btn-remove" data-index="${index}" title="Quitar"><i class="ph-bold ph-trash"></i></button>
+                `;
+                cartList.appendChild(li);
             });
-        });
+
+            document.querySelectorAll('.btn-remove').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    modpackCart.splice(this.dataset.index, 1);
+                    updateCartUI(); 
+                    fetchRealMods(false);
+                });
+            });
+        }
+
         // Actualizar el número en el botón flotante del celular
         const mobileCartBtn = document.getElementById('mobile-cart-toggle-btn');
         if(mobileCartBtn && !document.querySelector('.cart-panel').classList.contains('active-mobile')) {
@@ -387,19 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // LÓGICA DE CONSTRUCCIÓN Y DESCARGA AL BACKEND
+    // 5. CONSTRUCCIÓN Y DESCARGA AL BACKEND
     // ==========================================
     const modalSave = document.getElementById('save-pack-modal');
     const btnJustDownload = document.getElementById('btn-just-download');
     const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
     const packNameInput = document.getElementById('pack-name-input');
     
-    // 1. Abrir Modal de Guardado
     if(btnOpenSaveModal) {
         btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
     }
 
-// 2. Función central para armar y descargar (CORREGIDA PARA RED LOCAL/CELULAR)
+    // Función central para armar y descargar (RUTAS RELATIVAS)
     async function requestBuild(isSaving = false) {
         try {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
@@ -439,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!buildRes.ok) throw new Error("Error en el servidor al compilar el modpack.");
 
-            // Descargar el archivo procesado
+            // Descargar el archivo procesado por el backend
             const blob = await buildRes.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -459,6 +454,60 @@ document.addEventListener('DOMContentLoaded', () => {
             if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
         }
     }
+
+    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
+    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
+
+
+    // ==========================================
+    // 6. EVENTOS (Buscador, Selects)
+    // ==========================================
+    sortSelect.addEventListener('change', updateSearch);
+    versionSelect.addEventListener('change', updateSearch);
+    loaderSelect.addEventListener('change', updateSearch);
+    
+    let timeout = null;
+    searchInput.addEventListener('input', () => { 
+        clearTimeout(timeout); 
+        timeout = setTimeout(updateSearch, 600); 
+    });
+    
+    if(btnLoadMore) btnLoadMore.addEventListener('click', () => { 
+        currentOffset += 16; 
+        fetchRealMods(true); 
+    });
+
+    // Llamada inicial para cargar contenido al entrar
+    updateSearch();
+
+    // ==========================================
+    // 7. CREAR BOTÓN FLOTANTE PARA CARRITO EN MÓVIL
+    // ==========================================
+    const btnHtml = document.createElement('button');
+    btnHtml.id = 'mobile-cart-toggle-btn';
+    btnHtml.className = 'mobile-cart-toggle hidden-desktop';
+    btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`;
+    document.body.appendChild(btnHtml);
+
+    btnHtml.addEventListener('click', () => {
+        const cart = document.querySelector('.cart-panel');
+        cart.classList.toggle('active-mobile');
+        
+        if(cart.classList.contains('active-mobile')) {
+            // Si está abierto, mostrar una "X" para cerrar
+            btnHtml.innerHTML = `<i class="ph-bold ph-x"></i>`;
+        } else {
+            // Si está cerrado, mostrar el icono del paquete y el número
+            btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
+        }
+    });
+
+    // ==========================================
+    // 8. INICIALIZAR FUNCIONES EXTERNAS
+    // ==========================================
+    if (typeof initSoftwareModal === 'function') initSoftwareModal();
+    if (typeof initWorldUpload === 'function') initWorldUpload();
+});
 
 // ==========================================
 // FUNCIONES GLOBALES (MUNDOS Y SOFTWARE)
@@ -551,5 +600,4 @@ function handleWorldUpload(file) {
     
     const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
     alert(`Preparando la subida del mundo: ${file.name} (${fileSizeMB} MB)`);
-    // Aquí irá tu lógica de Fetch/XHR para enviar el formData a tu servidor
 }
