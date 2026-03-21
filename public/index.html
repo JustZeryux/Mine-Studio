@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MinePack Studio - Pro</title>
+    <title>CoreMod</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <i class="ph-fill ph-hexagon"></i>
-                <h2>MinePack</h2>
+                <h2>CoreMod</h2>
             </div>
             <nav class="nav-menu">
                 <button class="nav-btn active" data-target="mods"><i class="ph-bold ph-compass"></i> Explorar</button>
@@ -33,7 +33,9 @@
                     <span class="muted-text"><i class="ph-fill ph-sparkle"></i> Studio Creator</span>
                 </div>
                 <div class="profile-section">
-                    </div>
+                    <span id="header-username">Zeryux</span>
+                    <img src="https://crafatar.com/avatars/Zeryux?size=40" class="avatar">
+                </div>
             </header>
 
             <div class="main-layout">
@@ -50,7 +52,7 @@
                                     </div>
                                     
                                     <select id="mod-sort-select" class="form-select" style="max-width: 170px;">
-                                        <option value="downloads">🔥 Populares</option>
+                                        <option value="downloads">🔥 Populares (Supremos)</option>
                                         <option value="relevance">⭐ Relevancia</option>
                                         <option value="newest">✨ Más Recientes</option>
                                     </select>
@@ -60,6 +62,8 @@
                                         <option value="1.20.1" selected>1.20.1</option>
                                         <option value="1.19.4">1.19.4</option>
                                         <option value="1.18.2">1.18.2</option>
+                                        <option value="1.16.5">1.16.5</option>
+                                        <option value="1.12.2">1.12.2</option>
                                     </select>
                                     
                                     <select id="mod-loader-select" class="form-select" style="max-width: 120px;">
@@ -71,22 +75,25 @@
 
                                 <div class="category-chips" id="category-chips-container" style="margin-bottom: 0;">
                                     <button class="chip active" data-cat="">Todas</button>
-                                    <button class="chip" data-cat="adventure"><i class="ph-fill ph-sword"></i> Aventura</button>
+                                    <button class="chip" data-cat="adventure"><i class="ph-fill ph-sword"></i> Aventura & Jefes</button>
                                     <button class="chip" data-cat="technology"><i class="ph-fill ph-cpu"></i> Tecnología</button>
                                     <button class="chip" data-cat="magic"><i class="ph-fill ph-sparkle"></i> Magia</button>
                                     <button class="chip" data-cat="mobs"><i class="ph-fill ph-skull"></i> Criaturas</button>
-                                    <button class="chip" data-cat="equipment"><i class="ph-fill ph-shield"></i> Armaduras</button>
+                                    <button class="chip" data-cat="equipment"><i class="ph-fill ph-shield"></i> Armaduras & Armas</button>
+                                    <button class="chip" data-cat="worldgen"><i class="ph-fill ph-tree"></i> Biomas</button>
+                                    <button class="chip" data-cat="sound"><i class="ph-fill ph-speaker-high"></i> SFX</button>
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.9rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
-                                <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.9rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                                <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
+                                <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
+                                <button id="btn-randomizer" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #8b5cf6; border:none;"><i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria</button>
                             </div>
 
                             <div style="margin-bottom: 15px;">
                                 <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
-                                    <i class="ph-bold ph-rocket"></i> Instalar Pack de Optimización (Boost FPS)
+                                    <i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización (Boost FPS)
                                 </button>
                             </div>
 
@@ -105,15 +112,14 @@
                         </div>
                     </div>
 
-                    <div id="view-worlds" class="builder-view hidden panel" style="padding: 20px;">
-                        
+                    <div id="view-worlds" class="builder-view hidden panel">
                         <div class="panel" style="background: var(--bg-hover); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color);">
                             <div style="flex: 1; min-width: 200px;">
                                 <h3 style="margin-bottom: 10px;"><i class="ph-bold ph-user-focus"></i> Tu Personaje</h3>
                                 <p class="muted-text text-sm mb-10">Escribe tu nombre premium de Minecraft para ver tu Skin.</p>
                                 <div style="display: flex; gap: 10px;">
                                     <input type="text" id="mc-skin-input" class="form-input" placeholder="Ej: Zeryux" style="flex: 1;">
-                                    <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i> Buscar</button>
+                                    <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i></button>
                                 </div>
                             </div>
                             <div style="width: 100px; height: 100px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid var(--border-color);">
@@ -121,31 +127,20 @@
                             </div>
                         </div>
 
-                        <h2 class="title mb-10"><i class="ph-bold ph-globe"></i> Configuración del Mundo</h2>
-                        <p class="muted-text mb-20">Estos ajustes generarán un archivo server.properties dentro de tu Modpack.</p>
-                        
-                        <div class="settings-grid mt-20" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div class="form-group" style="grid-column: 1/-1;">
-                                <label>Semilla (Opcional)</label>
-                                <input type="text" id="world-seed-input" class="form-input" placeholder="Ej: -123456789">
-                            </div>
+                        <h2 class="title mb-10"><i class="ph-bold ph-sliders"></i> Generación del Mundo</h2>
+                        <div class="settings-grid mt-20">
+                            <div class="form-group"><label>Semilla</label><input type="text" id="world-seed-input" class="form-input"></div>
                             <div class="form-group">
                                 <label>Modo de Juego</label>
-                                <select id="world-gamemode" class="form-select">
-                                    <option value="survival">Supervivencia</option>
-                                    <option value="creative">Creativo</option>
-                                </select>
+                                <select id="world-gamemode" class="form-select"><option value="survival">Supervivencia</option><option value="creative">Creativo</option></select>
                             </div>
                             <div class="form-group">
                                 <label>Dificultad</label>
                                 <select id="world-difficulty" class="form-select">
-                                    <option value="peaceful">Pacífico</option>
-                                    <option value="easy">Fácil</option>
-                                    <option value="normal" selected>Normal</option>
-                                    <option value="hard">Difícil</option>
+                                    <option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="grid-column: 1/-1; display: flex; align-items: center; gap: 10px; background: var(--bg-hover); padding: 10px; border-radius: 8px;">
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
                                 <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px;">
                                 <label style="margin:0; font-weight:bold;">Generar Estructuras</label>
                             </div>
@@ -160,8 +155,11 @@
 
                 <aside class="cart-panel panel">
                     <div class="cart-header">
-                        <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
-                        <p class="muted-text text-sm">Target: <strong id="cart-version-label" style="color: var(--text-main);">1.20.1 Forge</strong></p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
+                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
+                        </div>
+                        <p class="muted-text text-sm mt-10">Target: <strong id="cart-version-label" style="color: var(--text-main);">1.20.1 Forge</strong></p>
                     </div>
                     <div class="cart-body custom-scrollbar">
                         <div id="empty-cart-msg" class="empty-state"><i class="ph-fill ph-ghost"></i><p>Vacío.</p></div>
@@ -171,7 +169,6 @@
                             <p class="muted-text text-sm mb-10"><i class="ph-bold ph-lightbulb"></i> Recomendado para ti:</p>
                             <div id="rec-item" style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-hover); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></div>
                         </div>
-
                     </div>
                     <div class="cart-footer">
                         <button id="btn-open-save-modal" class="btn btn-primary w-100" disabled><i class="ph-bold ph-download-simple"></i> Construir Pack</button>
@@ -181,38 +178,98 @@
         </main>
     </div>
 
+    <div class="modal-overlay hidden" id="mod-details-modal">
+        <div class="modal-content modal-lg"> <div class="modal-header-mod">
+                <div class="mod-header-info" style="display: flex; gap: 15px; align-items: center;">
+                    <img id="detail-icon" src="" class="mod-detail-icon" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
+                    <div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <h2 id="detail-title" class="title" style="margin: 0; font-size: 1.5rem;">Cargando...</h2>
+                            <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
+                        </div>
+                        <p id="detail-author" class="muted-text" style="margin: 0;"></p>
+                    </div>
+                </div>
+                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+            </div>
+            
+            <div class="modal-body-scroll custom-scrollbar">
+                <div id="detail-dependencies" class="dependencies-container mb-20"></div>
+
+                <h3 class="subtitle mb-10"><i class="ph-bold ph-article"></i> Información</h3>
+                <div class="mod-description-body" id="detail-description"></div>
+                
+                <h3 class="subtitle mt-20 mb-10"><i class="ph-bold ph-image"></i> Galería</h3>
+                <div id="detail-gallery" class="gallery-grid"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay hidden" id="save-pack-modal" style="z-index: 10005;">
         <div class="modal-content">
             <h2 class="title mb-20"><i class="ph-bold ph-floppy-disk"></i> Guardar Proyecto</h2>
             <div class="form-group mb-20"><label>Nombre del Modpack</label><input type="text" id="pack-name-input" class="form-input"></div>
             
-            <div class="form-group mb-20" style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
+            <div class="form-group mb-20">
+                <label><i class="ph-bold ph-image"></i> Logo del Modpack (.png)</label>
+                <input type="file" id="pack-icon-input" class="form-input" accept="image/png" style="padding: 5px;">
+            </div>
+
+            <div class="form-group mb-10" style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
                     <input type="checkbox" id="export-server-pack" style="width: 20px; height: 20px;">
-                    <label style="margin:0; font-weight:bold; color: var(--accent);">Exportar como Server Pack</label>
+                    <label style="margin:0; font-weight:bold; color: var(--accent);">Crear Server Pack</label>
                 </div>
-                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye archivos base para encender el servidor.</p>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye start.bat</p>
+            </div>
+
+            <div class="form-group mb-20" style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--success);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <input type="checkbox" id="export-mrpack" style="width: 20px; height: 20px;">
+                    <label style="margin:0; font-weight:bold; color: var(--success);">Formato .mrpack (Ligero)</label>
+                </div>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Compatible con Prism Launcher. Pesa KB en vez de MB.</p>
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-primary w-100 mb-10" id="btn-confirm-save-download">Guardar y Exportar ZIP</button>
-                <button class="btn btn-secondary w-100 mb-10" id="btn-just-download">Solo Descargar ZIP</button>
+                <button class="btn btn-primary w-100 mb-10" id="btn-confirm-save-download">Guardar y Exportar</button>
+                <button class="btn btn-secondary w-100 mb-10" id="btn-just-download">Solo Descargar</button>
                 <button class="btn btn-text w-100" onclick="document.getElementById('save-pack-modal').classList.add('hidden')">Cancelar</button>
             </div>
         </div>
     </div>
-    
-    <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;"><div class="modal-content modal-lg"><div class="modal-header-mod"><div class="mod-header-info" style="display: flex; gap: 15px; align-items: center;"><img id="detail-icon" src="" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;"><div><h2 id="detail-title" class="title" style="margin: 0; font-size: 1.5rem;">Cargando...</h2><p id="detail-author" class="muted-text" style="margin: 0;"></p></div></div><button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button></div><div class="modal-body-scroll custom-scrollbar"><div id="detail-dependencies"></div><div id="detail-description"></div><div id="detail-gallery" class="gallery-grid mt-20"></div></div></div></div>
-    <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10007;"><div class="modal-content" style="text-align: center;"><h2 class="title mb-10">Faltan piezas</h2><div id="epic-deps-list" style="max-height: 250px; overflow-y: auto;"></div><button class="btn btn-primary w-100 mt-20" id="btn-epic-add-all">Añadir Todo</button></div></div>
+
     <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
 
-    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10008;">
+    <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10005;">
+        <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);">
+            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px;"></i>
+            <h2 class="title mb-10">¡Un momento! Faltan piezas.</h2>
+            <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white; font-size: 1.1rem;">Este Mod</strong> funcione perfectamente y no rompa el juego, requiere estas librerías obligatorias:</p>
+            
+            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;"></div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button class="btn btn-primary w-100" id="btn-epic-add-all" style="font-size: 1.1rem; padding: 15px;">
+                    <i class="ph-bold ph-stack"></i> Añadir Todo al Ensamblado
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('epic-deps-modal').classList.add('hidden')">
+                    Ignorar y Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000;">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
-            <p class="muted-text mb-20">Únete para guardar tus modpacks en la nube.</p>
+            <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en tu navegador.</p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button class="btn btn-primary" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;">
                     <i class="ph-bold ph-discord-logo"></i> Entrar con Discord
+                </button>
+                <button class="btn btn-secondary" id="btn-fake-google" style="padding: 12px; font-size: 1rem;">
+                    <i class="ph-bold ph-google-logo"></i> Entrar con Google
                 </button>
                 <button class="btn btn-text mt-10" onclick="document.getElementById('auth-modal').classList.add('hidden')">Cancelar</button>
             </div>
