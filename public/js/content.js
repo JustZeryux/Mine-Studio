@@ -379,6 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchRealMods(false);
             });
         });
+        // Actualizar el número en el botón flotante del celular
+        const mobileCartBtn = document.getElementById('mobile-cart-toggle-btn');
+        if(mobileCartBtn && !document.querySelector('.cart-panel').classList.contains('active-mobile')) {
+            mobileCartBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
+        }
     }
 
     // ==========================================
