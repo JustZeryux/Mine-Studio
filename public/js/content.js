@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
     }
 
-    // 2. Función central para armar y descargar
+// 2. Función central para armar y descargar (CORREGIDA PARA RED LOCAL/CELULAR)
     async function requestBuild(isSaving = false) {
         try {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
@@ -421,11 +421,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // Aseguramos que apunte a la ruta correcta para evitar errores
-            const API_BASE = 'http://localhost:3000';
-
+            // USAMOS RUTAS RELATIVAS: Esto soluciona el error "Failed to fetch" en el celular
             if (isSaving) {
-                const saveRes = await fetch(`${API_BASE}/api/modpacks`, {
+                const saveRes = await fetch('/api/modpacks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -433,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!saveRes.ok) throw new Error("No se pudo guardar en la base de datos.");
             }
 
-            const buildRes = await fetch(`${API_BASE}/api/export`, {
+            const buildRes = await fetch('/api/export', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -441,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!buildRes.ok) throw new Error("Error en el servidor al compilar el modpack.");
 
-            // Descargar el archivo procesado por el backend
+            // Descargar el archivo procesado
             const blob = await buildRes.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -461,53 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
         }
     }
-
-    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
-    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
-
-
-    // ==========================================
-    // LISTENERS DE BÚSQUEDA Y ARRANQUE
-    // ==========================================
-    sortSelect.addEventListener('change', updateSearch);
-    versionSelect.addEventListener('change', updateSearch);
-    loaderSelect.addEventListener('change', updateSearch);
-    let timeout = null;
-    searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
-    
-    if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
-
-    // LA LLAMADA QUE HACE QUE CARGUE AL ENTRAR
-    updateSearch();
-
-    // ==========================================
-    // 3. INICIALIZAR FUNCIONES EXTERNAS (MUNDOS Y SOFTWARE)
-    // ==========================================
-    // ==========================================
-    // CREAR BOTÓN FLOTANTE PARA CARRITO EN MÓVIL
-    // ==========================================
-    const btnHtml = document.createElement('button');
-    btnHtml.id = 'mobile-cart-toggle-btn';
-    btnHtml.className = 'mobile-cart-toggle hidden-desktop';
-    btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`;
-    document.body.appendChild(btnHtml);
-
-    btnHtml.addEventListener('click', () => {
-        const cart = document.querySelector('.cart-panel');
-        cart.classList.toggle('active-mobile');
-        
-        if(cart.classList.contains('active-mobile')) {
-            // Si está abierto, mostrar una "X" para cerrar
-            btnHtml.innerHTML = `<i class="ph-bold ph-x"></i>`;
-        } else {
-            // Si está cerrado, mostrar el icono del paquete y el número
-            btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
-        }
-    });
-    
-    if (typeof initSoftwareModal === 'function') initSoftwareModal();
-    if (typeof initWorldUpload === 'function') initWorldUpload();
-});
 
 // ==========================================
 // FUNCIONES GLOBALES (MUNDOS Y SOFTWARE)
