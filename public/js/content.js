@@ -359,15 +359,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         await installTemplate(selected, 'btn-randomizer', '<i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria');
     });
 
-    const btnLoadSkin = document.getElementById('btn-load-skin'); const inputSkin = document.getElementById('mc-skin-input'); const imgSkinPreview = document.getElementById('mc-skin-preview');
+// ==========================================
+    // 7. INFO AVANZADA DE CUENTAS MC & VISOR DE SKINS
+    // ==========================================
+    const btnLoadSkin = document.getElementById('btn-load-skin');
+    const inputSkin = document.getElementById('mc-skin-input');
+    const imgSkinPreview = document.getElementById('mc-skin-preview');
+    const advInfoBox = document.getElementById('mc-advanced-info');
+    const uuidBadge = document.getElementById('mc-uuid-badge');
+    const capeBadge = document.getElementById('mc-cape-badge');
+
     if (btnLoadSkin && inputSkin && imgSkinPreview) {
-        btnLoadSkin.addEventListener('click', () => {
-            const username = inputSkin.value.trim(); if (!username) return; imgSkinPreview.style.opacity = '0.5';
-            const skinUrl = `https://crafatar.com/renders/body/${username}?overlay=true`; const tempImg = new Image();
-            tempImg.onload = () => { imgSkinPreview.src = skinUrl; imgSkinPreview.style.opacity = '1'; localStorage.setItem('minepack_username', username); };
-            tempImg.onerror = () => { alert('No se encontró cuenta premium.'); imgSkinPreview.style.opacity = '1'; }; tempImg.src = skinUrl;
-        });
-        const savedName = localStorage.getItem('minepack_username'); if (savedName) { inputSkin.value = savedName; imgSkinPreview.src = `https://crafatar.com/renders/body/${savedName}?overlay=true`; }
+        
+        const fetchMojangData = async (username) => {
+            if (username === '') return;
+            imgSkinPreview.style.opacity = '0.5';
+            
+            try {
+                // Usamos la API de Ashcon para extraer datos profundos de Mojang
+                const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
+                if (!res.ok) throw new Error("No encontrado");
+                
+                const data = await res.json();
+                
+                // Actualizar imagen con el UUID real
+                imgSkinPreview.src = `https://crafatar.com/renders/body/${data.uuid}?overlay=true`;
+                imgSkinPreview.style.opacity = '1';
+                
+                // Actualizar Info Avanzada
+                if (advInfoBox) {
+                    advInfoBox.style.display = 'block';
+                    // Recortar UUID para que quepa bien
+                    uuidBadge.textContent = `UUID: ${data.uuid.substring(0, 13)}...`;
+                    uuidBadge.title = data.uuid; // Muestra el completo al pasar el mouse
+                    
+                    // Verificar si tiene Capa
+                    if (data.textures && data.textures.cape) {
+                        capeBadge.innerHTML = `<i class="ph-fill ph-check-circle"></i> Tiene Capa`;
+                        capeBadge.style.color = '#fcd34d'; // Dorado
+                        capeBadge.style.borderColor = '#d97706';
+                    } else {
+                        capeBadge.innerHTML = `<i class="ph-bold ph-x"></i> Sin Capa`;
+                        capeBadge.style.color = '#93c5fd';
+                        capeBadge.style.borderColor = '#2563eb';
+                    }
+                }
+                
+                localStorage.setItem('minepack_username', username);
+            } catch (error) {
+                alert('No se encontró ninguna cuenta premium con ese nombre en Mojang.');
+                imgSkinPreview.style.opacity = '1';
+                if (advInfoBox) advInfoBox.style.display = 'none';
+            }
+        };
+
+        btnLoadSkin.addEventListener('click', () => fetchMojangData(inputSkin.value.trim()));
+
+        // Cargar el último usado al recargar la página
+        const savedName = localStorage.getItem('minepack_username');
+        if (savedName) { 
+            inputSkin.value = savedName; 
+            fetchMojangData(savedName); 
+        }
     }
 
     // ==========================================
