@@ -209,11 +209,23 @@
                 <div id="detail-dependencies" class="dependencies-container mb-20"></div>
                 <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 class="subtitle" style="margin: 0; color: var(--accent);"><i class="ph-bold ph-magnifying-glass-plus"></i> Escáner de Archivos (Rayos X)</h3>
+                        <h3 class="subtitle" style="margin: 0; color: var(--accent); font-size: 1.1rem;"><i class="ph-bold ph-magnifying-glass-plus"></i> Escáner de Archivos (Rayos X)</h3>
                         <button id="btn-scan-mod" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;"><i class="ph-bold ph-scan"></i> Analizar .jar</button>
                     </div>
-                    <p class="text-sm muted-text mb-10">Descomprime el mod en tu navegador para revelar su código interno.</p>
-                    <div id="mod-scan-results" style="display: none; gap: 10px; flex-wrap: wrap;"></div>
+                    <p class="text-sm muted-text mb-10">Descomprime el mod para revelar sus ítems ocultos y entidades.</p>
+                    
+                    <div id="mod-scan-stats" style="display: none; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;"></div>
+                    
+                    <div id="mod-scan-gallery" style="display: none; flex-direction: column; gap: 15px;">
+                        <div>
+                            <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-main);"><i class="ph-bold ph-sword"></i> Ítems Descubiertos</h4>
+                            <div id="scanner-items-grid" class="scanner-grid custom-scrollbar"></div>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs (Clic para 3D)</h4>
+                            <div id="scanner-mobs-grid" class="scanner-grid custom-scrollbar"></div>
+                        </div>
+                    </div>
                 </div>
                 <h3 class="subtitle mb-10"><i class="ph-bold ph-article"></i> Información</h3>
                 <div class="mod-description-body" id="detail-description"></div>
@@ -322,6 +334,27 @@
                     <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
                 </div>
                 <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
+        <div class="modal-content" style="max-width: 500px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 class="title" id="mob-3d-title" style="color: var(--accent);"><i class="ph-bold ph-cube"></i> Holograma de Entidad</h2>
+                <button class="btn-icon-danger" onclick="document.getElementById('mob-3d-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <p class="muted-text mb-20 text-sm">Textura interna extraída del archivo .jar</p>
+            
+            <div class="hologram-container">
+                <div class="hologram-cube" id="mob-hologram-cube">
+                    <div class="hologram-face front"></div>
+                    <div class="hologram-face back"></div>
+                    <div class="hologram-face right"></div>
+                    <div class="hologram-face left"></div>
+                    <div class="hologram-face top"></div>
+                    <div class="hologram-face bottom"></div>
+                </div>
             </div>
         </div>
     </div>
