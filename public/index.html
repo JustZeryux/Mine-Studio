@@ -82,6 +82,7 @@
                                     <button class="chip" data-cat="equipment"><i class="ph-fill ph-shield"></i> Armaduras & Armas</button>
                                     <button class="chip" data-cat="worldgen"><i class="ph-fill ph-tree"></i> Biomas</button>
                                     <button class="chip" data-cat="sound"><i class="ph-fill ph-speaker-high"></i> SFX</button>
+                                    <button class="chip" data-cat="optimization"><i class="ph-fill ph-rocket"></i> FPS</button>
                                 </div>
                             </div>
 
@@ -90,7 +91,6 @@
                                 <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
                                 <button id="btn-randomizer" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #8b5cf6; border:none;"><i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria</button>
                             </div>
-
                             <div style="margin-bottom: 15px;">
                                 <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
                                     <i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización (Boost FPS)
@@ -134,16 +134,6 @@
                                 <label>Modo de Juego</label>
                                 <select id="world-gamemode" class="form-select"><option value="survival">Supervivencia</option><option value="creative">Creativo</option></select>
                             </div>
-                            <div class="form-group">
-                                <label>Dificultad</label>
-                                <select id="world-difficulty" class="form-select">
-                                    <option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px;">
-                                <label style="margin:0; font-weight:bold;">Generar Estructuras</label>
-                            </div>
                         </div>
                     </div>
 
@@ -179,7 +169,8 @@
     </div>
 
     <div class="modal-overlay hidden" id="mod-details-modal">
-        <div class="modal-content modal-lg"> <div class="modal-header-mod">
+        <div class="modal-content modal-lg"> 
+            <div class="modal-header-mod">
                 <div class="mod-header-info" style="display: flex; gap: 15px; align-items: center;">
                     <img id="detail-icon" src="" class="mod-detail-icon" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
                     <div>
@@ -205,15 +196,34 @@
         </div>
     </div>
 
-    <div class="modal-overlay hidden" id="save-pack-modal" style="z-index: 10005;">
+    <div class="modal-overlay hidden" id="config-editor-modal" style="z-index: 10006;">
+        <div class="modal-content modal-lg" style="max-width: 600px;">
+            <div class="modal-header-mod" style="padding: 15px 25px;">
+                <div>
+                    <h2 class="title" id="config-mod-title" style="font-size: 1.3rem;"><i class="ph-bold ph-gear"></i> Configuración del Mod</h2>
+                    <p class="muted-text text-sm">Edita los valores. Se guardarán en la carpeta /config de tu ZIP.</p>
+                </div>
+                <button class="btn-icon-danger" onclick="document.getElementById('config-editor-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="modal-body-scroll" style="padding: 20px 25px; display: flex; flex-direction: column; gap: 15px;">
+                <input type="hidden" id="config-mod-id">
+                <div class="form-group">
+                    <label style="font-weight: bold; margin-bottom: 5px; display: block;">Nombre del archivo</label>
+                    <input type="text" id="config-filename" class="form-input" placeholder="ejemplo: modname-common.toml">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label style="font-weight: bold; margin-bottom: 5px; display: block;">Contenido del Archivo</label>
+                    <textarea id="config-content" class="form-input custom-scrollbar" style="height: 300px; font-family: monospace; resize: none;" placeholder="[General]\n  damage_multiplier = 1.5\n  spawn_rate = 20"></textarea>
+                </div>
+                <button id="btn-save-config" class="btn btn-primary w-100" style="padding: 12px;"><i class="ph-bold ph-floppy-disk"></i> Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="save-pack-modal">
         <div class="modal-content">
             <h2 class="title mb-20"><i class="ph-bold ph-floppy-disk"></i> Guardar Proyecto</h2>
             <div class="form-group mb-20"><label>Nombre del Modpack</label><input type="text" id="pack-name-input" class="form-input"></div>
-            
-            <div class="form-group mb-20">
-                <label><i class="ph-bold ph-image"></i> Logo del Modpack (.png)</label>
-                <input type="file" id="pack-icon-input" class="form-input" accept="image/png" style="padding: 5px;">
-            </div>
 
             <div class="form-group mb-10" style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
@@ -241,13 +251,15 @@
 
     <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
 
+
     <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10005;">
         <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);">
-            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px;"></i>
+            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px; animation: pulse 2s infinite;"></i>
             <h2 class="title mb-10">¡Un momento! Faltan piezas.</h2>
             <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white; font-size: 1.1rem;">Este Mod</strong> funcione perfectamente y no rompa el juego, requiere estas librerías obligatorias:</p>
             
-            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;"></div>
+            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;">
+                </div>
             
             <div style="display: flex; gap: 15px; margin-top: 25px;">
                 <button class="btn btn-primary w-100" id="btn-epic-add-all" style="font-size: 1.1rem; padding: 15px;">
@@ -275,7 +287,6 @@
             </div>
         </div>
     </div>
-
     <script src="js/content.js"></script>
 </body>
 </html>
