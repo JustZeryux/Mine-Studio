@@ -253,7 +253,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod')) return; 
                 const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
-                
+                window.currentModIdForScan = mod.project_id;
+                document.getElementById('mod-scan-results').style.display = 'none';
+                document.getElementById('btn-scan-mod').innerHTML = '<i class="ph-bold ph-scan"></i> Analizar .jar';
+                document.getElementById('btn-scan-mod').disabled = false;
                 document.getElementById('detail-title').textContent = mod.title;
                 document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
                 document.getElementById('detail-icon').src = iconUrl;
