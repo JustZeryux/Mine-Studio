@@ -676,4 +676,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         cart.classList.toggle('active-mobile');
         mobileBtn.innerHTML = cart.classList.contains('active-mobile') ? `<i class="ph-bold ph-x"></i>` : `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
     });
+
+    // ==========================================
+    // FUNCIÓN: COMPARADOR VISUAL DE SHADERS
+    // ==========================================
+    const shaderSliderInput = document.getElementById('shader-slider-input');
+    const shaderImgTop = document.getElementById('shader-img-top');
+    const shaderSliderLine = document.getElementById('shader-slider-line');
+    const btnOpenShaderCompare = document.getElementById('btn-shader-compare');
+
+    if (shaderSliderInput && shaderImgTop && shaderSliderLine) {
+        // Mover la línea y el recorte al mover el slider
+        shaderSliderInput.addEventListener('input', (e) => {
+            const sliderValue = e.target.value;
+            // Modificamos el polígono CSS para revelar la imagen de abajo
+            shaderImgTop.style.clipPath = `polygon(0 0, ${sliderValue}% 0, ${sliderValue}% 100%, 0 100%)`;
+            shaderSliderLine.style.left = `${sliderValue}%`;
+        });
+    }
+
+    if (btnOpenShaderCompare) {
+        btnOpenShaderCompare.addEventListener('click', () => {
+            document.getElementById('shader-compare-modal').classList.remove('hidden');
+        });
+    }
 });
