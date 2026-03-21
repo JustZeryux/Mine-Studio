@@ -1,4 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ==========================================
+    // SISTEMA DE SESIÓN (HEADER Y AUTH)
+    // ==========================================
+    // Revisa si hay una sesión activa (puedes cambiar 'usuario_token' por lo que uses en tu auth)
+    const isLoggedIn = localStorage.getItem('usuario_token'); 
+    const profileSection = document.querySelector('.profile-section');
+    
+    if (!isLoggedIn && profileSection) {
+        // Si no está logueado, reemplaza el nombre y avatar por el botón
+        profileSection.innerHTML = `
+            <button class="btn btn-primary" style="padding: 6px 16px; border-radius: 20px; font-size: 0.9rem;" onclick="window.location.href='login.html'">
+                <i class="ph-bold ph-sign-in"></i> Iniciar Sesión
+            </button>
+        `;
+    }
+
     // ==========================================
     // 1. NAVEGACIÓN Y VISTAS
     // ==========================================
@@ -12,12 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     navButtons.forEach(btn => btn.addEventListener('click', () => {
         navButtons.forEach(b => b.classList.remove('active')); 
         btn.classList.add('active');
+        
         Object.values(views).forEach(v => v.classList.add('hidden')); 
         views[btn.getAttribute('data-target')].classList.remove('hidden');
     }));
 
     // ==========================================
-    // 2. VARIABLES DE MODS Y MODRINTH API
+    // 2. LÓGICA DE MODS Y MODRINTH API
     // ==========================================
     const searchInput = document.getElementById('mod-search-input');
     const sortSelect = document.getElementById('mod-sort-select');
@@ -42,17 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchRealMods(false);
     };
 
-    // Diccionario para iconos de etiquetas (tags)
-    const tagIcons = {
-        'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
-        'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
-        'worldgen': '<i class="ph-fill ph-tree"></i>', 'equipment': '<i class="ph-fill ph-shield"></i>',
-        'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
-    };
-
-    // ==========================================
-    // 3. FUNCIONES DE BÚSQUEDA Y RENDERIZADO
-    // ==========================================
+    // CHIPS LOGIC
     chips.forEach(chip => {
         chip.addEventListener('click', (e) => {
             chips.forEach(c => c.classList.remove('active'));
@@ -66,7 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightboxImg = document.getElementById('lightbox-img');
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
+    // DICCIONARIO PARA ICONOS DE ETIQUETAS (TAGS)
+    const tagIcons = {
+        'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
+        'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
+        'worldgen': '<i class="ph-fill ph-tree"></i>', 'equipment': '<i class="ph-fill ph-shield"></i>',
+        'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
+    };
+
     const chipsContainer = document.getElementById('category-chips-container');
+    
     filterButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             filterButtons.forEach(b => b.classList.remove('active')); 
@@ -98,7 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let queryType = currentFilter === 'library' ? 'mod' : currentFilter;
             let facets = [[`versions:${versionSelect.value}`], [`project_type:${queryType}`]];
             
-            if (queryType === 'mod') facets.push([`categories:${loaderSelect.value}`]);
+            if (queryType === 'mod') {
+                facets.push([`categories:${loaderSelect.value}`]);
+            }
 
             if (currentFilter === 'mod') {
                 facets.push(["categories!=library"]); 
@@ -128,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (error) { 
-            if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API Modrinth.</div>'; 
+            if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; 
         }
     }
 
@@ -262,6 +281,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             depsContainer.innerHTML = depsHtml;
 
+                            document.querySelectorAll('.tilt-card').forEach(tiltCard => {
+                                tiltCard.addEventListener('mousemove', e => {
+                                    const rect = tiltCard.getBoundingClientRect();
+                                    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                                    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -15; 
+                                    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 15;
+                                    tiltCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+                                });
+                                tiltCard.addEventListener('mouseleave', () => { tiltCard.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`; });
+                            });
+
                             document.getElementById('btn-detail-add-all').onclick = () => {
                                 processAddAll(mod, depProjs);
                                 document.getElementById('mod-details-modal').classList.add('hidden');
@@ -285,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const list = document.getElementById('epic-deps-list');
         list.innerHTML = '';
+        
         missingDeps.forEach((p, index) => {
             let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
             list.innerHTML += `
@@ -327,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 4. CARRITO Y UI
+    // UI DEL CARRITO MEJORADA (COLORES E ICONOS)
     // ==========================================
     function updateCartUI() {
         cartList.innerHTML = '';
@@ -342,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const li = document.createElement('li'); 
                 li.className = `cart-item`; 
                 
-                // Lógica visual dependiendo del tipo
                 let iconClass = 'ph-puzzle-piece';
                 let typeColor = 'var(--accent)';
                 let typeText = 'Mod';
@@ -352,16 +382,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
 
                 li.innerHTML = `
-                    <div class="cart-item-info">
-                        <div class="cart-item-icon" style="display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
+                    <div class="cart-item-info" style="display:flex; align-items:center; gap:12px; overflow:hidden;">
+                        <div class="cart-item-icon" style="width:32px; height:32px; border-radius:6px; display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
                             <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
                         </div>
-                        <div class="cart-item-text">
-                            <span class="cart-item-title" title="${item.title}">${item.title}</span>
-                            <span class="cart-item-type" style="color: ${typeColor};">${typeText}</span>
+                        <div class="cart-item-text" style="display:flex; flex-direction:column;">
+                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;" title="${item.title}">${item.title}</span>
+                            <span class="cart-item-type" style="font-size:0.65rem; color:${typeColor}; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">${typeText}</span>
                         </div>
                     </div>
-                    <button class="btn-remove" data-index="${index}" title="Quitar"><i class="ph-bold ph-trash"></i></button>
+                    <button class="btn-remove" data-index="${index}" style="background:transparent; border:none; color:var(--danger); cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
                 `;
                 cartList.appendChild(li);
             });
@@ -375,15 +405,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Actualizar el número en el botón flotante del celular
-        const mobileCartBtn = document.getElementById('mobile-cart-toggle-btn');
-        if(mobileCartBtn && !document.querySelector('.cart-panel').classList.contains('active-mobile')) {
-            mobileCartBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
+        // Actualizar el número en el botón flotante
+        const mobileBtn = document.getElementById('mobile-cart-toggle-btn');
+        if(mobileBtn) {
+            mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
         }
     }
 
     // ==========================================
-    // 5. CONSTRUCCIÓN Y DESCARGA AL BACKEND
+    // EXPORTACIÓN Y GUARDADO DE MODPACKS
     // ==========================================
     const modalSave = document.getElementById('save-pack-modal');
     const btnJustDownload = document.getElementById('btn-just-download');
@@ -391,11 +421,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const packNameInput = document.getElementById('pack-name-input');
     
     if(btnOpenSaveModal) {
-        btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
+        btnOpenSaveModal.addEventListener('click', () => {
+            modalSave.classList.remove('hidden');
+        });
     }
 
-    // Función central para armar y descargar (RUTAS RELATIVAS)
     async function requestBuild(isSaving = false) {
+        // Validación de Auth: Solo te detiene si intentas guardar el perfil
+        if (isSaving && !isLoggedIn) {
+            alert('Necesitas iniciar sesión para guardar perfiles en la nube de MinePack Studio.');
+            window.location.href = 'login.html';
+            return;
+        }
+
         try {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
             const btn = isSaving ? btnSaveAndDownload : btnJustDownload;
@@ -416,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // USAMOS RUTAS RELATIVAS: Esto soluciona el error "Failed to fetch" en el celular
+            // Petición a la Base de Datos SOLO si el usuario está guardando el perfil
             if (isSaving) {
                 const saveRes = await fetch('/api/modpacks', {
                     method: 'POST',
@@ -426,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!saveRes.ok) throw new Error("No se pudo guardar en la base de datos.");
             }
 
+            // Descarga pura usando RUTA RELATIVA (soluciona el error en celular)
             const buildRes = await fetch('/api/export', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -434,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!buildRes.ok) throw new Error("Error en el servidor al compilar el modpack.");
 
-            // Descargar el archivo procesado por el backend
+            // Descargar el archivo
             const blob = await buildRes.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -459,9 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
 
 
-    // ==========================================
-    // 6. EVENTOS (Buscador, Selects)
-    // ==========================================
     sortSelect.addEventListener('change', updateSearch);
     versionSelect.addEventListener('change', updateSearch);
     loaderSelect.addEventListener('change', updateSearch);
@@ -477,34 +513,29 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchRealMods(true); 
     });
 
-    // Llamada inicial para cargar contenido al entrar
     updateSearch();
 
     // ==========================================
-    // 7. CREAR BOTÓN FLOTANTE PARA CARRITO EN MÓVIL
+    // CREAR BOTÓN FLOTANTE MÓVIL AL INICIAR
     // ==========================================
-    const btnHtml = document.createElement('button');
-    btnHtml.id = 'mobile-cart-toggle-btn';
-    btnHtml.className = 'mobile-cart-toggle hidden-desktop';
-    btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`;
-    document.body.appendChild(btnHtml);
+    const mobileBtn = document.createElement('button');
+    mobileBtn.id = 'mobile-cart-toggle-btn';
+    mobileBtn.className = 'mobile-cart-toggle hidden-desktop';
+    mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`;
+    document.body.appendChild(mobileBtn);
 
-    btnHtml.addEventListener('click', () => {
+    mobileBtn.addEventListener('click', () => {
         const cart = document.querySelector('.cart-panel');
         cart.classList.toggle('active-mobile');
         
         if(cart.classList.contains('active-mobile')) {
-            // Si está abierto, mostrar una "X" para cerrar
-            btnHtml.innerHTML = `<i class="ph-bold ph-x"></i>`;
+            mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`;
         } else {
-            // Si está cerrado, mostrar el icono del paquete y el número
-            btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
+            mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
         }
     });
 
-    // ==========================================
-    // 8. INICIALIZAR FUNCIONES EXTERNAS
-    // ==========================================
+    // Inicializar funciones externas si existen
     if (typeof initSoftwareModal === 'function') initSoftwareModal();
     if (typeof initWorldUpload === 'function') initWorldUpload();
 });
@@ -600,4 +631,5 @@ function handleWorldUpload(file) {
     
     const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
     alert(`Preparando la subida del mundo: ${file.name} (${fileSizeMB} MB)`);
+    // Aquí irá tu lógica de Fetch/XHR para enviar el formData a tu servidor
 }
