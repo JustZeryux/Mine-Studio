@@ -309,88 +309,68 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 }
 
 /* ==========================================
-   4. RESPONSIVIDAD (MÓVILES Y TABLETS)
-   ========================================== */
-/* ==========================================
-   4. RESPONSIVIDAD MÓVIL (CORREGIDA - ESTILO ORIGINAL)
+   4. RESPONSIVIDAD MÓVIL DEFINITIVA
    ========================================== */
 .hidden-desktop { display: none; }
 
 @media (max-width: 992px) {
     .hidden-desktop { display: flex; }
 
-    /* Estructura Base: Bloquear scroll general, permitir scroll interno */
-    body { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+    /* Bloqueo estricto del cuerpo para evitar saltos raros */
+    body, html { overflow: hidden; height: 100vh; margin: 0; position: fixed; width: 100%; }
     .app-container { flex-direction: column; height: 100vh; overflow: hidden; }
 
-    /* Menú Inferior Fijo tipo App */
+    /* Barra Inferior Fija (Menú) - Forzada abajo */
     .sidebar { 
-        width: 100%; position: absolute; bottom: 0; left: 0; z-index: 900; 
+        width: 100%; position: fixed !important; bottom: 0 !important; left: 0; z-index: 9999; 
         background: var(--bg-panel); border-right: none; 
         border-top: 1px solid var(--border-color); 
-        flex-direction: row; padding: 0; height: 65px;
+        flex-direction: row; height: 65px; display: flex;
     }
     .logo { display: none; }
     .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 0; gap: 0; }
     .nav-btn { flex-direction: column; gap: 4px; font-size: 0.75rem; padding: 10px 0; flex: 1; text-align: center; justify-content: center; align-items: center; }
     .nav-btn i { font-size: 1.4rem; }
 
-    /* Layout Central (Donde ocurre el scroll) */
-    .content { height: 100vh; padding-bottom: 65px; display: flex; flex-direction: column; }
-    .main-layout { flex: 1; padding: 15px 10px 0 10px; overflow: hidden; flex-direction: column; }
-    .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 0; padding-bottom: 30px; }
+    /* Contenido Central (Se ajusta dejando espacio a la barra) */
+    .content { height: 100vh; display: flex; flex-direction: column; padding-bottom: 65px; }
+    .main-layout { flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; }
+    .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px; }
 
-    /* Filtros Restaurados (Como tu 4ta Foto) */
-    .sticky-filters-container { position: sticky; top: 0; background: var(--bg-main); z-index: 50; padding-top: 10px; }
-    .search-panel { padding: 15px; margin-bottom: 15px; }
-    .search-panel > div { flex-direction: row !important; flex-wrap: wrap !important; gap: 10px; align-items: center !important; }
-    
-    /* Buscador completo arriba, selectores abajo repartidos */
-    .input-wrapper { flex: 1 1 100% !important; min-width: 100% !important; margin-bottom: 5px; }
-    .form-select { flex: 1; min-width: 30%; font-size: 0.85rem; padding: 8px 10px; }
+    /* Mods en Cuadritos (2 columnas) */
+    .mods-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mod-card { padding: 0; display: flex; flex-direction: column; }
+    .mod-banner { height: 65px; }
+    .mod-avatar { width: 40px; height: 40px; margin-top: -25px; margin-bottom: 5px; border-width: 2px; align-self: center; }
+    .mod-info { padding: 10px; text-align: center; }
+    .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+    .mod-desc, .mod-tags-container { display: none; } /* Ocultamos tags y descripción para que el cuadrito se vea limpio */
+    .btn-add-mod { font-size: 0.8rem; padding: 8px; margin-top: auto; }
 
-    /* Scroll Horizontal suave para botones y chips */
-    .category-chips { margin-bottom: 5px; padding-bottom: 5px; }
-    .filter-group { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; margin-bottom: 15px; padding-bottom: 5px; }
-    .filter-btn { white-space: nowrap; font-size: 0.85rem; padding: 6px 14px; }
-    .mods-grid { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); }
+    /* Filtros Sticky Superiores */
+    .sticky-filters-container { position: sticky; top: 0; background: var(--bg-main); z-index: 50; padding-top: 5px; }
+    .search-panel { padding: 10px; margin-bottom: 10px; }
+    .search-panel > div { flex-direction: row !important; flex-wrap: wrap !important; gap: 5px; }
+    .input-wrapper { flex: 1 1 100% !important; margin-bottom: 5px; }
+    .form-select { flex: 1; min-width: 30%; font-size: 0.8rem; padding: 6px; }
+    .category-chips, .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin-bottom: 10px; }
 
-    /* CARRITO Y BOTÓN FLOTANTE */
+    /* Carrito Móvil y Botón */
     .cart-panel {
-        position: fixed; top: 0; right: -100%; 
-        width: 85vw; height: calc(100vh - 65px); z-index: 1000; 
-        border-radius: 0; border-left: 1px solid var(--border-color);
-        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        box-shadow: -10px 0 30px rgba(0,0,0,0.8); margin: 0;
+        position: fixed; top: 0; right: -100%; width: 85vw; height: calc(100vh - 65px); 
+        z-index: 1000; border-left: 1px solid var(--border-color); transition: right 0.3s ease; 
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8); margin: 0; background: var(--bg-panel);
     }
     .cart-panel.active-mobile { right: 0; }
     
     .mobile-cart-toggle {
-        position: fixed; bottom: 85px; right: 20px; z-index: 1001;
+        position: fixed; bottom: 80px; right: 15px; z-index: 1001;
         background: var(--accent); color: white; border: none;
         width: 55px; height: 55px; border-radius: 50%;
-        box-shadow: 0 5px 20px rgba(99,102,241,0.6);
-        display: flex; justify-content: center; align-items: center; 
-        font-size: 24px; cursor: pointer; transition: 0.2s;
+        box-shadow: 0 5px 15px rgba(99,102,241,0.5); display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer;
     }
     .mobile-cart-toggle .badge {
-        position: absolute; top: -2px; right: -2px;
-        background: var(--danger); font-size: 11px; font-weight: bold;
-        width: 20px; height: 20px; border-radius: 50%; 
-        display: flex; justify-content: center; align-items: center;
+        position: absolute; top: -2px; right: -2px; background: var(--danger); font-size: 11px; font-weight: bold;
+        width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
     }
-
-    /* Evitar problemas de zoom en los modales */
-    .modal-content { width: 95%; max-height: 85vh; padding: 20px; overflow-y: auto; border-radius: 12px; }
-    .modal-header-mod { flex-direction: column; padding: 0 0 15px 0; background: transparent; position: static; }
-    
-    .tilt-wrapper { width: 100%; }
-    .tilt-card { 
-        width: 100% !important; flex-direction: column; text-align: center; 
-        transform: none !important; padding: 15px; box-sizing: border-box;
-    }
-    .tilt-card img { transform: none !important; margin-bottom: 10px; }
-    .tilt-card .dep-info { transform: none !important; text-align: center !important; }
-    .tilt-card .btn-install { transform: none !important; margin-top: 10px; width: 100%; }
-    .tilt-card::before { transform: none !important; left: 50%; translate: -50% 0; top: -12px; }
 }
