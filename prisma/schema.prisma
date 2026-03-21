@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        String    @id @default(uuid())
+  discordId String    @unique
+  username  String
+  avatar    String?
+  servers   Server[]
+  modpacks  Modpack[] // <--- ESTA ES LA LÍNEA QUE FALTA
+  createdAt DateTime  @default(now())
+}
+
+model Server {
+  id        String   @id @default(uuid())
+  name      String
+  port      Int      @unique
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// Añade esto al final de tu schema.prisma
+
+model Modpack {
+  id          String   @id @default(uuid())
+  name        String
+  mcVersion   String
+  modLoader   String
+  modsData    String   // Guardaremos el carrito de mods como un texto JSON
+  worldData   String   // Guardaremos las configuraciones del mundo como texto JSON
+  isPublic    Boolean  @default(false)
+  shortLink   String   @unique @default(uuid()) // Enlace único para compartir
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
