@@ -254,9 +254,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if(e.target.closest('.btn-add-mod')) return; 
                 const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
                 window.currentModIdForScan = mod.project_id;
-                document.getElementById('mod-scan-results').style.display = 'none';
-                document.getElementById('btn-scan-mod').innerHTML = '<i class="ph-bold ph-scan"></i> Analizar .jar';
-                document.getElementById('btn-scan-mod').disabled = false;
+                const scanStats = document.getElementById('mod-scan-stats'); 
+                const scanGallery = document.getElementById('mod-scan-gallery'); 
+                const btnScan = document.getElementById('btn-scan-mod');
+                
+                if(scanStats) scanStats.style.display = 'none'; 
+                if(scanGallery) scanGallery.style.display = 'none';
+                if(btnScan) { btnScan.innerHTML = '<i class="ph-bold ph-scan"></i> Analizar .jar'; btnScan.disabled = false; }
                 document.getElementById('detail-title').textContent = mod.title;
                 document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
                 document.getElementById('detail-icon').src = iconUrl;
