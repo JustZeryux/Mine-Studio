@@ -1,19 +1,52 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
-    // SISTEMA DE SESIÓN (HEADER Y AUTH)
+    // CONFIGURACIÓN DE ENTORNO (LOCAL VS PRODUCCIÓN)
     // ==========================================
-    // Revisa si hay una sesión activa (puedes cambiar 'usuario_token' por lo que uses en tu auth)
-    const isLoggedIn = localStorage.getItem('usuario_token'); 
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // PON AQUÍ LA URL DE TU BACKEND CUANDO LO SUBAS A RENDER/RAILWAY (ej. 'https://mi-backend.onrender.com')
+    const PRODUCCION_BACKEND_URL = ''; 
+    const API_BASE_URL = isLocal ? 'http://localhost:3000' : PRODUCCION_BACKEND_URL;
+
+    // ==========================================
+    // 0. SISTEMA DE SESIÓN REAL (CONECTADO AL BACKEND)
+    // ==========================================
+    let currentUser = null;
     const profileSection = document.querySelector('.profile-section');
-    
-    if (!isLoggedIn && profileSection) {
-        // Si no está logueado, reemplaza el nombre y avatar por el botón
-        profileSection.innerHTML = `
-            <button class="btn btn-primary" style="padding: 6px 16px; border-radius: 20px; font-size: 0.9rem;" onclick="window.location.href='login.html'">
-                <i class="ph-bold ph-sign-in"></i> Iniciar Sesión
-            </button>
-        `;
+
+    try {
+        // Le preguntamos al backend si hay una sesión activa
+        const resAuth = await fetch(`${API_BASE_URL}/api/me`);
+        if (resAuth.ok) {
+            const authData = await resAuth.json();
+            if (authData.loggedIn && authData.user) {
+                currentUser = authData.user;
+            }
+        }
+    } catch (e) {
+        console.warn("No se pudo conectar con el servidor de cuentas. Modo visitante activo.");
+    }
+
+    if (profileSection) {
+        if (!currentUser) {
+            // No hay sesión: Mostrar botón que redirige al login de Discord
+            profileSection.innerHTML = `
+                <button class="btn btn-primary" id="btn-trigger-login" style="padding: 6px 16px; border-radius: 20px; font-size: 0.9rem;">
+                    <i class="ph-bold ph-sign-in"></i> Iniciar Sesión
+                </button>
+            `;
+            document.getElementById('btn-trigger-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                // Redirigir a la ruta real de tu backend que inicia sesión con Discord
+                window.location.href = `${API_BASE_URL}/auth/discord`;
+            });
+        } else {
+            // Sí hay sesión: Mostrar el nombre y avatar real del usuario
+            profileSection.innerHTML = `
+                <span id="header-username">${currentUser.username}</span>
+                <img src="${currentUser.avatar || `https://crafatar.com/avatars/${currentUser.username}?size=40`}" class="avatar">
+            `;
+        }
     }
 
     // ==========================================
@@ -32,6 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         Object.values(views).forEach(v => v.classList.add('hidden')); 
         views[btn.getAttribute('data-target')].classList.remove('hidden');
+        
+        // Si entramos a "Mis Modpacks", cargarlos desde la base de datos
+        if (btn.getAttribute('data-target') === 'profiles') {
+            loadMyProfiles();
+        }
     }));
 
     // ==========================================
@@ -60,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchRealMods(false);
     };
 
-    // CHIPS LOGIC
     chips.forEach(chip => {
         chip.addEventListener('click', (e) => {
             chips.forEach(c => c.classList.remove('active'));
@@ -74,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightboxImg = document.getElementById('lightbox-img');
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
-    // DICCIONARIO PARA ICONOS DE ETIQUETAS (TAGS)
     const tagIcons = {
         'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
         'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
@@ -192,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="mod-tags-container">${tagsHtml}</div>
                     <p class="mod-desc">${mod.description.substring(0, 60)}...</p>
                 </div>
-                <div style="padding: 0 20px 20px 20px; z-index: 10;">
+                <div style="padding: 0 10px 10px 10px; z-index: 10; margin-top: auto;">
                     <button class="btn btn-primary w-100 btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="${isAdded ? 'background: var(--success); color: white;' : ''}">
                         <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
                     </button>
@@ -280,17 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>`;
                             
                             depsContainer.innerHTML = depsHtml;
-
-                            document.querySelectorAll('.tilt-card').forEach(tiltCard => {
-                                tiltCard.addEventListener('mousemove', e => {
-                                    const rect = tiltCard.getBoundingClientRect();
-                                    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-                                    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -15; 
-                                    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 15;
-                                    tiltCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
-                                });
-                                tiltCard.addEventListener('mouseleave', () => { tiltCard.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`; });
-                            });
 
                             document.getElementById('btn-detail-add-all').onclick = () => {
                                 processAddAll(mod, depProjs);
@@ -405,7 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Actualizar el número en el botón flotante
         const mobileBtn = document.getElementById('mobile-cart-toggle-btn');
         if(mobileBtn) {
             mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
@@ -413,7 +437,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // EXPORTACIÓN Y GUARDADO DE MODPACKS
+    // CARGAR MIS MODPACKS DESDE LA BASE DE DATOS
+    // ==========================================
+    async function loadMyProfiles() {
+        const grid = document.getElementById('profiles-grid');
+        if(!grid) return;
+
+        if(!currentUser) {
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i>
+                    <p style="margin-top: 10px;">Inicia sesión para ver y guardar tus modpacks aquí.</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = '<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando tus perfiles...</p></div>';
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/modpacks`);
+            if(!res.ok) throw new Error();
+            const profiles = await res.json();
+
+            if (profiles.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:40px;"><p>Aún no has guardado ningún Modpack.</p></div>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            profiles.forEach(p => {
+                const modsCount = p.modsData ? JSON.parse(p.modsData).length : 0;
+                grid.innerHTML += `
+                    <div class="profile-card panel" style="padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px;">
+                        <h3 style="margin-bottom: 5px;">${p.name}</h3>
+                        <p class="muted-text text-sm mb-10"><i class="ph-bold ph-tag"></i> ${p.mcVersion} ${p.modLoader}</p>
+                        <p class="muted-text text-sm"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} elementos guardados</p>
+                    </div>
+                `;
+            });
+        } catch (e) {
+            grid.innerHTML = '<div style="text-align:center; padding:40px; color: var(--danger);"><p>Error al cargar tus perfiles desde el servidor.</p></div>';
+        }
+    }
+
+    // ==========================================
+    // EXPORTACIÓN FINAL (GUARDAR BD + DESCARGAR ZIP)
     // ==========================================
     const modalSave = document.getElementById('save-pack-modal');
     const btnJustDownload = document.getElementById('btn-just-download');
@@ -427,10 +495,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function requestBuild(isSaving = false) {
-        // Validación de Auth: Solo te detiene si intentas guardar el perfil
-        if (isSaving && !isLoggedIn) {
-            alert('Necesitas iniciar sesión para guardar perfiles en la nube de MinePack Studio.');
-            window.location.href = 'login.html';
+        // Bloqueo estricto: Si quieres guardar y no tienes sesión, te mandará al login de Discord
+        if (isSaving && !currentUser) {
+            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en tu cuenta.');
+            window.location.href = `${API_BASE_URL}/auth/discord`;
             return;
         }
 
@@ -444,9 +512,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const payload = {
-                name: packName,
-                mcVersion: versionSelect.value,
-                modLoader: loaderSelect.value,
+                name: packName, 
+                mcVersion: versionSelect.value, 
+                modLoader: loaderSelect.value, 
                 mods: modpackCart,
                 worldSettings: {
                     seed: document.getElementById('world-seed-input') ? document.getElementById('world-seed-input').value : '',
@@ -454,40 +522,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // Petición a la Base de Datos SOLO si el usuario está guardando el perfil
+            // 1. GUARDAR EN LA BASE DE DATOS (Solo si el usuario seleccionó "Guardar y Exportar")
             if (isSaving) {
-                const saveRes = await fetch('/api/modpacks', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!saveRes.ok) throw new Error("No se pudo guardar en la base de datos.");
+                try {
+                    const saveRes = await fetch(`${API_BASE_URL}/api/modpacks`, {
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload)
+                    });
+                    if (saveRes.ok) {
+                        if(window.showNotification) window.showNotification("Perfil guardado en tu cuenta exitosamente.", "success");
+                    } else {
+                        throw new Error("Respuesta no OK de la BD");
+                    }
+                } catch (dbError) {
+                    console.error(dbError);
+                    alert("Aviso: El servidor de cuentas no respondió. No se pudo guardar el perfil en la nube, pero tu descarga continuará.");
+                }
             }
 
-            // Descarga pura usando RUTA RELATIVA (soluciona el error en celular)
-            const buildRes = await fetch('/api/export', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            // 2. DESCARGAR EL ZIP DESDE EL BACKEND
+            const buildRes = await fetch(`${API_BASE_URL}/api/export`, {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify(payload)
             });
 
-            if (!buildRes.ok) throw new Error("Error en el servidor al compilar el modpack.");
+            if (!buildRes.ok) throw new Error("Error en el servidor de Node al compilar el archivo ZIP.");
 
-            // Descargar el archivo
             const blob = await buildRes.blob();
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
+            const a = document.createElement('a'); 
+            a.style.display = 'none'; 
             a.href = url;
             a.download = `${packName.replace(/\s+/g, '_')}_${versionSelect.value}.zip`;
-            document.body.appendChild(a);
+            document.body.appendChild(a); 
             a.click();
             window.URL.revokeObjectURL(url);
             
             modalSave.classList.add('hidden');
             
         } catch (error) {
-            alert("Error: " + error.message);
+            alert("Error crítico al empaquetar: " + error.message);
         } finally {
             if(btnJustDownload) { btnJustDownload.innerHTML = 'Solo Descargar'; btnJustDownload.disabled = false; }
             if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
@@ -498,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
 
 
+    // EVENTOS Y ARRANQUE
     sortSelect.addEventListener('change', updateSearch);
     versionSelect.addEventListener('change', updateSearch);
     loaderSelect.addEventListener('change', updateSearch);
@@ -535,7 +612,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inicializar funciones externas si existen
     if (typeof initSoftwareModal === 'function') initSoftwareModal();
     if (typeof initWorldUpload === 'function') initWorldUpload();
 });
@@ -543,7 +619,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // FUNCIONES GLOBALES (MUNDOS Y SOFTWARE)
 // ==========================================
-
 function initSoftwareModal() {
     const softwareModal = document.getElementById('software-modal');
     const softwareBtns = document.querySelectorAll('.software-select-btn');
@@ -552,16 +627,13 @@ function initSoftwareModal() {
     if (softwareBtns) {
         softwareBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const softwareType = e.target.dataset.software; 
-                openSoftwareModal(softwareType);
+                openSoftwareModal(e.target.dataset.software);
             });
         });
     }
 
     if (closeBtn && softwareModal) {
-        closeBtn.addEventListener('click', () => {
-            softwareModal.classList.add('hidden');
-        });
+        closeBtn.addEventListener('click', () => softwareModal.classList.add('hidden'));
     }
 }
 
@@ -610,16 +682,11 @@ function initWorldUpload() {
         e.preventDefault();
         dropZone.style.borderColor = 'var(--border)';
         dropZone.style.background = 'transparent';
-        
-        if (e.dataTransfer.files.length) {
-            handleWorldUpload(e.dataTransfer.files[0]);
-        }
+        if (e.dataTransfer.files.length) handleWorldUpload(e.dataTransfer.files[0]);
     });
 
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) {
-            handleWorldUpload(e.target.files[0]);
-        }
+        if (e.target.files.length) handleWorldUpload(e.target.files[0]);
     });
 }
 
@@ -628,8 +695,5 @@ function handleWorldUpload(file) {
         alert("Por favor, sube solo archivos .ZIP. Es el único formato admitido para los mundos.");
         return;
     }
-    
-    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-    alert(`Preparando la subida del mundo: ${file.name} (${fileSizeMB} MB)`);
-    // Aquí irá tu lógica de Fetch/XHR para enviar el formData a tu servidor
+    alert(`Preparando la subida del mundo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 }
