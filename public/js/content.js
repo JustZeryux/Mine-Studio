@@ -1,52 +1,46 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
-    // CONFIGURACIÓN DE ENTORNO (LOCAL VS PRODUCCIÓN)
+    // 0. SISTEMA DE SESIÓN 100% FRONTEND (MÓDULOS)
     // ==========================================
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    // PON AQUÍ LA URL DE TU BACKEND CUANDO LO SUBAS A RENDER/RAILWAY (ej. 'https://mi-backend.onrender.com')
-    const PRODUCCION_BACKEND_URL = ''; 
-    const API_BASE_URL = isLocal ? 'http://localhost:3000' : PRODUCCION_BACKEND_URL;
-
-    // ==========================================
-    // 0. SISTEMA DE SESIÓN REAL (CONECTADO AL BACKEND)
-    // ==========================================
-    let currentUser = null;
+    const isLoggedIn = localStorage.getItem('usuario_token'); 
     const profileSection = document.querySelector('.profile-section');
-
-    try {
-        // Le preguntamos al backend si hay una sesión activa
-        const resAuth = await fetch(`${API_BASE_URL}/api/me`);
-        if (resAuth.ok) {
-            const authData = await resAuth.json();
-            if (authData.loggedIn && authData.user) {
-                currentUser = authData.user;
-            }
-        }
-    } catch (e) {
-        console.warn("No se pudo conectar con el servidor de cuentas. Modo visitante activo.");
-    }
+    const authModal = document.getElementById('auth-modal');
 
     if (profileSection) {
-        if (!currentUser) {
-            // No hay sesión: Mostrar botón que redirige al login de Discord
+        if (!isLoggedIn) {
             profileSection.innerHTML = `
                 <button class="btn btn-primary" id="btn-trigger-login" style="padding: 6px 16px; border-radius: 20px; font-size: 0.9rem;">
                     <i class="ph-bold ph-sign-in"></i> Iniciar Sesión
                 </button>
             `;
-            document.getElementById('btn-trigger-login').addEventListener('click', (e) => {
-                e.preventDefault();
-                // Redirigir a la ruta real de tu backend que inicia sesión con Discord
-                window.location.href = `${API_BASE_URL}/auth/discord`;
+            document.getElementById('btn-trigger-login').addEventListener('click', () => {
+                if(authModal) authModal.classList.remove('hidden');
             });
         } else {
-            // Sí hay sesión: Mostrar el nombre y avatar real del usuario
+            const user = JSON.parse(isLoggedIn);
             profileSection.innerHTML = `
-                <span id="header-username">${currentUser.username}</span>
-                <img src="${currentUser.avatar || `https://crafatar.com/avatars/${currentUser.username}?size=40`}" class="avatar">
+                <span id="header-username">${user.username}</span>
+                <img src="${user.avatar}" class="avatar">
+                <button class="btn btn-text" id="btn-logout" style="padding: 4px; margin-left: 5px; color: var(--danger);" title="Cerrar Sesión"><i class="ph-bold ph-sign-out"></i></button>
             `;
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                localStorage.removeItem('usuario_token');
+                window.location.reload();
+            });
         }
+    }
+
+    // Funciones del Modal de Login
+    if(authModal) {
+        document.getElementById('btn-fake-discord').addEventListener('click', () => {
+            localStorage.setItem('usuario_token', JSON.stringify({username: 'Zeryux_Dev', avatar: 'https://crafatar.com/avatars/Zeryux?size=40'}));
+            window.location.reload();
+        });
+        document.getElementById('btn-fake-google').addEventListener('click', () => {
+            localStorage.setItem('usuario_token', JSON.stringify({username: 'Invitado', avatar: 'https://crafatar.com/avatars/Steve?size=40'}));
+            window.location.reload();
+        });
     }
 
     // ==========================================
@@ -66,10 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.values(views).forEach(v => v.classList.add('hidden')); 
         views[btn.getAttribute('data-target')].classList.remove('hidden');
         
-        // Si entramos a "Mis Modpacks", cargarlos desde la base de datos
-        if (btn.getAttribute('data-target') === 'profiles') {
-            loadMyProfiles();
-        }
+        if (btn.getAttribute('data-target') === 'profiles') loadMyProfiles();
     }));
 
     // ==========================================
@@ -100,10 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     chips.forEach(chip => {
         chip.addEventListener('click', (e) => {
-            chips.forEach(c => c.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            currentCategory = e.currentTarget.dataset.cat;
-            updateSearch();
+            chips.forEach(c => c.classList.remove('active')); e.currentTarget.classList.add('active');
+            currentCategory = e.currentTarget.dataset.cat; updateSearch();
         });
     });
 
@@ -118,20 +107,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
     };
 
-    const chipsContainer = document.getElementById('category-chips-container');
-    
     filterButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             filterButtons.forEach(b => b.classList.remove('active')); 
             e.currentTarget.classList.add('active');
             currentFilter = e.currentTarget.dataset.filter; 
-            
+            const chipsContainer = document.getElementById('category-chips-container');
             if(currentFilter === 'mod') {
                 if(chipsContainer) chipsContainer.style.display = 'flex';
             } else {
                 if(chipsContainer) chipsContainer.style.display = 'none';
-                currentCategory = ""; 
-                chips.forEach(c => c.classList.remove('active'));
+                currentCategory = ""; chips.forEach(c => c.classList.remove('active'));
                 if(chips.length) chips[0].classList.add('active');
             }
             fetchRealMods(false);
@@ -143,28 +129,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentOffset = 0;
             modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Buscando...</p></div>`;
             if(btnLoadMore) btnLoadMore.classList.add('hidden');
-        } else {
-            if(btnLoadMore) btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...';
-        }
+        } else { if(btnLoadMore) btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; }
 
         try {
             let queryType = currentFilter === 'library' ? 'mod' : currentFilter;
             let facets = [[`versions:${versionSelect.value}`], [`project_type:${queryType}`]];
-            
-            if (queryType === 'mod') {
-                facets.push([`categories:${loaderSelect.value}`]);
-            }
-
+            if (queryType === 'mod') facets.push([`categories:${loaderSelect.value}`]);
             if (currentFilter === 'mod') {
                 facets.push(["categories!=library"]); 
                 if (currentCategory !== "") facets.push([`categories:${currentCategory}`]);
-            } else if (currentFilter === 'library') {
-                facets.push(["categories:library"]);
-            }
+            } else if (currentFilter === 'library') { facets.push(["categories:library"]); }
 
-            const facetsStr = encodeURIComponent(JSON.stringify(facets));
-            const query = searchInput.value;
-            const res = await fetch(`https://api.modrinth.com/v2/search?query=${query}&facets=${facetsStr}&index=${sortSelect.value}&limit=16&offset=${currentOffset}`);
+            const res = await fetch(`https://api.modrinth.com/v2/search?query=${searchInput.value}&facets=${encodeURIComponent(JSON.stringify(facets))}&index=${sortSelect.value}&limit=16&offset=${currentOffset}`);
             const data = await res.json();
             
             if (!isAppend) modsGrid.innerHTML = '';
@@ -174,17 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 renderRealMods(data.hits);
                 if(data.hits.length === 16) {
-                    if(btnLoadMore) {
-                        btnLoadMore.classList.remove('hidden');
-                        btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más';
-                    }
-                } else { 
-                    if(btnLoadMore) btnLoadMore.classList.add('hidden'); 
-                }
+                    if(btnLoadMore) { btnLoadMore.classList.remove('hidden'); btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más'; }
+                } else { if(btnLoadMore) btnLoadMore.classList.add('hidden'); }
             }
-        } catch (error) { 
-            if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; 
-        }
+        } catch (error) { if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; }
     }
 
     async function getRequiredDependencies(projectId, version, loader) {
@@ -205,18 +174,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderRealMods(mods) {
         mods.forEach(mod => {
-            const card = document.createElement('div');
-            card.className = 'mod-card';
+            const card = document.createElement('div'); card.className = 'mod-card';
             const iconUrl = mod.icon_url || 'https://via.placeholder.com/80/18181b/ffffff?text=?';
             const bannerUrl = (mod.gallery && mod.gallery[0]) ? mod.gallery[0] : 'https://via.placeholder.com/400x150/18181b/27272a';
             const isAdded = modpackCart.some(item => item.id === mod.project_id);
             
             let tagsHtml = '';
             if(mod.display_categories) {
-                const topTags = mod.display_categories.slice(0, 3);
-                topTags.forEach(tag => {
-                    const icon = tagIcons[tag] || '<i class="ph-bold ph-tag"></i>';
-                    tagsHtml += `<span class="mini-tag">${icon} ${tag}</span>`;
+                mod.display_categories.slice(0, 3).forEach(tag => {
+                    tagsHtml += `<span class="mini-tag">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`;
                 });
             }
 
@@ -238,10 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const addBtn = card.querySelector('.btn-add-mod');
             addBtn.addEventListener('click', async function(e) {
                 e.stopPropagation(); 
-                
-                const originalHtml = this.innerHTML;
-                this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...';
-                this.disabled = true;
+                const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...'; this.disabled = true;
 
                 if (this.dataset.type === 'mod') {
                     const deps = await getRequiredDependencies(this.dataset.id, versionSelect.value, loaderSelect.value);
@@ -249,87 +212,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const missingDeps = deps.filter(dep => !modpackCart.some(item => item.id === dep.id));
                         if (missingDeps.length > 0) {
                             showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type }, missingDeps, this);
-                            this.innerHTML = originalHtml; 
-                            this.disabled = false;
-                            return; 
+                            this.innerHTML = originalHtml; this.disabled = false; return; 
                         }
                     }
                 }
 
                 modpackCart.push({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type });
                 updateCartUI();
-                this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
-                this.style.background = 'var(--success)';
-                this.style.color = 'white';
+                this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
             });
-
-            card.addEventListener('click', (e) => {
-                if(e.target.closest('.btn-add-mod')) return; 
-                
-                const modal = document.getElementById('mod-details-modal');
-                modal.classList.remove('hidden');
-                
-                document.getElementById('detail-title').textContent = mod.title;
-                document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
-                document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
-                document.getElementById('detail-icon').src = iconUrl;
-                document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información...</p></div>`;
-                document.getElementById('detail-gallery').innerHTML = '';
-                const depsContainer = document.getElementById('detail-dependencies');
-                depsContainer.innerHTML = '';
-
-                fetch(`https://api.modrinth.com/v2/project/${mod.project_id}`).then(res => res.json()).then(projectData => {
-                    document.getElementById('detail-description').innerHTML = projectData.body ? marked.parse(projectData.body) : `<p>${projectData.description}</p>`;
-                    const gallery = document.getElementById('detail-gallery');
-                    if(projectData.gallery && projectData.gallery.length > 0) {
-                        projectData.gallery.forEach(img => {
-                            const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.style.cursor = 'zoom-in';
-                            imgEl.onclick = () => { lightboxImg.src = img.url; lightbox.classList.remove('hidden'); };
-                            gallery.appendChild(imgEl);
-                        });
-                    }
-                });
-
-                if (mod.project_type === 'mod') {
-                    getRequiredDependencies(mod.project_id, versionSelect.value, loaderSelect.value).then(depProjs => {
-                        if (depProjs.length > 0) {
-                            let depsHtml = '<h3 class="subtitle mb-10 w-100 text-center" style="width:100%;"><i class="ph-bold ph-books"></i> Librerías Necesarias</h3>';
-                            depProjs.forEach((p, index) => {
-                                let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
-                                depsHtml += `
-                                <div class="tilt-wrapper">
-                                    <div class="tilt-card ${animClass}">
-                                        <img src="${p.icon_url || 'https://via.placeholder.com/40'}" alt="icon">
-                                        <div class="dep-info">
-                                            <h4>${p.title}</h4>
-                                            <span>Obligatorio</span>
-                                        </div>
-                                    </div>
-                                </div>`;
-                            });
-                            
-                            depsHtml += `
-                            <div style="width: 100%; text-align: center; margin-top: 20px;">
-                                <button class="btn btn-primary" id="btn-detail-add-all" style="background: var(--accent); padding: 12px 24px; font-size: 1rem;">
-                                    <i class="ph-bold ph-stack"></i> Añadir Mod y sus Librerías
-                                </button>
-                            </div>`;
-                            
-                            depsContainer.innerHTML = depsHtml;
-
-                            document.getElementById('btn-detail-add-all').onclick = () => {
-                                processAddAll(mod, depProjs);
-                                document.getElementById('mod-details-modal').classList.add('hidden');
-                                addBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
-                                addBtn.style.background = 'var(--success)';
-                                addBtn.style.color = 'white';
-                                addBtn.disabled = true;
-                            };
-                        }
-                    });
-                }
-            });
-
             modsGrid.appendChild(card);
         });
     }
@@ -337,9 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showEpicDepsModal(mainMod, missingDeps, triggerButton) {
         const modal = document.getElementById('epic-deps-modal');
         document.getElementById('epic-mod-name').textContent = mainMod.title;
-        
-        const list = document.getElementById('epic-deps-list');
-        list.innerHTML = '';
+        const list = document.getElementById('epic-deps-list'); list.innerHTML = '';
         
         missingDeps.forEach((p, index) => {
             let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
@@ -347,44 +236,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="tilt-wrapper" style="margin-bottom: 10px;">
                 <div class="tilt-card ${animClass}" style="background: var(--bg-main);">
                     <img src="${p.icon_url || 'https://via.placeholder.com/40'}" alt="icon">
-                    <div class="dep-info" style="text-align: left;">
-                        <h4>${p.title}</h4>
-                        <span>Componente central</span>
-                    </div>
+                    <div class="dep-info" style="text-align: left;"><h4>${p.title}</h4><span>Componente central</span></div>
                 </div>
             </div>`;
         });
 
         document.getElementById('btn-epic-add-all').onclick = () => {
-            processAddAll(mainMod, missingDeps);
-            if(triggerButton) {
-                triggerButton.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
-                triggerButton.style.background = 'var(--success)';
-                triggerButton.style.color = 'white';
-                triggerButton.disabled = true;
-            }
+            if (!modpackCart.some(item => item.id === mainMod.id)) modpackCart.push({ id: mainMod.id, title: mainMod.title, type: mainMod.type || 'mod' });
+            missingDeps.forEach(dep => { if (!modpackCart.some(item => item.id === dep.id)) modpackCart.push({ id: dep.id, title: dep.title, type: 'mod' }); });
+            updateCartUI();
+            if(triggerButton) { triggerButton.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; triggerButton.style.background = 'var(--success)'; triggerButton.disabled = true; }
             modal.classList.add('hidden');
         };
-
         modal.classList.remove('hidden');
     }
 
-    function processAddAll(mainMod, depsArray) {
-        if (!modpackCart.some(item => item.id === mainMod.id)) {
-            modpackCart.push({ id: mainMod.id, title: mainMod.title, type: mainMod.type || 'mod' });
-        }
-        depsArray.forEach(dep => {
-            if (!modpackCart.some(item => item.id === dep.id)) {
-                modpackCart.push({ id: dep.id, title: dep.title, type: 'mod' });
-            }
-        });
-        updateCartUI();
-        if(window.showNotification) window.showNotification(`Se añadió ${mainMod.title} y sus ${depsArray.length} librerías con éxito.`, "success");
-    }
-
-    // ==========================================
-    // UI DEL CARRITO MEJORADA (COLORES E ICONOS)
-    // ==========================================
     function updateCartUI() {
         cartList.innerHTML = '';
         if (modpackCart.length === 0) {
@@ -395,175 +261,138 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(btnOpenSaveModal) btnOpenSaveModal.disabled = false;
 
             modpackCart.forEach((item, index) => {
-                const li = document.createElement('li'); 
-                li.className = `cart-item`; 
-                
-                let iconClass = 'ph-puzzle-piece';
-                let typeColor = 'var(--accent)';
-                let typeText = 'Mod';
-                
+                const li = document.createElement('li'); li.className = `cart-item`; 
+                let iconClass = 'ph-puzzle-piece', typeColor = 'var(--accent)', typeText = 'Mod';
                 if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
                 else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
-                else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
-
+                
                 li.innerHTML = `
                     <div class="cart-item-info" style="display:flex; align-items:center; gap:12px; overflow:hidden;">
                         <div class="cart-item-icon" style="width:32px; height:32px; border-radius:6px; display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
                             <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
                         </div>
                         <div class="cart-item-text" style="display:flex; flex-direction:column;">
-                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;" title="${item.title}">${item.title}</span>
-                            <span class="cart-item-type" style="font-size:0.65rem; color:${typeColor}; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">${typeText}</span>
+                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;">${item.title}</span>
+                            <span class="cart-item-type" style="font-size:0.65rem; color:${typeColor}; text-transform:uppercase; font-weight:700;">${typeText}</span>
                         </div>
                     </div>
                     <button class="btn-remove" data-index="${index}" style="background:transparent; border:none; color:var(--danger); cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
                 `;
                 cartList.appendChild(li);
             });
-
-            document.querySelectorAll('.btn-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    modpackCart.splice(this.dataset.index, 1);
-                    updateCartUI(); 
-                    fetchRealMods(false);
-                });
-            });
+            document.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', function() { modpackCart.splice(this.dataset.index, 1); updateCartUI(); fetchRealMods(false); }));
         }
 
         const mobileBtn = document.getElementById('mobile-cart-toggle-btn');
-        if(mobileBtn) {
-            mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
-        }
+        if(mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
     }
 
     // ==========================================
-    // CARGAR MIS MODPACKS DESDE LA BASE DE DATOS
+    // CARGAR MIS PERFILES DESDE LOCALSTORAGE (SIN BACKEND)
     // ==========================================
-    async function loadMyProfiles() {
+    function loadMyProfiles() {
         const grid = document.getElementById('profiles-grid');
         if(!grid) return;
 
-        if(!currentUser) {
-            grid.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i>
-                    <p style="margin-top: 10px;">Inicia sesión para ver y guardar tus modpacks aquí.</p>
-                </div>`;
+        if(!isLoggedIn) {
+            grid.innerHTML = `<div style="text-align: center; padding: 40px;"><i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i><p style="margin-top: 10px;">Inicia sesión para guardar tus modpacks aquí.</p></div>`;
             return;
         }
 
-        grid.innerHTML = '<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando tus perfiles...</p></div>';
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/modpacks`);
-            if(!res.ok) throw new Error();
-            const profiles = await res.json();
-
-            if (profiles.length === 0) {
-                grid.innerHTML = '<div style="text-align:center; padding:40px;"><p>Aún no has guardado ningún Modpack.</p></div>';
-                return;
-            }
-
-            grid.innerHTML = '';
-            profiles.forEach(p => {
-                const modsCount = p.modsData ? JSON.parse(p.modsData).length : 0;
-                grid.innerHTML += `
-                    <div class="profile-card panel" style="padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                        <h3 style="margin-bottom: 5px;">${p.name}</h3>
-                        <p class="muted-text text-sm mb-10"><i class="ph-bold ph-tag"></i> ${p.mcVersion} ${p.modLoader}</p>
-                        <p class="muted-text text-sm"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} elementos guardados</p>
-                    </div>
-                `;
-            });
-        } catch (e) {
-            grid.innerHTML = '<div style="text-align:center; padding:40px; color: var(--danger);"><p>Error al cargar tus perfiles desde el servidor.</p></div>';
+        const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
+        if (profiles.length === 0) {
+            grid.innerHTML = '<div style="text-align:center; padding:40px;"><p>Aún no has guardado ningún Modpack.</p></div>';
+            return;
         }
+
+        grid.innerHTML = '';
+        profiles.forEach(p => {
+            const modsCount = p.modsData ? p.modsData.length : 0;
+            grid.innerHTML += `
+                <div class="profile-card panel" style="padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 style="margin-bottom: 5px;">${p.name}</h3>
+                        <p class="muted-text text-sm mb-5"><i class="ph-bold ph-tag"></i> ${p.mcVersion} ${p.modLoader}</p>
+                        <p class="muted-text text-sm"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} mods</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="alert('Se descargará pronto...')"><i class="ph-bold ph-download-simple"></i></button>
+                </div>
+            `;
+        });
     }
 
     // ==========================================
-    // EXPORTACIÓN FINAL (GUARDAR BD + DESCARGAR ZIP)
+    // EXPORTACIÓN 100% EN NAVEGADOR (USA JSZIP, NO BACKEND)
     // ==========================================
     const modalSave = document.getElementById('save-pack-modal');
     const btnJustDownload = document.getElementById('btn-just-download');
     const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
     const packNameInput = document.getElementById('pack-name-input');
     
-    if(btnOpenSaveModal) {
-        btnOpenSaveModal.addEventListener('click', () => {
-            modalSave.classList.remove('hidden');
-        });
-    }
+    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
 
     async function requestBuild(isSaving = false) {
-        // Bloqueo estricto: Si quieres guardar y no tienes sesión, te mandará al login de Discord
-        if (isSaving && !currentUser) {
-            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en tu cuenta.');
-            window.location.href = `${API_BASE_URL}/auth/discord`;
+        if (isSaving && !isLoggedIn) {
+            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles.');
+            if(authModal) authModal.classList.remove('hidden');
+            modalSave.classList.add('hidden');
             return;
         }
 
         try {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
             const btn = isSaving ? btnSaveAndDownload : btnJustDownload;
+            const mcVersion = versionSelect.value;
+            const loader = loaderSelect.value;
             
-            if(btn) {
-                btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
-                btn.disabled = true;
-            }
+            if(btn) { btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; btn.disabled = true; }
 
-            const payload = {
-                name: packName, 
-                mcVersion: versionSelect.value, 
-                modLoader: loaderSelect.value, 
-                mods: modpackCart,
-                worldSettings: {
-                    seed: document.getElementById('world-seed-input') ? document.getElementById('world-seed-input').value : '',
-                    gamemode: document.getElementById('world-gamemode') ? document.getElementById('world-gamemode').value : 'survival'
-                }
-            };
-
-            // 1. GUARDAR EN LA BASE DE DATOS (Solo si el usuario seleccionó "Guardar y Exportar")
+            // GUARDAR PERFIL EN LOCALSTORAGE (Para que funcione sin backend en Cloudflare)
             if (isSaving) {
-                try {
-                    const saveRes = await fetch(`${API_BASE_URL}/api/modpacks`, {
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(payload)
-                    });
-                    if (saveRes.ok) {
-                        if(window.showNotification) window.showNotification("Perfil guardado en tu cuenta exitosamente.", "success");
-                    } else {
-                        throw new Error("Respuesta no OK de la BD");
-                    }
-                } catch (dbError) {
-                    console.error(dbError);
-                    alert("Aviso: El servidor de cuentas no respondió. No se pudo guardar el perfil en la nube, pero tu descarga continuará.");
+                const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
+                profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: modpackCart });
+                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles));
+                loadMyProfiles();
+            }
+
+            // CREAR ZIP EN EL NAVEGADOR (Requiere JSZip en el index.html)
+            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa el Paso 1.");
+
+            const zip = new JSZip();
+            const modsFolder = zip.folder("mods");
+            const shadersFolder = zip.folder("shaderpacks");
+            const resourceFolder = zip.folder("resourcepacks");
+
+            for (let i = 0; i < modpackCart.length; i++) {
+                const item = modpackCart[i];
+                if(btn) btn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descargando (${i+1}/${modpackCart.length})...`;
+
+                const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                const versData = await versRes.json();
+
+                if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                    const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                    const fileRes = await fetch(fileObj.url);
+                    const fileBlob = await fileRes.blob();
+                    
+                    if (item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob);
+                    else if (item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob);
+                    else modsFolder.file(fileObj.filename, fileBlob);
                 }
             }
 
-            // 2. DESCARGAR EL ZIP DESDE EL BACKEND
-            const buildRes = await fetch(`${API_BASE_URL}/api/export`, {
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload)
-            });
+            if(btn) btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
+            const zipContent = await zip.generateAsync({ type: "blob" });
 
-            if (!buildRes.ok) throw new Error("Error en el servidor de Node al compilar el archivo ZIP.");
-
-            const blob = await buildRes.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); 
-            a.style.display = 'none'; 
-            a.href = url;
-            a.download = `${packName.replace(/\s+/g, '_')}_${versionSelect.value}.zip`;
-            document.body.appendChild(a); 
-            a.click();
-            window.URL.revokeObjectURL(url);
+            const url = window.URL.createObjectURL(zipContent);
+            const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+            a.download = `${packName.replace(/\s+/g, '_')}_${mcVersion}.zip`;
+            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
             
             modalSave.classList.add('hidden');
             
         } catch (error) {
-            alert("Error crítico al empaquetar: " + error.message);
+            alert("Error al descargar: " + error.message);
         } finally {
             if(btnJustDownload) { btnJustDownload.innerHTML = 'Solo Descargar'; btnJustDownload.disabled = false; }
             if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
@@ -573,22 +402,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
 
-
-    // EVENTOS Y ARRANQUE
-    sortSelect.addEventListener('change', updateSearch);
-    versionSelect.addEventListener('change', updateSearch);
-    loaderSelect.addEventListener('change', updateSearch);
-    
-    let timeout = null;
-    searchInput.addEventListener('input', () => { 
-        clearTimeout(timeout); 
-        timeout = setTimeout(updateSearch, 600); 
-    });
-    
-    if(btnLoadMore) btnLoadMore.addEventListener('click', () => { 
-        currentOffset += 16; 
-        fetchRealMods(true); 
-    });
+    sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
+    let timeout = null; searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
+    if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
 
     updateSearch();
 
@@ -604,96 +420,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     mobileBtn.addEventListener('click', () => {
         const cart = document.querySelector('.cart-panel');
         cart.classList.toggle('active-mobile');
-        
-        if(cart.classList.contains('active-mobile')) {
-            mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`;
-        } else {
-            mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
-        }
+        mobileBtn.innerHTML = cart.classList.contains('active-mobile') ? `<i class="ph-bold ph-x"></i>` : `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
     });
-
-    if (typeof initSoftwareModal === 'function') initSoftwareModal();
-    if (typeof initWorldUpload === 'function') initWorldUpload();
 });
-
-// ==========================================
-// FUNCIONES GLOBALES (MUNDOS Y SOFTWARE)
-// ==========================================
-function initSoftwareModal() {
-    const softwareModal = document.getElementById('software-modal');
-    const softwareBtns = document.querySelectorAll('.software-select-btn');
-    const closeBtn = document.querySelector('.close-software-modal-btn'); 
-
-    if (softwareBtns) {
-        softwareBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                openSoftwareModal(e.target.dataset.software);
-            });
-        });
-    }
-
-    if (closeBtn && softwareModal) {
-        closeBtn.addEventListener('click', () => softwareModal.classList.add('hidden'));
-    }
-}
-
-function openSoftwareModal(type) {
-    const softwareModal = document.getElementById('software-modal');
-    const versionList = document.getElementById('version-list');
-    if (!softwareModal || !versionList) return;
-
-    versionList.innerHTML = `<div style="text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando versiones para ${type}...</p></div>`;
-    softwareModal.classList.remove('hidden');
-
-    setTimeout(() => {
-        const versions = ['1.20.4', '1.20.1', '1.19.4', '1.19.2', '1.18.2'];
-        versionList.innerHTML = versions.map(v => `
-            <div class="version-item" style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid var(--border);">
-                <span>${v}</span>
-                <button class="btn btn-primary" onclick="window.installSoftware('${type}', '${v}')">Instalar</button>
-            </div>
-        `).join('');
-    }, 500);
-}
-
-window.installSoftware = function(type, version) {
-    alert(`Iniciando instalación de ${type} versión ${version}...`);
-    document.getElementById('software-modal').classList.add('hidden');
-};
-
-function initWorldUpload() {
-    const dropZone = document.getElementById('world-drop-zone');
-    const fileInput = document.getElementById('world-file-input');
-
-    if (!dropZone || !fileInput) return;
-
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = 'var(--accent)';
-        dropZone.style.background = 'rgba(59, 130, 246, 0.1)';
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.style.borderColor = 'var(--border)';
-        dropZone.style.background = 'transparent';
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = 'var(--border)';
-        dropZone.style.background = 'transparent';
-        if (e.dataTransfer.files.length) handleWorldUpload(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleWorldUpload(e.target.files[0]);
-    });
-}
-
-function handleWorldUpload(file) {
-    if (!file.name.toLowerCase().endsWith('.zip')) {
-        alert("Por favor, sube solo archivos .ZIP. Es el único formato admitido para los mundos.");
-        return;
-    }
-    alert(`Preparando la subida del mundo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-}
