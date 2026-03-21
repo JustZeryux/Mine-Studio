@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     // ==========================================
-    // 2. LÓGICA DE MODS Y MODRINTH API (TU CÓDIGO)
+    // 2. LÓGICA DE MODS Y MODRINTH API
     // ==========================================
     const searchInput = document.getElementById('mod-search-input');
     const sortSelect = document.getElementById('mod-sort-select');
@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCategory = '';
     let modpackCart = []; 
     let currentOffset = 0; 
+
+    // --- AQUÍ ESTÁ LA FUNCIÓN CORREGIDA ---
+    const updateSearch = () => {
+        const cartLabel = document.getElementById('cart-version-label');
+        if(cartLabel) cartLabel.textContent = `${versionSelect.value} ${loaderSelect.options[loaderSelect.selectedIndex].text}`;
+        fetchRealMods(false);
+    };
 
     // CHIPS LOGIC
     chips.forEach(chip => {
@@ -57,9 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isAppend) {
             currentOffset = 0;
             modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Buscando...</p></div>`;
-            btnLoadMore.classList.add('hidden');
+            if(btnLoadMore) btnLoadMore.classList.add('hidden');
         } else {
-            btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...';
+            if(btnLoadMore) btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...';
         }
 
         try {
@@ -89,9 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 renderRealMods(data.hits);
                 if(data.hits.length === 16) {
-                    btnLoadMore.classList.remove('hidden');
-                    btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más';
-                } else { btnLoadMore.classList.add('hidden'); }
+                    if(btnLoadMore) {
+                        btnLoadMore.classList.remove('hidden');
+                        btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más';
+                    }
+                } else { if(btnLoadMore) btnLoadMore.classList.add('hidden'); }
             }
         } catch (error) { if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; }
     }
@@ -355,13 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
 
-    const updateSearchFunction = () => {
-        const cartLabel = document.getElementById('cart-version-label');
-        if(cartLabel) cartLabel.textContent = `${versionSelect.value} ${loaderSelect.options[loaderSelect.selectedIndex].text}`;
-        fetchRealMods(false);
-    };
-
-    updateSearchFunction();
+    // LA LLAMADA QUE HACE QUE CARGUE AL ENTRAR
+    updateSearch();
 
     // ==========================================
     // 3. INICIALIZAR NUEVAS FUNCIONES (MUNDOS Y SOFTWARE)
@@ -377,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initSoftwareModal() {
     const softwareModal = document.getElementById('software-modal');
     const softwareBtns = document.querySelectorAll('.software-select-btn');
-    const closeBtn = document.querySelector('.close-software-modal-btn'); // Asegúrate de que esta clase exista en tu HTML
+    const closeBtn = document.querySelector('.close-software-modal-btn'); 
 
     if (softwareBtns) {
         softwareBtns.forEach(btn => {
