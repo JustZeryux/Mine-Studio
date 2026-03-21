@@ -483,6 +483,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3. INICIALIZAR FUNCIONES EXTERNAS (MUNDOS Y SOFTWARE)
     // ==========================================
+    // ==========================================
+    // CREAR BOTÓN FLOTANTE PARA CARRITO EN MÓVIL
+    // ==========================================
+    const btnHtml = document.createElement('button');
+    btnHtml.id = 'mobile-cart-toggle-btn';
+    btnHtml.className = 'mobile-cart-toggle hidden-desktop';
+    btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`;
+    document.body.appendChild(btnHtml);
+
+    btnHtml.addEventListener('click', () => {
+        const cart = document.querySelector('.cart-panel');
+        cart.classList.toggle('active-mobile');
+        
+        if(cart.classList.contains('active-mobile')) {
+            // Si está abierto, mostrar una "X" para cerrar
+            btnHtml.innerHTML = `<i class="ph-bold ph-x"></i>`;
+        } else {
+            // Si está cerrado, mostrar el icono del paquete y el número
+            btnHtml.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${modpackCart.length}</span>`;
+        }
+    });
+    
     if (typeof initSoftwareModal === 'function') initSoftwareModal();
     if (typeof initWorldUpload === 'function') initWorldUpload();
 });
