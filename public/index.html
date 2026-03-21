@@ -200,6 +200,21 @@
         </div>
     </div>
 
+    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
+            <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en tu navegador.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-primary" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;">
+                    <i class="ph-bold ph-discord-logo"></i> Entrar con Discord
+                </button>
+                <button class="btn btn-secondary" id="btn-fake-google" style="padding: 12px; font-size: 1rem;">
+                    <i class="ph-bold ph-google-logo"></i> Entrar con Google
+                </button>
+                <button class="btn btn-text mt-10" onclick="document.getElementById('auth-modal').classList.add('hidden')">Cancelar</button>
+            </div>
+        </div>
+    </div>
     <script src="js/content.js"></script>
 </body>
 </html>
