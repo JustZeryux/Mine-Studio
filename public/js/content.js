@@ -729,7 +729,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('shader-compare-modal').classList.remove('hidden');
         });
     }
-});
 
 // ==========================================
     // MOD SCANNER PROFUNDO (IMÁGENES, NOMBRES Y MOBS 3D)
@@ -841,3 +840,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         modal.classList.remove('hidden');
     }
+});
