@@ -207,7 +207,14 @@
             
             <div class="modal-body-scroll custom-scrollbar">
                 <div id="detail-dependencies" class="dependencies-container mb-20"></div>
-
+                <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 class="subtitle" style="margin: 0; color: var(--accent);"><i class="ph-bold ph-magnifying-glass-plus"></i> Escáner de Archivos (Rayos X)</h3>
+                        <button id="btn-scan-mod" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;"><i class="ph-bold ph-scan"></i> Analizar .jar</button>
+                    </div>
+                    <p class="text-sm muted-text mb-10">Descomprime el mod en tu navegador para revelar su código interno.</p>
+                    <div id="mod-scan-results" style="display: none; gap: 10px; flex-wrap: wrap;"></div>
+                </div>
                 <h3 class="subtitle mb-10"><i class="ph-bold ph-article"></i> Información</h3>
                 <div class="mod-description-body" id="detail-description"></div>
                 
