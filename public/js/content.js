@@ -3,7 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. NAVEGACIÓN Y VISTAS
     // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
-    const views = { 'mods': document.getElementById('view-mods'), 'worlds': document.getElementById('view-worlds'), 'profiles': document.getElementById('view-profiles') };
+    const views = { 
+        'mods': document.getElementById('view-mods'), 
+        'worlds': document.getElementById('view-worlds'), 
+        'profiles': document.getElementById('view-profiles') 
+    };
     
     navButtons.forEach(btn => btn.addEventListener('click', () => {
         navButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active');
@@ -31,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let modpackCart = []; 
     let currentOffset = 0; 
 
-    // --- AQUÍ ESTÁ LA FUNCIÓN CORREGIDA ---
     const updateSearch = () => {
         const cartLabel = document.getElementById('cart-version-label');
         if(cartLabel) cartLabel.textContent = `${versionSelect.value} ${loaderSelect.options[loaderSelect.selectedIndex].text}`;
@@ -329,7 +332,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.showNotification) window.showNotification(`Se añadió ${mainMod.title} y sus ${depsArray.length} librerías con éxito.`, "success");
     }
 
-function updateCartUI() {
+    // ==========================================
+    // NUEVA FUNCIÓN MEJORADA: UPDATE CART UI
+    // ==========================================
+    function updateCartUI() {
         cartList.innerHTML = '';
         if (modpackCart.length === 0) {
             document.getElementById('empty-cart-msg').style.display = 'block';
@@ -342,7 +348,7 @@ function updateCartUI() {
             const li = document.createElement('li'); 
             li.className = `cart-item`; 
             
-            // Lógica visual dependiendo si es Mod, Textura, Shader, etc.
+            // Lógica visual dependiendo del tipo
             let iconClass = 'ph-puzzle-piece';
             let typeColor = 'var(--accent)';
             let typeText = 'Mod';
@@ -373,8 +379,91 @@ function updateCartUI() {
                 fetchRealMods(false);
             });
         });
-}
+    }
 
+    // ==========================================
+    // LÓGICA DE CONSTRUCCIÓN Y DESCARGA AL BACKEND
+    // ==========================================
+    const modalSave = document.getElementById('save-pack-modal');
+    const btnJustDownload = document.getElementById('btn-just-download');
+    const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
+    const packNameInput = document.getElementById('pack-name-input');
+    
+    // 1. Abrir Modal de Guardado
+    if(btnOpenSaveModal) {
+        btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
+    }
+
+    // 2. Función central para armar y descargar
+    async function requestBuild(isSaving = false) {
+        try {
+            const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
+            const btn = isSaving ? btnSaveAndDownload : btnJustDownload;
+            
+            if(btn) {
+                btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
+                btn.disabled = true;
+            }
+
+            const payload = {
+                name: packName,
+                mcVersion: versionSelect.value,
+                modLoader: loaderSelect.value,
+                mods: modpackCart,
+                worldSettings: {
+                    seed: document.getElementById('world-seed-input') ? document.getElementById('world-seed-input').value : '',
+                    gamemode: document.getElementById('world-gamemode') ? document.getElementById('world-gamemode').value : 'survival'
+                }
+            };
+
+            // Aseguramos que apunte a la ruta correcta para evitar errores
+            const API_BASE = 'http://localhost:3000';
+
+            if (isSaving) {
+                const saveRes = await fetch(`${API_BASE}/api/modpacks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!saveRes.ok) throw new Error("No se pudo guardar en la base de datos.");
+            }
+
+            const buildRes = await fetch(`${API_BASE}/api/export`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!buildRes.ok) throw new Error("Error en el servidor al compilar el modpack.");
+
+            // Descargar el archivo procesado por el backend
+            const blob = await buildRes.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `${packName.replace(/\s+/g, '_')}_${versionSelect.value}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            modalSave.classList.add('hidden');
+            
+        } catch (error) {
+            alert("Error: " + error.message);
+        } finally {
+            if(btnJustDownload) { btnJustDownload.innerHTML = 'Solo Descargar'; btnJustDownload.disabled = false; }
+            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
+        }
+    }
+
+    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
+    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
+
+
+    // ==========================================
+    // LISTENERS DE BÚSQUEDA Y ARRANQUE
+    // ==========================================
     sortSelect.addEventListener('change', updateSearch);
     versionSelect.addEventListener('change', updateSearch);
     loaderSelect.addEventListener('change', updateSearch);
@@ -387,76 +476,10 @@ function updateCartUI() {
     updateSearch();
 
     // ==========================================
-    // LÓGICA DE CONSTRUCCIÓN Y DESCARGA (API EXPORT)
+    // 3. INICIALIZAR FUNCIONES EXTERNAS (MUNDOS Y SOFTWARE)
     // ==========================================
-    const modalSave = document.getElementById('save-pack-modal');
-    const btnJustDownload = document.getElementById('btn-just-download');
-    
-    // 1. Abrir Modal de Guardado
-    if(btnOpenSaveModal) {
-        btnOpenSaveModal.addEventListener('click', () => {
-            modalSave.classList.remove('hidden');
-        });
-    }
-
-    // 2. Ejecutar la descarga (Conexión con backend.js)
-    if(btnJustDownload) {
-        btnJustDownload.addEventListener('click', async () => {
-            try {
-                // Estado de carga
-                const prevHtml = btnJustDownload.innerHTML;
-                btnJustDownload.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando en la nube...';
-                btnJustDownload.disabled = true;
-
-                // Preparar datos para el backend
-                const payload = {
-                    mcVersion: versionSelect.value,
-                    modLoader: loaderSelect.value,
-                    mods: modpackCart,
-                    worldSettings: {
-                        seed: document.getElementById('world-seed-input') ? document.getElementById('world-seed-input').value : '',
-                        gamemode: document.getElementById('world-gamemode') ? document.getElementById('world-gamemode').value : 'survival'
-                    }
-                };
-
-                // Llamar al backend
-                const response = await fetch('/api/export', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error("Error en el servidor al compilar el modpack");
-
-                // Descargar el ZIP resultante
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `MinePack_${versionSelect.value}_${loaderSelect.value}.zip`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                
-                // Cerrar modal
-                modalSave.classList.add('hidden');
-                
-            } catch (error) {
-                alert("Error al construir el pack: " + error.message);
-            } finally {
-                // Restaurar botón
-                btnJustDownload.innerHTML = 'Solo Descargar';
-                btnJustDownload.disabled = false;
-            }
-        });
-    }
-
-    // ==========================================
-    // 3. INICIALIZAR NUEVAS FUNCIONES (MUNDOS Y SOFTWARE)
-    // ==========================================
-    initSoftwareModal();
-    initWorldUpload();
+    if (typeof initSoftwareModal === 'function') initSoftwareModal();
+    if (typeof initWorldUpload === 'function') initWorldUpload();
 });
 
 // ==========================================
