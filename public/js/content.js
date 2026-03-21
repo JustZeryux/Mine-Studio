@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.showNotification) window.showNotification(`Se añadió ${mainMod.title} y sus ${depsArray.length} librerías con éxito.`, "success");
     }
 
-    function updateCartUI() {
+function updateCartUI() {
         cartList.innerHTML = '';
         if (modpackCart.length === 0) {
             document.getElementById('empty-cart-msg').style.display = 'block';
@@ -339,22 +339,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if(btnOpenSaveModal) btnOpenSaveModal.disabled = false;
 
         modpackCart.forEach((item, index) => {
-            const li = document.createElement('li'); li.className = `cart-item`; 
+            const li = document.createElement('li'); 
+            li.className = `cart-item`; 
+            
+            // Lógica visual dependiendo si es Mod, Textura, Shader, etc.
+            let iconClass = 'ph-puzzle-piece';
+            let typeColor = 'var(--accent)';
+            let typeText = 'Mod';
+            
+            if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
+            else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
+            else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
+
             li.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="ph-bold ph-puzzle-piece" style="color: var(--accent);"></i><span style="font-weight: 500;">${item.title}</span>
+                <div class="cart-item-info">
+                    <div class="cart-item-icon" style="display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
+                        <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
+                    </div>
+                    <div class="cart-item-text">
+                        <span class="cart-item-title" title="${item.title}">${item.title}</span>
+                        <span class="cart-item-type" style="color: ${typeColor};">${typeText}</span>
+                    </div>
                 </div>
-                <button class="btn-remove" data-index="${index}"><i class="ph-bold ph-trash"></i></button>`;
+                <button class="btn-remove" data-index="${index}" title="Quitar"><i class="ph-bold ph-trash"></i></button>
+            `;
             cartList.appendChild(li);
         });
 
         document.querySelectorAll('.btn-remove').forEach(btn => {
             btn.addEventListener('click', function() {
                 modpackCart.splice(this.dataset.index, 1);
-                updateCartUI(); fetchRealMods(false);
+                updateCartUI(); 
+                fetchRealMods(false);
             });
         });
-    }
+}
 
     sortSelect.addEventListener('change', updateSearch);
     versionSelect.addEventListener('change', updateSearch);
@@ -366,6 +385,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // LA LLAMADA QUE HACE QUE CARGUE AL ENTRAR
     updateSearch();
+
+    // ==========================================
+    // LÓGICA DE CONSTRUCCIÓN Y DESCARGA (API EXPORT)
+    // ==========================================
+    const modalSave = document.getElementById('save-pack-modal');
+    const btnJustDownload = document.getElementById('btn-just-download');
+    
+    // 1. Abrir Modal de Guardado
+    if(btnOpenSaveModal) {
+        btnOpenSaveModal.addEventListener('click', () => {
+            modalSave.classList.remove('hidden');
+        });
+    }
+
+    // 2. Ejecutar la descarga (Conexión con backend.js)
+    if(btnJustDownload) {
+        btnJustDownload.addEventListener('click', async () => {
+            try {
+                // Estado de carga
+                const prevHtml = btnJustDownload.innerHTML;
+                btnJustDownload.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando en la nube...';
+                btnJustDownload.disabled = true;
+
+                // Preparar datos para el backend
+                const payload = {
+                    mcVersion: versionSelect.value,
+                    modLoader: loaderSelect.value,
+                    mods: modpackCart,
+                    worldSettings: {
+                        seed: document.getElementById('world-seed-input') ? document.getElementById('world-seed-input').value : '',
+                        gamemode: document.getElementById('world-gamemode') ? document.getElementById('world-gamemode').value : 'survival'
+                    }
+                };
+
+                // Llamar al backend
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Error en el servidor al compilar el modpack");
+
+                // Descargar el ZIP resultante
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `MinePack_${versionSelect.value}_${loaderSelect.value}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                // Cerrar modal
+                modalSave.classList.add('hidden');
+                
+            } catch (error) {
+                alert("Error al construir el pack: " + error.message);
+            } finally {
+                // Restaurar botón
+                btnJustDownload.innerHTML = 'Solo Descargar';
+                btnJustDownload.disabled = false;
+            }
+        });
+    }
 
     // ==========================================
     // 3. INICIALIZAR NUEVAS FUNCIONES (MUNDOS Y SOFTWARE)
