@@ -784,12 +784,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 for (let path of itemFiles) {
                     const base64 = await unzipped.files[path].async('base64');
                     let name = path.split('/').pop().replace('.png', '').replace(/_/g, ' ');
+                for (let path of itemFiles) {
+                    const base64 = await unzipped.files[path].async('base64');
+                    let name = path.split('/').pop().replace('.png', '').replace(/_/g, ' ');
                     itemsGrid.innerHTML += `
-                        <div class="scanner-item">
+                        <div class="jei-item-slot" title="${name}">
                             <img src="data:image/png;base64,${base64}">
-                            <span title="${name}">${name}</span>
                         </div>
                     `;
+                }
+                
+                // Y oculta el empty-state cuando termine de escanear:
+                document.getElementById('jei-empty-state').style.display = 'none';
                 }
 
                 // Generar Botones de Mobs
