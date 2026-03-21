@@ -290,6 +290,26 @@
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay hidden" id="shader-compare-modal" style="z-index: 10010;">
+    <div class="modal-content" style="max-width: 600px; text-align: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 class="title"><i class="ph-bold ph-aperture"></i> Comparador de Shaders</h2>
+            <button class="btn-icon-danger" onclick="document.getElementById('shader-compare-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <p class="muted-text mb-20">Desliza la barra para ver la diferencia visual.</p>
+        
+        <div class="shader-compare-container" id="shader-compare-container">
+            <img src="https://i.imgur.com/M6PZ1Y4.jpeg" alt="Vanilla" class="shader-img-vanilla">
+            <img src="https://i.imgur.com/kSGB20u.jpeg" alt="Con Shaders" class="shader-img-shader" id="shader-img-top">
+            
+            <div class="shader-slider-line" id="shader-slider-line">
+                <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
+            </div>
+            <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
+        </div>
+    </div>
+</div>
     <script src="js/content.js"></script>
 </body>
 </html>
