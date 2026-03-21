@@ -329,3 +329,84 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     0% { transform: rotateX(-15deg) rotateY(0deg); }
     100% { transform: rotateX(-15deg) rotateY(360deg); }
 }
+
+/* ---- REDISEÑO EXTREMO MODAL ESTILO JEI ---- */
+.modal-jei {
+    max-width: 95vw !important;
+    width: 1400px;
+    height: 90vh;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: row;
+    background: var(--bg-main) !important;
+    overflow: hidden;
+}
+
+.jei-sidebar-left {
+    width: 280px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.jei-center-content {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background: var(--bg-main);
+}
+
+.jei-sidebar-right {
+    width: 350px;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border-color);
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.jei-header {
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--accent);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Cuadrícula estilo inventario de Minecraft */
+.jei-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 6px;
+}
+
+.jei-item-slot {
+    width: 40px;
+    height: 40px;
+    background: #8b8b8b;
+    border: 2px solid;
+    border-color: #373737 #ffffff #ffffff #373737;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.jei-item-slot:hover {
+    background: #a0a0a0;
+    transform: scale(1.1);
+    box-shadow: 0 0 5px var(--accent);
+}
+.jei-item-slot img {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    object-fit: contain;
+}
