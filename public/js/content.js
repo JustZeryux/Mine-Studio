@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
-    // VARIABLES GLOBALES (AGREGADAS: modConfigs Y SHARE)
+    // VARIABLES GLOBALES (modConfigs Y SHARE)
     // ==========================================
-    window.modConfigs = {}; // Almacena configuraciones del usuario
+    window.modConfigs = {}; 
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPack = urlParams.get('pack');
     window.modpackCart = [];
@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Funciones del Modal de Login
     if(authModal) {
         document.getElementById('btn-fake-discord').addEventListener('click', () => {
             localStorage.setItem('usuario_token', JSON.stringify({username: 'Zeryux_Dev', avatar: 'https://crafatar.com/avatars/Zeryux?size=40'}));
@@ -183,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return await depProjsRes.json(); 
                 }
             }
-        } catch(e) { console.error("Error obteniendo dependencias", e); }
+        } catch(e) {}
         return [];
     }
 
@@ -222,7 +221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...'; this.disabled = true;
 
                 if (this.dataset.type === 'mod') {
-                    // AÑADIDO: CHECADOR DE COMPATIBILIDAD (EVITA CRASHEOS)
                     try {
                         const versRes = await fetch(`https://api.modrinth.com/v2/project/${this.dataset.id}/version?game_versions=["${versionSelect.value}"]&loaders=["${loaderSelect.value}"]`);
                         const versData = await versRes.json();
@@ -252,9 +250,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
             });
 
-            // ==========================================
-            // TU LÓGICA INTACTA DEL MODAL DE DETALLES
-            // ==========================================
             card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod')) return; 
                 const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
@@ -262,17 +257,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('detail-title').textContent = mod.title;
                 document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
                 document.getElementById('detail-icon').src = iconUrl;
-                
-                // RESTAURADO: El contador de descargas Sticky
                 document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
-                
                 document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información...</p></div>`;
                 document.getElementById('detail-gallery').innerHTML = '';
                 
                 const depsContainer = document.getElementById('detail-dependencies');
                 depsContainer.innerHTML = '';
 
-                // RESTAURADO: Las librerías y el botón de Añadir Todo
                 if (mod.project_type === 'mod') {
                     getRequiredDependencies(mod.project_id, versionSelect.value, loaderSelect.value).then(depProjs => {
                         if (depProjs.length > 0) {
@@ -338,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // FUNCIONES AÑADIDAS: PLANTILLAS Y SKIN VIEWER
+    // HERRAMIENTAS (PLANTILLAS Y RULETA)
     // ==========================================
     async function installTemplate(slugs, buttonId, text) {
         const btn = document.getElementById(buttonId); btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; btn.disabled = true; let añadidos = 0;
@@ -351,6 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-template-rpg')?.addEventListener('click', () => installTemplate(['better-combat', 'waystones', 'farmers-delight', 'appleskin'], 'btn-template-rpg', '<i class="ph-bold ph-sword"></i> Plantilla RPG'));
     document.getElementById('btn-template-tech')?.addEventListener('click', () => installTemplate(['create', 'jei', 'mouse-tweaks', 'jade'], 'btn-template-tech', '<i class="ph-bold ph-gear"></i> Plantilla Técnica'));
     document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización'));
+    
     document.getElementById('btn-randomizer')?.addEventListener('click', async () => {
         if(!confirm("Esto vaciará tu carrito actual para crear un reto aleatorio. ¿Continuar?")) return;
         window.modpackCart = []; window.updateCartUI();
@@ -359,8 +351,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         await installTemplate(selected, 'btn-randomizer', '<i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria');
     });
 
-// ==========================================
-    // 7. INFO AVANZADA DE CUENTAS MC & VISOR DE SKINS
+    // ==========================================
+    // INFO AVANZADA DE CUENTAS MC & VISOR DE SKINS
     // ==========================================
     const btnLoadSkin = document.getElementById('btn-load-skin');
     const inputSkin = document.getElementById('mc-skin-input');
@@ -370,41 +362,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const capeBadge = document.getElementById('mc-cape-badge');
 
     if (btnLoadSkin && inputSkin && imgSkinPreview) {
-        
         const fetchMojangData = async (username) => {
             if (username === '') return;
             imgSkinPreview.style.opacity = '0.5';
             
             try {
-                // Usamos la API de Ashcon para extraer datos profundos de Mojang
                 const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
                 if (!res.ok) throw new Error("No encontrado");
-                
                 const data = await res.json();
                 
-                // Actualizar imagen con el UUID real
                 imgSkinPreview.src = `https://crafatar.com/renders/body/${data.uuid}?overlay=true`;
                 imgSkinPreview.style.opacity = '1';
                 
-                // Actualizar Info Avanzada
                 if (advInfoBox) {
                     advInfoBox.style.display = 'block';
-                    // Recortar UUID para que quepa bien
                     uuidBadge.textContent = `UUID: ${data.uuid.substring(0, 13)}...`;
-                    uuidBadge.title = data.uuid; // Muestra el completo al pasar el mouse
+                    uuidBadge.title = data.uuid; 
                     
-                    // Verificar si tiene Capa
                     if (data.textures && data.textures.cape) {
                         capeBadge.innerHTML = `<i class="ph-fill ph-check-circle"></i> Tiene Capa`;
-                        capeBadge.style.color = '#fcd34d'; // Dorado
-                        capeBadge.style.borderColor = '#d97706';
+                        capeBadge.style.color = '#fcd34d'; capeBadge.style.borderColor = '#d97706';
                     } else {
                         capeBadge.innerHTML = `<i class="ph-bold ph-x"></i> Sin Capa`;
-                        capeBadge.style.color = '#93c5fd';
-                        capeBadge.style.borderColor = '#2563eb';
+                        capeBadge.style.color = '#93c5fd'; capeBadge.style.borderColor = '#2563eb';
                     }
                 }
-                
                 localStorage.setItem('minepack_username', username);
             } catch (error) {
                 alert('No se encontró ninguna cuenta premium con ese nombre en Mojang.');
@@ -414,13 +396,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         btnLoadSkin.addEventListener('click', () => fetchMojangData(inputSkin.value.trim()));
-
-        // Cargar el último usado al recargar la página
         const savedName = localStorage.getItem('minepack_username');
-        if (savedName) { 
-            inputSkin.value = savedName; 
-            fetchMojangData(savedName); 
-        }
+        if (savedName) { inputSkin.value = savedName; fetchMojangData(savedName); }
     }
 
     // ==========================================
@@ -466,7 +443,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             document.querySelectorAll('.btn-remove').forEach(btn => { btn.addEventListener('click', function() { window.modpackCart.splice(this.dataset.index, 1); window.updateCartUI(); fetchRealMods(false); }); });
             
-            // ABRIR EDITOR DE CONFIGURACIONES
             document.querySelectorAll('.btn-config').forEach(btn => { 
                 btn.addEventListener('click', function() { 
                     const modId = this.dataset.id;
@@ -485,7 +461,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }); 
             });
 
-            // Recomendaciones
             if (recBox && recItem) {
                 const availableRecs = recommendedMods.filter(rm => !window.modpackCart.some(cm => cm.id === rm.id));
                 if (availableRecs.length > 0) {
@@ -498,7 +473,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const mobileBtn = document.getElementById('mobile-cart-toggle-btn'); if(mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
     }
 
-    // GUARDAR CONFIGURACIÓN EDITADA
     document.getElementById('btn-save-config')?.addEventListener('click', () => {
         const modId = document.getElementById('config-mod-id').value;
         const filename = document.getElementById('config-filename').value;
@@ -507,7 +481,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('config-editor-modal').classList.add('hidden');
     });
 
-    // MIGRAR VERSIÓN MÁGICO
     document.getElementById('btn-migrate-pack')?.addEventListener('click', async () => {
         if(window.modpackCart.length === 0) return alert("Tu carrito está vacío.");
         const newVers = prompt(`¿A qué versión de Minecraft quieres migrar tus ${window.modpackCart.length} mods?\nEjemplo: 1.20.4 o 1.19.2`); if(!newVers) return;
@@ -605,7 +578,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
     const packNameInput = document.getElementById('pack-name-input');
     
-    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
+    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => {
+        document.querySelector('.cart-panel').classList.remove('active-mobile');
+        modalSave.classList.remove('hidden');
+    });
 
     let uploadedIconBase64 = null;
     document.getElementById('pack-icon-input')?.addEventListener('change', function(e) {
@@ -638,7 +614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); loadMyProfiles();
             }
 
-            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa el Paso 1.");
+            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa tu index.html.");
             const zip = new JSZip();
 
             if (uploadedIconBase64) {
@@ -646,7 +622,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 zip.file("icon.png", base64Data, {base64: true});
             }
 
-            // CREAR LA CARPETA /config SI EL USUARIO EDITÓ ARCHIVOS EN LA WEB
             if(Object.keys(window.modConfigs).length > 0) {
                 const confFolder = zip.folder("config");
                 for (const modId in window.modConfigs) {
@@ -731,7 +706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ==========================================
-    // FUNCIÓN: COMPARADOR VISUAL DE SHADERS
+    // COMPARADOR VISUAL DE SHADERS
     // ==========================================
     const shaderSliderInput = document.getElementById('shader-slider-input');
     const shaderImgTop = document.getElementById('shader-img-top');
@@ -739,10 +714,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnOpenShaderCompare = document.getElementById('btn-shader-compare');
 
     if (shaderSliderInput && shaderImgTop && shaderSliderLine) {
-        // Mover la línea y el recorte al mover el slider
         shaderSliderInput.addEventListener('input', (e) => {
             const sliderValue = e.target.value;
-            // Modificamos el polígono CSS para revelar la imagen de abajo
             shaderImgTop.style.clipPath = `polygon(0 0, ${sliderValue}% 0, ${sliderValue}% 100%, 0 100%)`;
             shaderSliderLine.style.left = `${sliderValue}%`;
         });
