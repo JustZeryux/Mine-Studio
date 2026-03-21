@@ -307,3 +307,41 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     background: var(--bg-hover); color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
     display: flex; justify-content: center; align-items: center; margin-left: -10px; z-index: 0;
 }
+
+/* ==========================================
+   4. RESPONSIVIDAD (MÓVILES Y TABLETS)
+   ========================================== */
+@media (max-width: 992px) {
+    /* Permitir scroll natural en móviles */
+    body { height: auto; overflow: visible; }
+    .app-container { flex-direction: column; height: auto; min-height: 100vh; }
+    
+    /* Adaptar Sidebar a Menú Superior/Horizontal */
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); flex-direction: column; }
+    .nav-menu { flex-direction: row; padding: 10px; overflow-x: auto; gap: 10px; }
+    .nav-btn { white-space: nowrap; flex: 1; justify-content: center; }
+    
+    /* Ajustar layout principal */
+    .content { height: auto; }
+    .main-layout { flex-direction: column; height: auto; padding: 10px; overflow: visible; }
+    .center-area { overflow-y: visible; padding-right: 0; }
+    
+    /* El carrito pasa abajo */
+    .cart-panel { width: 100%; height: 400px; margin-top: 20px; border-left: none; }
+    
+    /* Ajustar rejilla de mods */
+    .mods-grid { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); }
+    
+    /* Ajustar barra de búsqueda y filtros */
+    .search-panel > div { flex-direction: column; align-items: stretch !important; gap: 10px; }
+    .input-wrapper, .form-select { width: 100%; max-width: 100% !important; }
+    .filter-group { flex-wrap: wrap; justify-content: center; }
+    .filter-btn { flex: 1; justify-content: center; text-align: center; }
+    
+    /* Ajustes de Modales */
+    .modal-content { width: 95%; padding: 0; }
+    .modal-header-mod { flex-direction: column; gap: 15px; position: static; padding: 20px; }
+    .modal-body-scroll { padding: 20px; }
+    .mod-header-info { width: 100%; }
+    .tilt-card { width: 100%; }
+}
