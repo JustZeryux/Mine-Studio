@@ -311,37 +311,72 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 /* ==========================================
    4. RESPONSIVIDAD (MÓVILES Y TABLETS)
    ========================================== */
+/* ==========================================
+   4. RESPONSIVIDAD ESTILIZADA (MÓVILES)
+   ========================================== */
+.hidden-desktop { display: none; }
+
 @media (max-width: 992px) {
-    /* Permitir scroll natural en móviles */
-    body { height: auto; overflow: visible; }
-    .app-container { flex-direction: column; height: auto; min-height: 100vh; }
+    /* Permitir scroll natural */
+    body, .app-container { height: auto; overflow: visible; min-height: 100vh; }
     
-    /* Adaptar Sidebar a Menú Superior/Horizontal */
-    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); flex-direction: column; }
-    .nav-menu { flex-direction: row; padding: 10px; overflow-x: auto; gap: 10px; }
-    .nav-btn { white-space: nowrap; flex: 1; justify-content: center; }
+    /* Mostrar elementos móviles */
+    .hidden-desktop { display: flex; }
     
-    /* Ajustar layout principal */
-    .content { height: auto; }
-    .main-layout { flex-direction: column; height: auto; padding: 10px; overflow: visible; }
-    .center-area { overflow-y: visible; padding-right: 0; }
+    /* Sidebar / Menú Inferior Fijo */
+    .sidebar { width: 100%; position: fixed; bottom: 0; left: 0; z-index: 900; background: var(--bg-panel); border-right: none; border-top: 1px solid var(--border-color); flex-direction: row; padding: 0; }
+    .logo { display: none; } /* Ocultar logo en móvil para dar espacio */
+    .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 8px; }
+    .nav-btn { flex-direction: column; gap: 4px; font-size: 0.75rem; padding: 8px; flex: 1; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
+    .nav-btn i { font-size: 1.2rem; }
     
-    /* El carrito pasa abajo */
-    .cart-panel { width: 100%; height: 400px; margin-top: 20px; border-left: none; }
+    /* Layout y Centro */
+    .content { padding-bottom: 70px; /* Espacio para el menú inferior */ }
+    .main-layout { flex-direction: column; padding: 15px; overflow: visible; }
+    .center-area { overflow: visible; padding-right: 0; }
     
-    /* Ajustar rejilla de mods */
-    .mods-grid { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); }
+    /* Cabeceras Estáticas (Sticky) */
+    .topbar { position: sticky; top: 0; z-index: 50; padding: 0 15px; }
+    .sticky-filters-container { position: sticky; top: 70px; background: var(--bg-main); z-index: 40; padding-top: 15px; border-bottom: 1px solid var(--border-color); margin-left: -15px; margin-right: -15px; padding-left: 15px; padding-right: 15px; }
     
-    /* Ajustar barra de búsqueda y filtros */
-    .search-panel > div { flex-direction: column; align-items: stretch !important; gap: 10px; }
-    .input-wrapper, .form-select { width: 100%; max-width: 100% !important; }
-    .filter-group { flex-wrap: wrap; justify-content: center; }
-    .filter-btn { flex: 1; justify-content: center; text-align: center; }
+    /* Arreglar inputs aplastados */
+    .search-panel { display: flex; flex-direction: column; gap: 10px; }
+    .search-panel > div { flex-wrap: wrap !important; }
+    .input-wrapper { width: 100% !important; min-width: 100% !important; }
+    .form-select { flex: 1; min-width: 120px; }
     
-    /* Ajustes de Modales */
-    .modal-content { width: 95%; padding: 0; }
-    .modal-header-mod { flex-direction: column; gap: 15px; position: static; padding: 20px; }
-    .modal-body-scroll { padding: 20px; }
-    .mod-header-info { width: 100%; }
+    /* Filtros Scrolleables */
+    .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; justify-content: flex-start; }
+    .filter-btn { white-space: nowrap; }
+    
+    /* Arreglo Modales en celular */
+    .modal-content { width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; display: flex; flex-direction: column; position: relative; }
+    .modal-header-mod { flex-direction: column; position: static; padding: 20px 20px 0 20px; }
+    .mod-header-info { width: 100%; flex-direction: column; text-align: center; }
+    .btn-icon-danger { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 5px; }
+    .modal-body-scroll { padding: 20px; flex: 1; }
     .tilt-card { width: 100%; }
+    
+    /* CARRITO OCULTO CON SLIDE */
+    .cart-panel {
+        position: fixed; top: 0; right: -100%; width: 85vw; height: 100vh; max-height: 100vh;
+        z-index: 1000; border-radius: 0; border-left: 1px solid var(--border-color);
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+    }
+    .cart-panel.active-mobile { right: 0; }
+    
+    /* Botón flotante para abrir carrito */
+    .mobile-cart-toggle {
+        position: fixed; bottom: 85px; right: 20px; z-index: 999;
+        background: var(--accent); color: white; border: none;
+        width: 60px; height: 60px; border-radius: 50%;
+        box-shadow: 0 10px 25px rgba(99,102,241,0.5);
+        display: flex; justify-content: center; align-items: center; font-size: 26px; cursor: pointer;
+    }
+    .mobile-cart-toggle .badge {
+        position: absolute; top: -5px; right: -5px;
+        background: var(--danger); font-size: 12px; font-weight: bold;
+        width: 24px; height: 24px; border-radius: 50%; display: flex;
+        justify-content: center; align-items: center;
+    }
 }
