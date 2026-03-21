@@ -732,65 +732,112 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-    // MOD SCANNER (RAYOS X AL .JAR)
+    // MOD SCANNER PROFUNDO (IMÁGENES, NOMBRES Y MOBS 3D)
     // ==========================================
     const btnScanMod = document.getElementById('btn-scan-mod');
-    const scanResults = document.getElementById('mod-scan-results');
+    const scanStats = document.getElementById('mod-scan-stats');
+    const scanGallery = document.getElementById('mod-scan-gallery');
+    const itemsGrid = document.getElementById('scanner-items-grid');
+    const mobsGrid = document.getElementById('scanner-mobs-grid');
 
-    if (btnScanMod) {
+    if (btnScanMod && scanStats) {
         btnScanMod.addEventListener('click', async () => {
             if(!window.currentModIdForScan) return;
-            btnScanMod.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Inspeccionando código...';
+            
+            btnScanMod.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Destripando .jar...';
             btnScanMod.disabled = true;
-            scanResults.style.display = 'flex';
-            scanResults.innerHTML = '<span class="muted-text text-sm">Abriendo el archivo en memoria...</span>';
+            scanStats.style.display = 'flex'; scanGallery.style.display = 'none';
+            scanStats.innerHTML = '<span class="muted-text text-sm">Descargando archivos fuente en memoria...</span>';
+            itemsGrid.innerHTML = ''; mobsGrid.innerHTML = '';
 
             try {
-                // 1. Obtener el .jar de la API
                 const mcVers = document.getElementById('mod-version-select').value;
                 const loader = document.getElementById('mod-loader-select').value;
+                
                 const versRes = await fetch(`https://api.modrinth.com/v2/project/${window.currentModIdForScan}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
                 const versData = await versRes.json();
 
-                if (versData.length === 0 || versData[0].files.length === 0) throw new Error("No hay archivos para esta versión.");
+                if (versData.length === 0 || versData[0].files.length === 0) throw new Error("No hay .jar disponible.");
 
                 const fileUrl = versData[0].files.find(f => f.primary)?.url || versData[0].files[0].url;
-
-                // 2. Descargar y descomprimir en el navegador
                 const fileRes = await fetch(fileUrl);
                 const fileBlob = await fileRes.blob();
+                
+                scanStats.innerHTML = '<span class="muted-text text-sm">Extrayendo texturas y modelos...</span>';
+                
                 const zip = new JSZip();
                 const unzipped = await zip.loadAsync(fileBlob);
 
-                // 3. Buscar texturas y recetas internamente
-                let itemsCount = 0; let blocksCount = 0; let recipesCount = 0;
+                const allFiles = Object.keys(unzipped.files);
+                
+                // Extraer Ítems (.png)
+                const itemFiles = allFiles.filter(p => p.includes('textures/item/') && p.endsWith('.png')).slice(0, 20);
+                // Extraer Mobs/Entidades (.png)
+                const entityFiles = allFiles.filter(p => p.includes('textures/entity/') && p.endsWith('.png')).slice(0, 10);
+                
+                const totalRecipes = allFiles.filter(p => p.includes('data/') && p.includes('recipes/')).length;
 
-                unzipped.forEach((relativePath, zipEntry) => {
-                    if (!zipEntry.dir) {
-                        if (relativePath.includes('assets/') && relativePath.includes('textures/item/')) itemsCount++;
-                        if (relativePath.includes('assets/') && relativePath.includes('textures/block/')) blocksCount++;
-                        if (relativePath.includes('data/') && relativePath.includes('recipes/')) recipesCount++;
+                // Generar Imágenes de Ítems
+                for (let path of itemFiles) {
+                    const base64 = await unzipped.files[path].async('base64');
+                    let name = path.split('/').pop().replace('.png', '').replace(/_/g, ' ');
+                    itemsGrid.innerHTML += `
+                        <div class="scanner-item">
+                            <img src="data:image/png;base64,${base64}">
+                            <span title="${name}">${name}</span>
+                        </div>
+                    `;
+                }
+
+                // Generar Botones de Mobs
+                if (entityFiles.length === 0) {
+                    mobsGrid.innerHTML = '<p class="muted-text text-sm">Este mod no parece agregar entidades.</p>';
+                } else {
+                    for (let path of entityFiles) {
+                        const base64 = await unzipped.files[path].async('base64');
+                        let name = path.split('/').pop().replace('.png', '').replace(/_/g, ' ');
+                        const imgSrc = `data:image/png;base64,${base64}`;
+                        
+                        // Botón especial para abrir el Holograma 3D
+                        const mobCard = document.createElement('div');
+                        mobCard.className = 'scanner-item scanner-mob-btn';
+                        mobCard.innerHTML = `<img src="${imgSrc}"><span>${name}</span>`;
+                        mobCard.onclick = () => openMob3D(name, imgSrc);
+                        mobsGrid.appendChild(mobCard);
                     }
-                });
+                }
 
-                // 4. Mostrar resultados al usuario
-                scanResults.innerHTML = `
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                        <i class="ph-bold ph-sword"></i> ${itemsCount} Ítems nuevos
+                // Imprimir Estadísticas
+                scanStats.innerHTML = `
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); padding: 6px 10px; border-radius: 8px; font-weight: bold; font-size: 0.8rem;">
+                        <i class="ph-bold ph-image"></i> ${allFiles.filter(p=>p.includes('textures/item/')).length} Texturas Detectadas
                     </div>
-                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                        <i class="ph-bold ph-cube"></i> ${blocksCount} Bloques nuevos
-                    </div>
-                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                        <i class="ph-bold ph-book-bookmark"></i> ${recipesCount} Crafteos
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; padding: 6px 10px; border-radius: 8px; font-weight: bold; font-size: 0.8rem;">
+                        <i class="ph-bold ph-book-bookmark"></i> ${totalRecipes} Crafteos Ocultos
                     </div>
                 `;
-                btnScanMod.innerHTML = '<i class="ph-bold ph-check"></i> Escaneo Completado';
+                
+                scanGallery.style.display = 'flex';
+                btnScanMod.innerHTML = '<i class="ph-bold ph-check"></i> Análisis Completado';
 
             } catch (error) {
-                scanResults.innerHTML = `<span style="color: var(--danger);"><i class="ph-bold ph-warning"></i> Error: ${error.message}</span>`;
+                scanStats.innerHTML = `<span style="color: var(--danger); font-size: 0.85rem;"><i class="ph-bold ph-warning"></i> Error: ${error.message}</span>`;
                 btnScanMod.innerHTML = '<i class="ph-bold ph-scan"></i> Reintentar';
                 btnScanMod.disabled = false;
             }
         });
+    }
+
+    // ABRIR EL VISUALIZADOR 3D
+    function openMob3D(name, base64Src) {
+        const modal = document.getElementById('mob-3d-modal');
+        document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-cube"></i> Holograma: ${name.toUpperCase()}`;
+        
+        // Aplicar la textura extraída a todas las caras del cubo holográfico
+        const faces = document.querySelectorAll('.hologram-face');
+        faces.forEach(face => {
+            face.style.backgroundImage = `url(${base64Src})`;
+        });
+        
+        modal.classList.remove('hidden');
     }
