@@ -727,3 +727,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
+// ==========================================
+    // MOD SCANNER (RAYOS X AL .JAR)
+    // ==========================================
+    const btnScanMod = document.getElementById('btn-scan-mod');
+    const scanResults = document.getElementById('mod-scan-results');
+
+    if (btnScanMod) {
+        btnScanMod.addEventListener('click', async () => {
+            if(!window.currentModIdForScan) return;
+            btnScanMod.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Inspeccionando código...';
+            btnScanMod.disabled = true;
+            scanResults.style.display = 'flex';
+            scanResults.innerHTML = '<span class="muted-text text-sm">Abriendo el archivo en memoria...</span>';
+
+            try {
+                // 1. Obtener el .jar de la API
+                const mcVers = document.getElementById('mod-version-select').value;
+                const loader = document.getElementById('mod-loader-select').value;
+                const versRes = await fetch(`https://api.modrinth.com/v2/project/${window.currentModIdForScan}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                const versData = await versRes.json();
+
+                if (versData.length === 0 || versData[0].files.length === 0) throw new Error("No hay archivos para esta versión.");
+
+                const fileUrl = versData[0].files.find(f => f.primary)?.url || versData[0].files[0].url;
+
+                // 2. Descargar y descomprimir en el navegador
+                const fileRes = await fetch(fileUrl);
+                const fileBlob = await fileRes.blob();
+                const zip = new JSZip();
+                const unzipped = await zip.loadAsync(fileBlob);
+
+                // 3. Buscar texturas y recetas internamente
+                let itemsCount = 0; let blocksCount = 0; let recipesCount = 0;
+
+                unzipped.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir) {
+                        if (relativePath.includes('assets/') && relativePath.includes('textures/item/')) itemsCount++;
+                        if (relativePath.includes('assets/') && relativePath.includes('textures/block/')) blocksCount++;
+                        if (relativePath.includes('data/') && relativePath.includes('recipes/')) recipesCount++;
+                    }
+                });
+
+                // 4. Mostrar resultados al usuario
+                scanResults.innerHTML = `
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                        <i class="ph-bold ph-sword"></i> ${itemsCount} Ítems nuevos
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                        <i class="ph-bold ph-cube"></i> ${blocksCount} Bloques nuevos
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                        <i class="ph-bold ph-book-bookmark"></i> ${recipesCount} Crafteos
+                    </div>
+                `;
+                btnScanMod.innerHTML = '<i class="ph-bold ph-check"></i> Escaneo Completado';
+
+            } catch (error) {
+                scanResults.innerHTML = `<span style="color: var(--danger);"><i class="ph-bold ph-warning"></i> Error: ${error.message}</span>`;
+                btnScanMod.innerHTML = '<i class="ph-bold ph-scan"></i> Reintentar';
+                btnScanMod.disabled = false;
+            }
+        });
+    }
