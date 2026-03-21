@@ -374,3 +374,12 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
         width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
     }
 }
+
+/* --- AJUSTE PARA EL BOTÓN DEL CARRITO EN MÓVIL --- */
+    .cart-panel { display: flex; flex-direction: column; }
+    .cart-body { flex: 1; overflow-y: auto; padding-bottom: 90px; } /* Da espacio al fondo */
+    .cart-footer { 
+        position: absolute; bottom: 0; left: 0; width: 100%; 
+        background: var(--bg-panel); padding: 15px; 
+        border-top: 1px solid var(--border-color); z-index: 20;
+    }
