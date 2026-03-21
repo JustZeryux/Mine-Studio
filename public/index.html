@@ -90,9 +90,7 @@
                                 <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
                                 <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
                                 <button id="btn-randomizer" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #8b5cf6; border:none;"><i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria</button>
-                                <button id="btn-shader-compare" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">
-                                <i class="ph-bold ph-aperture"></i> Comparar Shaders
-                                </button>
+                                <button id="btn-shader-compare" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-aperture"></i> Comparar Shaders</button>
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
@@ -116,28 +114,28 @@
                     </div>
 
                     <div id="view-worlds" class="builder-view hidden panel">
+                        
                         <div class="panel" style="background: var(--bg-hover); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color);">
-    <div style="flex: 1; min-width: 200px;">
-        <h3 style="margin-bottom: 10px;"><i class="ph-bold ph-user-focus"></i> Tu Personaje</h3>
-        <p class="muted-text text-sm mb-10">Escribe tu nombre premium de Minecraft para ver tu Skin e info.</p>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="mc-skin-input" class="form-input" placeholder="Ej: Zeryux" style="flex: 1;">
-            <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i></button>
-        </div>
-        
-        <div id="mc-advanced-info" style="display: none; margin-top: 15px; width: 100%; border-top: 1px solid var(--border-color); padding-top: 10px;">
-            <p class="text-sm muted-text mb-10"><i class="ph-bold ph-identification-card"></i> Base de datos de Mojang:</p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <span class="dependency-tag" style="color: #6ee7b7; border-color: #059669; background: rgba(5, 150, 105, 0.1);" id="mc-uuid-badge">UUID: ...</span>
-                <span class="dependency-tag" style="color: #93c5fd; border-color: #2563eb; background: rgba(37, 99, 235, 0.1);" id="mc-cape-badge">Capa: No</span>
-            </div>
-        </div>
-    </div>
-    
-    <div style="width: 100px; height: 100px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid var(--border-color);">
-        <img id="mc-skin-preview" src="https://crafatar.com/renders/body/Steve?overlay=true" alt="Skin" style="height: 120px; object-fit: contain; margin-top: -10px; transition: 0.3s;">
-    </div>
-</div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <h3 style="margin-bottom: 10px;"><i class="ph-bold ph-user-focus"></i> Tu Personaje</h3>
+                                <p class="muted-text text-sm mb-10">Escribe tu nombre premium de Minecraft para ver tu Skin e info.</p>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="mc-skin-input" class="form-input" placeholder="Ej: Zeryux" style="flex: 1;">
+                                    <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i></button>
+                                </div>
+                                
+                                <div id="mc-advanced-info" style="display: none; margin-top: 15px; width: 100%; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                                    <p class="text-sm muted-text mb-10"><i class="ph-bold ph-identification-card"></i> Base de datos de Mojang:</p>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <span class="dependency-tag" style="color: #6ee7b7; border-color: #059669; background: rgba(5, 150, 105, 0.1);" id="mc-uuid-badge">UUID: ...</span>
+                                        <span class="dependency-tag" style="color: #93c5fd; border-color: #2563eb; background: rgba(37, 99, 235, 0.1);" id="mc-cape-badge">Capa: No</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="width: 100px; height: 100px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid var(--border-color);">
+                                <img id="mc-skin-preview" src="https://crafatar.com/renders/body/Steve?overlay=true" alt="Skin" style="height: 120px; object-fit: contain; margin-top: -10px; transition: 0.3s;">
+                            </div>
                         </div>
 
                         <h2 class="title mb-10"><i class="ph-bold ph-sliders"></i> Generación del Mundo</h2>
@@ -146,6 +144,16 @@
                             <div class="form-group">
                                 <label>Modo de Juego</label>
                                 <select id="world-gamemode" class="form-select"><option value="survival">Supervivencia</option><option value="creative">Creativo</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Dificultad</label>
+                                <select id="world-difficulty" class="form-select">
+                                    <option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px;">
+                                <label style="margin:0; font-weight:bold;">Generar Estructuras</label>
                             </div>
                         </div>
                     </div>
@@ -264,16 +272,12 @@
 
     <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
 
-
     <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10005;">
         <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);">
-            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px; animation: pulse 2s infinite;"></i>
+            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px;"></i>
             <h2 class="title mb-10">¡Un momento! Faltan piezas.</h2>
             <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white; font-size: 1.1rem;">Este Mod</strong> funcione perfectamente y no rompa el juego, requiere estas librerías obligatorias:</p>
-            
-            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;">
-                </div>
-            
+            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;"></div>
             <div style="display: flex; gap: 15px; margin-top: 25px;">
                 <button class="btn btn-primary w-100" id="btn-epic-add-all" style="font-size: 1.1rem; padding: 15px;">
                     <i class="ph-bold ph-stack"></i> Añadir Todo al Ensamblado
@@ -290,36 +294,31 @@
             <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
             <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en tu navegador.</p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-primary" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;">
-                    <i class="ph-bold ph-discord-logo"></i> Entrar con Discord
-                </button>
-                <button class="btn btn-secondary" id="btn-fake-google" style="padding: 12px; font-size: 1rem;">
-                    <i class="ph-bold ph-google-logo"></i> Entrar con Google
-                </button>
+                <button class="btn btn-primary" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;"><i class="ph-bold ph-discord-logo"></i> Entrar con Discord</button>
+                <button class="btn btn-secondary" id="btn-fake-google" style="padding: 12px; font-size: 1rem;"><i class="ph-bold ph-google-logo"></i> Entrar con Google</button>
                 <button class="btn btn-text mt-10" onclick="document.getElementById('auth-modal').classList.add('hidden')">Cancelar</button>
             </div>
         </div>
     </div>
 
     <div class="modal-overlay hidden" id="shader-compare-modal" style="z-index: 10010;">
-    <div class="modal-content" style="max-width: 600px; text-align: center;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 class="title"><i class="ph-bold ph-aperture"></i> Comparador de Shaders</h2>
-            <button class="btn-icon-danger" onclick="document.getElementById('shader-compare-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
-        </div>
-        <p class="muted-text mb-20">Desliza la barra para ver la diferencia visual.</p>
-        
-        <div class="shader-compare-container" id="shader-compare-container">
-            <img src="https://i.imgur.com/M6PZ1Y4.jpeg" alt="Vanilla" class="shader-img-vanilla">
-            <img src="https://i.imgur.com/kSGB20u.jpeg" alt="Con Shaders" class="shader-img-shader" id="shader-img-top">
-            
-            <div class="shader-slider-line" id="shader-slider-line">
-                <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
+        <div class="modal-content" style="max-width: 600px; text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 class="title"><i class="ph-bold ph-aperture"></i> Comparador de Shaders</h2>
+                <button class="btn-icon-danger" onclick="document.getElementById('shader-compare-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
             </div>
-            <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
+            <p class="muted-text mb-20">Desliza la barra para ver la diferencia visual.</p>
+            <div class="shader-compare-container" id="shader-compare-container">
+                <img src="https://i.imgur.com/M6PZ1Y4.jpeg" alt="Vanilla" class="shader-img-vanilla">
+                <img src="https://i.imgur.com/kSGB20u.jpeg" alt="Con Shaders" class="shader-img-shader" id="shader-img-top">
+                <div class="shader-slider-line" id="shader-slider-line">
+                    <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
+                </div>
+                <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
+            </div>
         </div>
     </div>
-</div>
+
     <script src="js/content.js"></script>
 </body>
 </html>
