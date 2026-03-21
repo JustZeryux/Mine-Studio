@@ -79,6 +79,11 @@
                                 </div>
                             </div>
 
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.9rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
+                                <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.9rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
+                            </div>
+
                             <div style="margin-bottom: 15px;">
                                 <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
                                     <i class="ph-bold ph-rocket"></i> Instalar Pack de Optimización (Boost FPS)
@@ -176,59 +181,32 @@
         </main>
     </div>
 
-    <div class="modal-overlay hidden" id="mod-details-modal">
-        <div class="modal-content modal-lg">
-            <div class="modal-header-mod">
-                <div class="mod-header-info" style="display: flex; gap: 15px; align-items: center;">
-                    <img id="detail-icon" src="" class="mod-detail-icon" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
-                    <div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <h2 id="detail-title" class="title" style="margin: 0; font-size: 1.5rem;">Cargando...</h2>
-                            <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
-                        </div>
-                        <p id="detail-author" class="muted-text" style="margin: 0;"></p>
-                    </div>
-                </div>
-                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <div class="modal-body-scroll custom-scrollbar">
-                <div id="detail-dependencies" class="dependencies-container mb-20"></div>
-                <h3 class="subtitle mb-10"><i class="ph-bold ph-article"></i> Información</h3>
-                <div class="mod-description-body" id="detail-description"></div>
-                <h3 class="subtitle mt-20 mb-10"><i class="ph-bold ph-image"></i> Galería</h3>
-                <div id="detail-gallery" class="gallery-grid"></div>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-overlay hidden" id="save-pack-modal" style="z-index: 10005;">
         <div class="modal-content">
             <h2 class="title mb-20"><i class="ph-bold ph-floppy-disk"></i> Guardar Proyecto</h2>
             <div class="form-group mb-20"><label>Nombre del Modpack</label><input type="text" id="pack-name-input" class="form-input"></div>
+            
+            <div class="form-group mb-20" style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <input type="checkbox" id="export-server-pack" style="width: 20px; height: 20px;">
+                    <label style="margin:0; font-weight:bold; color: var(--accent);">Exportar como Server Pack</label>
+                </div>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye archivos base para encender el servidor.</p>
+            </div>
+
             <div class="modal-actions">
-                <button class="btn btn-primary w-100 mb-10" id="btn-confirm-save-download">Guardar y Exportar</button>
-                <button class="btn btn-secondary w-100 mb-10" id="btn-just-download">Solo Descargar</button>
+                <button class="btn btn-primary w-100 mb-10" id="btn-confirm-save-download">Guardar y Exportar ZIP</button>
+                <button class="btn btn-secondary w-100 mb-10" id="btn-just-download">Solo Descargar ZIP</button>
                 <button class="btn btn-text w-100" onclick="document.getElementById('save-pack-modal').classList.add('hidden')">Cancelar</button>
             </div>
         </div>
     </div>
-
+    
+    <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;"><div class="modal-content modal-lg"><div class="modal-header-mod"><div class="mod-header-info" style="display: flex; gap: 15px; align-items: center;"><img id="detail-icon" src="" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;"><div><h2 id="detail-title" class="title" style="margin: 0; font-size: 1.5rem;">Cargando...</h2><p id="detail-author" class="muted-text" style="margin: 0;"></p></div></div><button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button></div><div class="modal-body-scroll custom-scrollbar"><div id="detail-dependencies"></div><div id="detail-description"></div><div id="detail-gallery" class="gallery-grid mt-20"></div></div></div></div>
+    <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10007;"><div class="modal-content" style="text-align: center;"><h2 class="title mb-10">Faltan piezas</h2><div id="epic-deps-list" style="max-height: 250px; overflow-y: auto;"></div><button class="btn btn-primary w-100 mt-20" id="btn-epic-add-all">Añadir Todo</button></div></div>
     <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
 
-    <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10006;">
-        <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent);">
-            <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px;"></i>
-            <h2 class="title mb-10">¡Un momento! Faltan piezas.</h2>
-            <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white;">Este Mod</strong> funcione, requiere estas librerías obligatorias:</p>
-            <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;"></div>
-            <div style="display: flex; gap: 15px; margin-top: 25px;">
-                <button class="btn btn-primary w-100" id="btn-epic-add-all" style="font-size: 1.1rem; padding: 15px;">Añadir Todo al Ensamblado</button>
-                <button class="btn btn-secondary" onclick="document.getElementById('epic-deps-modal').classList.add('hidden')">Ignorar</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10007;">
+    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10008;">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
             <p class="muted-text mb-20">Únete para guardar tus modpacks en la nube.</p>
