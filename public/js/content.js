@@ -1,26 +1,23 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
-    // 1. LÓGICA DE COMPARTIR (SERVERLESS SHARE)
+    // VARIABLES GLOBALES (AGREGADAS: modConfigs Y SHARE)
     // ==========================================
+    window.modConfigs = {}; // Almacena configuraciones del usuario
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPack = urlParams.get('pack');
     window.modpackCart = [];
 
     if (sharedPack) {
         try {
-            const parsedCart = JSON.parse(atob(decodeURIComponent(sharedPack)));
-            window.modpackCart = parsedCart;
+            window.modpackCart = JSON.parse(atob(decodeURIComponent(sharedPack)));
             alert("✨ ¡Modpack compartido cargado con éxito en tu ensamblador!");
             window.history.replaceState({}, document.title, window.location.pathname);
-        } catch(e) {
-            console.error("Link de pack inválido", e);
-            alert("El enlace del modpack compartido está dañado o es inválido.");
-        }
+        } catch(e) {}
     }
 
     // ==========================================
-    // 2. SISTEMA DE SESIÓN (MOCK/SIMULADO)
+    // 0. SISTEMA DE SESIÓN 100% FRONTEND (MÓDULOS)
     // ==========================================
     const isLoggedIn = localStorage.getItem('usuario_token'); 
     const profileSection = document.querySelector('.profile-section');
@@ -50,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Funciones del Modal de Login
     if(authModal) {
         document.getElementById('btn-fake-discord').addEventListener('click', () => {
             localStorage.setItem('usuario_token', JSON.stringify({username: 'Zeryux_Dev', avatar: 'https://crafatar.com/avatars/Zeryux?size=40'}));
@@ -62,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 3. NAVEGACIÓN Y VISTAS
+    // 1. NAVEGACIÓN Y VISTAS
     // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
     const views = { 
@@ -74,13 +72,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     navButtons.forEach(btn => btn.addEventListener('click', () => {
         navButtons.forEach(b => b.classList.remove('active')); 
         btn.classList.add('active');
+        
         Object.values(views).forEach(v => v.classList.add('hidden')); 
         views[btn.getAttribute('data-target')].classList.remove('hidden');
+        
         if (btn.getAttribute('data-target') === 'profiles') loadMyProfiles();
     }));
 
     // ==========================================
-    // 4. LÓGICA DE MODS Y MODRINTH API
+    // 2. LÓGICA DE MODS Y MODRINTH API
     // ==========================================
     const searchInput = document.getElementById('mod-search-input');
     const sortSelect = document.getElementById('mod-sort-select');
@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loaderSelect = document.getElementById('mod-loader-select');
     const filterButtons = document.querySelectorAll('.filter-btn');
     const chips = document.querySelectorAll('.chip');
+    
     const modsGrid = document.getElementById('mods-grid');
     const btnLoadMore = document.getElementById('btn-load-more');
     const cartList = document.getElementById('cart-list');
@@ -114,9 +115,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lightboxImg = document.getElementById('lightbox-img');
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
+    const tagIcons = {
+        'technology': '<i class="ph-fill ph-cpu"></i>', 'magic': '<i class="ph-fill ph-sparkle"></i>',
+        'adventure': '<i class="ph-fill ph-sword"></i>', 'mobs': '<i class="ph-fill ph-skull"></i>',
+        'worldgen': '<i class="ph-fill ph-tree"></i>', 'equipment': '<i class="ph-fill ph-shield"></i>',
+        'optimization': '<i class="ph-fill ph-rocket"></i>', 'library': '<i class="ph-fill ph-books"></i>'
+    };
+
     filterButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            filterButtons.forEach(b => b.classList.remove('active')); e.currentTarget.classList.add('active');
+            filterButtons.forEach(b => b.classList.remove('active')); 
+            e.currentTarget.classList.add('active');
             currentFilter = e.currentTarget.dataset.filter; 
             const chipsContainer = document.getElementById('category-chips-container');
             if(currentFilter === 'mod') {
@@ -132,7 +141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchRealMods(isAppend = false) {
         if (!isAppend) {
-            currentOffset = 0; modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Buscando...</p></div>`;
+            currentOffset = 0;
+            modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Buscando...</p></div>`;
             if(btnLoadMore) btnLoadMore.classList.add('hidden');
         } else { if(btnLoadMore) btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; }
 
@@ -140,15 +150,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             let queryType = currentFilter === 'library' ? 'mod' : currentFilter;
             let facets = [[`versions:${versionSelect.value}`], [`project_type:${queryType}`]];
             if (queryType === 'mod') facets.push([`categories:${loaderSelect.value}`]);
-            if (currentFilter === 'mod') { facets.push(["categories!=library"]); if (currentCategory !== "") facets.push([`categories:${currentCategory}`]); } 
-            else if (currentFilter === 'library') { facets.push(["categories:library"]); }
+            if (currentFilter === 'mod') {
+                facets.push(["categories!=library"]); 
+                if (currentCategory !== "") facets.push([`categories:${currentCategory}`]);
+            } else if (currentFilter === 'library') { facets.push(["categories:library"]); }
 
             const res = await fetch(`https://api.modrinth.com/v2/search?query=${searchInput.value}&facets=${encodeURIComponent(JSON.stringify(facets))}&index=${sortSelect.value}&limit=16&offset=${currentOffset}`);
             const data = await res.json();
             
             if (!isAppend) modsGrid.innerHTML = '';
+            
             if (data.hits.length === 0 && !isAppend) {
-                modsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;">No se encontraron resultados.</div>';
+                modsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;">No se encontraron resultados para estos filtros.</div>';
             } else {
                 renderRealMods(data.hits);
                 if(data.hits.length === 16) {
@@ -170,7 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return await depProjsRes.json(); 
                 }
             }
-        } catch(e) { } return [];
+        } catch(e) { console.error("Error obteniendo dependencias", e); }
+        return [];
     }
 
     function renderRealMods(mods) {
@@ -179,12 +193,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const iconUrl = mod.icon_url || 'https://via.placeholder.com/80/18181b/ffffff?text=?';
             const bannerUrl = (mod.gallery && mod.gallery[0]) ? mod.gallery[0] : 'https://via.placeholder.com/400x150/18181b/27272a';
             const isAdded = window.modpackCart.some(item => item.id === mod.project_id);
+            
+            let tagsHtml = '';
+            if(mod.display_categories) {
+                mod.display_categories.slice(0, 3).forEach(tag => {
+                    tagsHtml += `<span class="mini-tag">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`;
+                });
+            }
 
             card.innerHTML = `
                 <div class="mod-banner" style="background-image: url('${bannerUrl}'); pointer-events: none;"></div>
                 <div class="mod-info" style="pointer-events: none; padding-bottom: 10px;">
                     <img src="${iconUrl}" class="mod-avatar">
                     <h3 class="mod-title">${mod.title}</h3>
+                    <div class="mod-tags-container">${tagsHtml}</div>
                     <p class="mod-desc">${mod.description.substring(0, 60)}...</p>
                 </div>
                 <div style="padding: 0 10px 10px 10px; z-index: 10; margin-top: auto;">
@@ -197,10 +219,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const addBtn = card.querySelector('.btn-add-mod');
             addBtn.addEventListener('click', async function(e) {
                 e.stopPropagation(); 
-                const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Analizando...'; this.disabled = true;
+                const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...'; this.disabled = true;
 
                 if (this.dataset.type === 'mod') {
-                    // NEW: COMPATIBILITY CHECKER (Evitar Crasheos)
+                    // AÑADIDO: CHECADOR DE COMPATIBILIDAD (EVITA CRASHEOS)
                     try {
                         const versRes = await fetch(`https://api.modrinth.com/v2/project/${this.dataset.id}/version?game_versions=["${versionSelect.value}"]&loaders=["${loaderSelect.value}"]`);
                         const versData = await versRes.json();
@@ -213,9 +235,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 this.innerHTML = originalHtml; this.disabled = false; return;
                             }
                         }
-                    } catch(err) { console.error("Error checking compatibility", err); }
+                    } catch(err) {}
 
-                    // REQUIRED DEPS CHECKER
                     const deps = await getRequiredDependencies(this.dataset.id, versionSelect.value, loaderSelect.value);
                     if (deps && deps.length > 0) {
                         const missingDeps = deps.filter(dep => !window.modpackCart.some(item => item.id === dep.id));
@@ -231,16 +252,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                 this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
             });
 
-            // Abrir Modal de Detalles
+            // ==========================================
+            // TU LÓGICA INTACTA DEL MODAL DE DETALLES
+            // ==========================================
             card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod')) return; 
                 const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
+                
                 document.getElementById('detail-title').textContent = mod.title;
                 document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
                 document.getElementById('detail-icon').src = iconUrl;
+                
+                // RESTAURADO: El contador de descargas Sticky
+                document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
+                
                 document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información...</p></div>`;
                 document.getElementById('detail-gallery').innerHTML = '';
                 
+                const depsContainer = document.getElementById('detail-dependencies');
+                depsContainer.innerHTML = '';
+
+                // RESTAURADO: Las librerías y el botón de Añadir Todo
+                if (mod.project_type === 'mod') {
+                    getRequiredDependencies(mod.project_id, versionSelect.value, loaderSelect.value).then(depProjs => {
+                        if (depProjs.length > 0) {
+                            let depsHtml = '<h3 class="subtitle mb-10 w-100"><i class="ph-bold ph-books"></i> Librerías Necesarias</h3><div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">';
+                            depProjs.forEach(p => {
+                                depsHtml += `<div style="background: var(--bg-hover); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); display:flex; align-items:center; gap:10px;"><img src="${p.icon_url || 'https://via.placeholder.com/40'}" style="width:24px; height:24px; border-radius:4px;"><span style="font-size:0.85rem; font-weight:600;">${p.title}</span></div>`;
+                            });
+                            depsHtml += `</div><button class="btn btn-secondary w-100" id="btn-detail-add-all" style="margin-bottom: 20px;"><i class="ph-bold ph-stack"></i> Añadir Mod y Librerías al Carrito</button>`;
+                            depsContainer.innerHTML = depsHtml;
+                            
+                            document.getElementById('btn-detail-add-all').onclick = () => {
+                                if (!window.modpackCart.some(item => item.id === mod.project_id)) window.modpackCart.push({ id: mod.project_id, title: mod.title, type: mod.project_type });
+                                depProjs.forEach(dep => { if (!window.modpackCart.some(item => item.id === dep.id)) window.modpackCart.push({ id: dep.id, title: dep.title, type: 'mod' }); });
+                                window.updateCartUI();
+                                addBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; addBtn.style.background = 'var(--success)'; addBtn.disabled = true;
+                                modal.classList.add('hidden');
+                            };
+                        }
+                    });
+                }
+
                 fetch(`https://api.modrinth.com/v2/project/${mod.project_id}`).then(res => res.json()).then(projectData => {
                     document.getElementById('detail-description').innerHTML = projectData.body ? marked.parse(projectData.body) : `<p>${projectData.description}</p>`;
                     const gallery = document.getElementById('detail-gallery');
@@ -265,7 +318,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         missingDeps.forEach((p, index) => {
             let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
-            list.innerHTML += `<div class="tilt-wrapper" style="margin-bottom: 10px;"><div class="tilt-card ${animClass}" style="background: var(--bg-main);"><img src="${p.icon_url || 'https://via.placeholder.com/40'}" alt="icon"><div class="dep-info" style="text-align: left;"><h4>${p.title}</h4><span>Componente central</span></div></div></div>`;
+            list.innerHTML += `
+            <div class="tilt-wrapper" style="margin-bottom: 10px;">
+                <div class="tilt-card ${animClass}" style="background: var(--bg-main);">
+                    <img src="${p.icon_url || 'https://via.placeholder.com/40'}" alt="icon">
+                    <div class="dep-info" style="text-align: left;"><h4>${p.title}</h4><span>Componente central</span></div>
+                </div>
+            </div>`;
         });
 
         document.getElementById('btn-epic-add-all').onclick = () => {
@@ -279,51 +338,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 5. NUEVAS HERRAMIENTAS: PLANTILLAS, RULETA Y RECOMENDACIONES
+    // FUNCIONES AÑADIDAS: PLANTILLAS Y SKIN VIEWER
     // ==========================================
     async function installTemplate(slugs, buttonId, text) {
-        const btn = document.getElementById(buttonId);
-        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; btn.disabled = true;
-        let añadidos = 0;
+        const btn = document.getElementById(buttonId); btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; btn.disabled = true; let añadidos = 0;
         for (const slug of slugs) {
-            try {
-                const res = await fetch(`https://api.modrinth.com/v2/project/${slug}`);
-                if (res.ok) {
-                    const modData = await res.json();
-                    if (!window.modpackCart.some(item => item.id === modData.id)) { window.modpackCart.push({ id: modData.id, title: modData.title, type: 'mod' }); añadidos++; }
-                }
-            } catch(e) {}
+            try { const res = await fetch(`https://api.modrinth.com/v2/project/${slug}`); if (res.ok) { const modData = await res.json(); if (!window.modpackCart.some(item => item.id === modData.id)) { window.modpackCart.push({ id: modData.id, title: modData.title, type: 'mod' }); añadidos++; } } } catch(e) {}
         }
-        window.updateCartUI();
-        btn.innerHTML = text; btn.disabled = false;
-        if(añadidos > 0) alert(`Se añadieron ${añadidos} mods correctamente.`);
+        window.updateCartUI(); btn.innerHTML = text; btn.disabled = false; if(añadidos > 0) alert(`Se añadieron ${añadidos} mods.`);
     }
 
     document.getElementById('btn-template-rpg')?.addEventListener('click', () => installTemplate(['better-combat', 'waystones', 'farmers-delight', 'appleskin'], 'btn-template-rpg', '<i class="ph-bold ph-sword"></i> Plantilla RPG'));
     document.getElementById('btn-template-tech')?.addEventListener('click', () => installTemplate(['create', 'jei', 'mouse-tweaks', 'jade'], 'btn-template-tech', '<i class="ph-bold ph-gear"></i> Plantilla Técnica'));
-    document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización (Boost FPS)'));
-
-    // RULETA RANDOMIZER
+    document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización'));
     document.getElementById('btn-randomizer')?.addEventListener('click', async () => {
         if(!confirm("Esto vaciará tu carrito actual para crear un reto aleatorio. ¿Continuar?")) return;
         window.modpackCart = []; window.updateCartUI();
         const randomSlugs = ['rlcraft', 'ice-and-fire', 'alexs-mobs', 'terralith', 'biomesoplenty', 'bloodmagic', 'twilightforest', 'botania', 'vampirism', 'mutant-monsters'];
-        const numMods = Math.floor(Math.random() * 4) + 2; 
-        const selected = randomSlugs.sort(() => 0.5 - Math.random()).slice(0, numMods);
+        const numMods = Math.floor(Math.random() * 4) + 2; const selected = randomSlugs.sort(() => 0.5 - Math.random()).slice(0, numMods);
         await installTemplate(selected, 'btn-randomizer', '<i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria');
-        alert("🎲 ¡Reto generado! Tienes " + numMods + " mods masivos aleatorios listos para explorar.");
     });
 
-    const recommendedMods = [
-        { id: '1eAoo2KR', title: 'Just Enough Items (JEI)', type: 'mod' },
-        { id: 'mOgUt4GM', title: 'Mod Menu', type: 'mod' },
-        { id: 'yM94ont6', title: 'Jade 🔍', type: 'mod' }
-    ];
+    const btnLoadSkin = document.getElementById('btn-load-skin'); const inputSkin = document.getElementById('mc-skin-input'); const imgSkinPreview = document.getElementById('mc-skin-preview');
+    if (btnLoadSkin && inputSkin && imgSkinPreview) {
+        btnLoadSkin.addEventListener('click', () => {
+            const username = inputSkin.value.trim(); if (!username) return; imgSkinPreview.style.opacity = '0.5';
+            const skinUrl = `https://crafatar.com/renders/body/${username}?overlay=true`; const tempImg = new Image();
+            tempImg.onload = () => { imgSkinPreview.src = skinUrl; imgSkinPreview.style.opacity = '1'; localStorage.setItem('minepack_username', username); };
+            tempImg.onerror = () => { alert('No se encontró cuenta premium.'); imgSkinPreview.style.opacity = '1'; }; tempImg.src = skinUrl;
+        });
+        const savedName = localStorage.getItem('minepack_username'); if (savedName) { inputSkin.value = savedName; imgSkinPreview.src = `https://crafatar.com/renders/body/${savedName}?overlay=true`; }
+    }
+
+    // ==========================================
+    // UI DEL CARRITO CON EDITOR DE CONFIGURACIÓN
+    // ==========================================
+    const recommendedMods = [ { id: '1eAoo2KR', title: 'Just Enough Items (JEI)', type: 'mod' }, { id: 'mOgUt4GM', title: 'Mod Menu', type: 'mod' }, { id: 'yM94ont6', title: 'Jade 🔍', type: 'mod' } ];
 
     window.updateCartUI = function() {
         cartList.innerHTML = '';
-        const recBox = document.getElementById('recommendations-box');
-        const recItem = document.getElementById('rec-item');
+        const recBox = document.getElementById('recommendations-box'); const recItem = document.getElementById('rec-item');
 
         if (window.modpackCart.length === 0) {
             document.getElementById('empty-cart-msg').style.display = 'block';
@@ -338,7 +392,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let iconClass = 'ph-puzzle-piece', typeColor = 'var(--accent)', typeText = 'Mod';
                 if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
                 else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
-                else if(item.type === 'datapack') { iconClass = 'ph-file-code'; typeColor = '#8b5cf6'; typeText = 'DataPack'; }
                 
                 li.innerHTML = `
                     <div class="cart-item-info" style="display:flex; align-items:center; gap:12px; overflow:hidden;">
@@ -346,104 +399,77 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
                         </div>
                         <div class="cart-item-text" style="display:flex; flex-direction:column;">
-                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;" title="${item.title}">${item.title}</span>
+                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${item.title}</span>
                             <span class="cart-item-type" style="font-size:0.65rem; color:${typeColor}; text-transform:uppercase; font-weight:700;">${typeText}</span>
                         </div>
                     </div>
-                    <button class="btn-remove" data-index="${index}" style="background:transparent; border:none; color:var(--danger); cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
+                    <div style="display:flex; gap: 5px;">
+                        <button class="btn-config" data-id="${item.id}" data-title="${item.title}" style="background:transparent; border:none; color:var(--text-main); cursor:pointer; padding:5px;" title="Editar Configuración"><i class="ph-bold ph-gear"></i></button>
+                        <button class="btn-remove" data-index="${index}" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:5px;"><i class="ph-bold ph-trash"></i></button>
+                    </div>
                 `;
                 cartList.appendChild(li);
             });
 
-            document.querySelectorAll('.btn-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    window.modpackCart.splice(this.dataset.index, 1);
-                    window.updateCartUI(); 
-                    fetchRealMods(false);
-                });
+            document.querySelectorAll('.btn-remove').forEach(btn => { btn.addEventListener('click', function() { window.modpackCart.splice(this.dataset.index, 1); window.updateCartUI(); fetchRealMods(false); }); });
+            
+            // ABRIR EDITOR DE CONFIGURACIONES
+            document.querySelectorAll('.btn-config').forEach(btn => { 
+                btn.addEventListener('click', function() { 
+                    const modId = this.dataset.id;
+                    document.getElementById('config-mod-title').innerHTML = `<i class="ph-bold ph-gear"></i> Config: ${this.dataset.title}`;
+                    document.getElementById('config-mod-id').value = modId;
+                    
+                    if(window.modConfigs[modId]) {
+                        document.getElementById('config-filename').value = window.modConfigs[modId].filename;
+                        document.getElementById('config-content').value = window.modConfigs[modId].content;
+                    } else {
+                        const safeName = this.dataset.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                        document.getElementById('config-filename').value = `${safeName}-common.toml`;
+                        document.getElementById('config-content').value = ``;
+                    }
+                    document.getElementById('config-editor-modal').classList.remove('hidden');
+                }); 
             });
 
-            // Mostrar recomendaciones
+            // Recomendaciones
             if (recBox && recItem) {
                 const availableRecs = recommendedMods.filter(rm => !window.modpackCart.some(cm => cm.id === rm.id));
                 if (availableRecs.length > 0) {
                     const rec = availableRecs[Math.floor(Math.random() * availableRecs.length)];
-                    recItem.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size: 0.85rem; font-weight: bold;">${rec.title}</span>
-                            <button class="btn btn-primary btn-add-rec" data-id="${rec.id}" data-title="${rec.title}" data-type="${rec.type}" style="padding: 4px 8px; font-size: 0.75rem;"><i class="ph-bold ph-plus"></i></button>
-                        </div>
-                    `;
-                    recBox.style.display = 'block';
-                    recItem.querySelector('.btn-add-rec').addEventListener('click', function() {
-                        window.modpackCart.push({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type });
-                        window.updateCartUI();
-                    });
-                } else {
-                    recBox.style.display = 'none';
-                }
+                    recItem.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 0.85rem; font-weight: bold;">${rec.title}</span><button class="btn btn-primary btn-add-rec" data-id="${rec.id}" data-title="${rec.title}" data-type="${rec.type}" style="padding: 4px 8px; font-size: 0.75rem;"><i class="ph-bold ph-plus"></i></button></div>`;
+                    recBox.style.display = 'block'; recItem.querySelector('.btn-add-rec').addEventListener('click', function() { window.modpackCart.push({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type }); window.updateCartUI(); });
+                } else { recBox.style.display = 'none'; }
             }
         }
-
-        const mobileBtn = document.getElementById('mobile-cart-toggle-btn');
-        if(mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+        const mobileBtn = document.getElementById('mobile-cart-toggle-btn'); if(mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
     }
 
-    // ==========================================
-    // 6. MIGRAR DE VERSIÓN (ACTUALIZADOR MÁGICO)
-    // ==========================================
+    // GUARDAR CONFIGURACIÓN EDITADA
+    document.getElementById('btn-save-config')?.addEventListener('click', () => {
+        const modId = document.getElementById('config-mod-id').value;
+        const filename = document.getElementById('config-filename').value;
+        const content = document.getElementById('config-content').value;
+        if(content.trim() !== '') { window.modConfigs[modId] = { filename, content }; alert("Configuración guardada en memoria. Se incluirá al exportar el ZIP."); }
+        document.getElementById('config-editor-modal').classList.add('hidden');
+    });
+
+    // MIGRAR VERSIÓN MÁGICO
     document.getElementById('btn-migrate-pack')?.addEventListener('click', async () => {
         if(window.modpackCart.length === 0) return alert("Tu carrito está vacío.");
-        const newVers = prompt(`¿A qué versión de Minecraft quieres migrar tus ${window.modpackCart.length} mods?\nEjemplo: 1.20.4 o 1.19.2`);
-        if(!newVers) return;
-        
+        const newVers = prompt(`¿A qué versión de Minecraft quieres migrar tus ${window.modpackCart.length} mods?\nEjemplo: 1.20.4 o 1.19.2`); if(!newVers) return;
         const btn = document.getElementById('btn-migrate-pack'); btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>'; btn.disabled = true;
         let exist = 0; let fail = 0; let failedNames = [];
-
         for (let i = 0; i < window.modpackCart.length; i++) {
-            try {
-                const res = await fetch(`https://api.modrinth.com/v2/project/${window.modpackCart[i].id}/version?game_versions=["${newVers}"]&loaders=["${loaderSelect.value}"]`);
-                const data = await res.json();
-                if(data.length > 0) { exist++; } else { fail++; failedNames.push(window.modpackCart[i].title); }
-            } catch(e) { fail++; }
+            try { const res = await fetch(`https://api.modrinth.com/v2/project/${window.modpackCart[i].id}/version?game_versions=["${newVers}"]&loaders=["${loaderSelect.value}"]`); const data = await res.json(); if(data.length > 0) exist++; else { fail++; failedNames.push(window.modpackCart[i].title); } } catch(e) { fail++; }
         }
         btn.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Migrar'; btn.disabled = false;
-        
-        let msg = `✨ MIGRACIÓN COMPLETADA\n\nCompatibles con ${newVers}: ${exist}\nNo disponibles: ${fail}\n`;
-        if(fail > 0) msg += `\nMods que perderás: ${failedNames.slice(0,3).join(', ')}${fail > 3 ? '...' : ''}`;
-        
-        if(confirm(msg + `\n\n¿Deseas aplicar el cambio a la versión ${newVers}?`)) {
-            versionSelect.value = newVers;
-            updateSearch();
-        }
+        let msg = `✨ MIGRACIÓN COMPLETADA\n\nCompatibles con ${newVers}: ${exist}\nNo disponibles: ${fail}\n`; if(fail > 0) msg += `\nMods que perderás: ${failedNames.slice(0,3).join(', ')}${fail > 3 ? '...' : ''}`;
+        if(confirm(msg + `\n\n¿Deseas aplicar el cambio a la versión ${newVers}?`)) { versionSelect.value = newVers; updateSearch(); }
     });
 
     // ==========================================
-    // 7. VISOR DE SKINS 3D EN EL NAVEGADOR
-    // ==========================================
-    const btnLoadSkin = document.getElementById('btn-load-skin');
-    const inputSkin = document.getElementById('mc-skin-input');
-    const imgSkinPreview = document.getElementById('mc-skin-preview');
-
-    if (btnLoadSkin && inputSkin && imgSkinPreview) {
-        btnLoadSkin.addEventListener('click', () => {
-            const username = inputSkin.value.trim();
-            if (username === '') return;
-            imgSkinPreview.style.opacity = '0.5';
-            const skinUrl = `https://crafatar.com/renders/body/${username}?overlay=true`;
-            
-            const tempImg = new Image();
-            tempImg.onload = () => { imgSkinPreview.src = skinUrl; imgSkinPreview.style.opacity = '1'; localStorage.setItem('minepack_username', username); };
-            tempImg.onerror = () => { alert('No se encontró ninguna cuenta premium con ese nombre.'); imgSkinPreview.style.opacity = '1'; };
-            tempImg.src = skinUrl;
-        });
-
-        const savedName = localStorage.getItem('minepack_username');
-        if (savedName) { inputSkin.value = savedName; imgSkinPreview.src = `https://crafatar.com/renders/body/${savedName}?overlay=true`; }
-    }
-
-    // ==========================================
-    // 8. CARGAR, EDITAR, COMPARTIR Y BORRAR PERFILES
+    // CARGAR MIS PERFILES DESDE LOCALSTORAGE
     // ==========================================
     window.loadMyProfiles = function() {
         const grid = document.getElementById('profiles-grid');
@@ -485,7 +511,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         });
 
-        // Eventos
         document.querySelectorAll('.btn-share-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const profile = profiles[e.currentTarget.dataset.index];
@@ -520,27 +545,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 9. EXPORTACIÓN EXTREMA (BRANDING, SERVER PACK, MRPACK, ZIP)
+    // EXPORTACIÓN 100% EN NAVEGADOR
     // ==========================================
     const modalSave = document.getElementById('save-pack-modal');
     const btnJustDownload = document.getElementById('btn-just-download');
     const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
     const packNameInput = document.getElementById('pack-name-input');
     
-    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => {
-        document.querySelector('.cart-panel').classList.remove('active-mobile');
-        modalSave.classList.remove('hidden');
-    });
+    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => modalSave.classList.remove('hidden'));
 
-    // Leer el archivo de imagen para el Logo del pack
     let uploadedIconBase64 = null;
     document.getElementById('pack-icon-input')?.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(evt) { uploadedIconBase64 = evt.target.result; };
-            reader.readAsDataURL(file);
-        }
+        if (file) { const reader = new FileReader(); reader.onload = function(evt) { uploadedIconBase64 = evt.target.result; }; reader.readAsDataURL(file); }
     });
 
     async function requestBuild(isSaving = false) {
@@ -565,28 +582,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isSaving) {
                 const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
                 profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: window.modpackCart, iconBase64: uploadedIconBase64 });
-                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles));
-                loadMyProfiles();
+                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); loadMyProfiles();
             }
 
-            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa tu index.html.");
+            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa el Paso 1.");
             const zip = new JSZip();
 
-            // BRANDING: Agregar logo a la raíz del ZIP
             if (uploadedIconBase64) {
                 const base64Data = uploadedIconBase64.split(',')[1];
                 zip.file("icon.png", base64Data, {base64: true});
             }
 
-            // MODO MRPACK ULTRA LIGERO
+            // CREAR LA CARPETA /config SI EL USUARIO EDITÓ ARCHIVOS EN LA WEB
+            if(Object.keys(window.modConfigs).length > 0) {
+                const confFolder = zip.folder("config");
+                for (const modId in window.modConfigs) {
+                    confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content);
+                }
+            }
+
             if (isMrPack) {
                 if(btn) btn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando Índices MRPack...`;
-                const mrpackIndex = {
-                    formatVersion: 1, game: "minecraft", versionId: packName, name: packName,
-                    dependencies: { minecraft: mcVersion, [loader]: "*" },
-                    files: []
-                };
-
+                const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
                 for (let i = 0; i < window.modpackCart.length; i++) {
                     const item = window.modpackCart[i];
                     const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
@@ -594,79 +611,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (versData && versData.length > 0 && versData[0].files.length > 0) {
                         const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
                         let envData = { client: "required", server: "required" };
-                        
-                        // Si es server pack, intenta no poner los que crashean el servidor en required
-                        if (isServerPack) { 
-                            try { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') continue; } catch(e){}
-                        }
-                        
-                        let targetFolder = "mods";
-                        if(item.type === 'shader') targetFolder = "shaderpacks";
-                        else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
-
+                        if (isServerPack) { try { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') continue; } catch(e){} }
+                        let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
                         mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
                     }
                 }
                 zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
-
             } else {
-                // MODO ZIP TRADICIONAL
-                const modsFolder = zip.folder("mods");
-                const shadersFolder = zip.folder("shaderpacks");
-                const resourceFolder = zip.folder("resourcepacks");
-
+                const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
                 const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
-                const wDifficulty = document.getElementById('world-difficulty')?.value || 'normal';
-                const wStructures = document.getElementById('world-structures')?.checked ? 'true' : 'false';
-                const wSeed = document.getElementById('world-seed-input')?.value;
-
-                let propsContent = `# Generado por MinePack Studio\ngamemode=${wGamemode}\ndifficulty=${wDifficulty}\ngenerate-structures=${wStructures}\n`;
-                if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
+                let propsContent = `# Generado por MinePack Studio\ngamemode=${wGamemode}\n`;
+                const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
                 zip.file("server.properties", propsContent);
 
                 if (isServerPack) {
                     zip.file("eula.txt", "eula=true\n");
                     zip.file("start.bat", "@echo off\necho INICIANDO SERVIDOR MINEPACK...\njava -Xmx4G -Xms4G -jar server.jar nogui\npause");
-                    zip.file("start.sh", "#!/bin/bash\necho INICIANDO SERVIDOR MINEPACK...\njava -Xmx4G -Xms4G -jar server.jar nogui");
                 }
 
                 for (let i = 0; i < window.modpackCart.length; i++) {
                     const item = window.modpackCart[i];
                     if(btn) btn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descargando (${i+1}/${window.modpackCart.length})...`;
-
-                    if (isServerPack) {
-                        if (item.type === 'shader' || item.type === 'resourcepack') continue;
-                        try { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') continue; } catch(e) {}
-                    }
-
+                    if (isServerPack) { if (item.type === 'shader' || item.type === 'resourcepack') continue; try { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') continue; } catch(e) {} }
                     const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
                     const versData = await versRes.json();
-
                     if (versData && versData.length > 0 && versData[0].files.length > 0) {
                         const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
                         const fileRes = await fetch(fileObj.url);
                         const fileBlob = await fileRes.blob();
-                        
-                        if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob);
-                        else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob);
-                        else modsFolder.file(fileObj.filename, fileBlob);
+                        if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
                     }
                 }
             }
 
             if(btn) btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
             const zipContent = await zip.generateAsync({ type: "blob" });
-
             const url = window.URL.createObjectURL(zipContent);
             const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
             a.download = `${packName.replace(/\s+/g, '_')}${isServerPack ? '_SERVER' : ''}_${mcVersion}.${isMrPack ? 'mrpack' : 'zip'}`;
             document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-            
             modalSave.classList.add('hidden');
-            
-        } catch (error) {
-            alert("Error al descargar: " + error.message);
-        } finally {
+        } catch (error) { alert("Error al descargar: " + error.message); } finally {
             if(btnJustDownload) { btnJustDownload.innerHTML = 'Solo Descargar'; btnJustDownload.disabled = false; }
             if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
         }
@@ -674,7 +659,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
-
     sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
     let timeout = null; searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
     if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
