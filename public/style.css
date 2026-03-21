@@ -312,79 +312,82 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
    4. RESPONSIVIDAD (MÓVILES Y TABLETS)
    ========================================== */
 /* ==========================================
-   4. RESPONSIVIDAD MÓVIL (MÓVILES Y TABLETS)
+   4. RESPONSIVIDAD MÓVIL (CORREGIDA - ESTILO ORIGINAL)
    ========================================== */
 .hidden-desktop { display: none; }
 
 @media (max-width: 992px) {
-    /* 1. CORREGIR EL ZOOM Y DESBORDAMIENTO */
-    html, body { overflow-x: hidden; width: 100%; position: relative; }
     .hidden-desktop { display: flex; }
 
-    /* 2. MENÚ INFERIOR TIPO APP */
+    /* Estructura Base: Bloquear scroll general, permitir scroll interno */
+    body { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+    .app-container { flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* Menú Inferior Fijo tipo App */
     .sidebar { 
-        width: 100%; position: fixed; bottom: 0; left: 0; z-index: 900; 
+        width: 100%; position: absolute; bottom: 0; left: 0; z-index: 900; 
         background: var(--bg-panel); border-right: none; 
         border-top: 1px solid var(--border-color); 
-        flex-direction: row; padding: 0; 
+        flex-direction: row; padding: 0; height: 65px;
     }
     .logo { display: none; }
-    .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 5px; }
-    .nav-btn { flex-direction: column; gap: 4px; font-size: 0.7rem; padding: 8px; flex: 1; text-align: center; }
+    .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 0; gap: 0; }
+    .nav-btn { flex-direction: column; gap: 4px; font-size: 0.75rem; padding: 10px 0; flex: 1; text-align: center; justify-content: center; align-items: center; }
     .nav-btn i { font-size: 1.4rem; }
 
-    /* 3. LAYOUT PRINCIPAL */
-    .app-container { flex-direction: column; }
-    .content { padding-bottom: 70px; }
-    .main-layout { flex-direction: column; padding: 10px; overflow: visible; }
+    /* Layout Central (Donde ocurre el scroll) */
+    .content { height: 100vh; padding-bottom: 65px; display: flex; flex-direction: column; }
+    .main-layout { flex: 1; padding: 15px 10px 0 10px; overflow: hidden; flex-direction: column; }
+    .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 0; padding-bottom: 30px; }
+
+    /* Filtros Restaurados (Como tu 4ta Foto) */
+    .sticky-filters-container { position: sticky; top: 0; background: var(--bg-main); z-index: 50; padding-top: 10px; }
+    .search-panel { padding: 15px; margin-bottom: 15px; }
+    .search-panel > div { flex-direction: row !important; flex-wrap: wrap !important; gap: 10px; align-items: center !important; }
     
-    /* Buscador y Filtros */
-    .sticky-filters-container { position: sticky; top: 0; background: var(--bg-main); z-index: 50; padding: 10px 0; }
-    .search-panel { flex-direction: column; padding: 15px; }
-    .search-panel > div { flex-direction: column; gap: 10px; align-items: stretch !important; }
-    .input-wrapper, .form-select { width: 100% !important; max-width: 100% !important; }
-    .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; justify-content: flex-start; }
-    
-    /* 4. CARRITO OCULTO Y BOTÓN FLOTANTE */
+    /* Buscador completo arriba, selectores abajo repartidos */
+    .input-wrapper { flex: 1 1 100% !important; min-width: 100% !important; margin-bottom: 5px; }
+    .form-select { flex: 1; min-width: 30%; font-size: 0.85rem; padding: 8px 10px; }
+
+    /* Scroll Horizontal suave para botones y chips */
+    .category-chips { margin-bottom: 5px; padding-bottom: 5px; }
+    .filter-group { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; margin-bottom: 15px; padding-bottom: 5px; }
+    .filter-btn { white-space: nowrap; font-size: 0.85rem; padding: 6px 14px; }
+    .mods-grid { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); }
+
+    /* CARRITO Y BOTÓN FLOTANTE */
     .cart-panel {
         position: fixed; top: 0; right: -100%; 
-        width: 85vw; height: 100vh; z-index: 1000; 
+        width: 85vw; height: calc(100vh - 65px); z-index: 1000; 
         border-radius: 0; border-left: 1px solid var(--border-color);
         transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8); margin: 0;
     }
     .cart-panel.active-mobile { right: 0; }
     
     .mobile-cart-toggle {
         position: fixed; bottom: 85px; right: 20px; z-index: 1001;
         background: var(--accent); color: white; border: none;
-        width: 60px; height: 60px; border-radius: 50%;
+        width: 55px; height: 55px; border-radius: 50%;
         box-shadow: 0 5px 20px rgba(99,102,241,0.6);
         display: flex; justify-content: center; align-items: center; 
-        font-size: 26px; cursor: pointer; transition: 0.2s;
+        font-size: 24px; cursor: pointer; transition: 0.2s;
     }
     .mobile-cart-toggle .badge {
-        position: absolute; top: 0px; right: 0px;
-        background: var(--danger); font-size: 12px; font-weight: bold;
-        width: 22px; height: 22px; border-radius: 50%; 
+        position: absolute; top: -2px; right: -2px;
+        background: var(--danger); font-size: 11px; font-weight: bold;
+        width: 20px; height: 20px; border-radius: 50%; 
         display: flex; justify-content: center; align-items: center;
     }
 
-    /* 5. ARREGLAR MODAL DE LIBRERÍAS Y TARJETAS 3D */
-    .modal-content { 
-        width: 95%; max-height: 85vh; padding: 20px; 
-        overflow-y: auto; overflow-x: hidden;
-    }
-    .modal-header-mod { flex-direction: column; padding: 0 0 15px 0; position: static; background: transparent; }
-    .modal-body-scroll { padding: 0; }
+    /* Evitar problemas de zoom en los modales */
+    .modal-content { width: 95%; max-height: 85vh; padding: 20px; overflow-y: auto; border-radius: 12px; }
+    .modal-header-mod { flex-direction: column; padding: 0 0 15px 0; background: transparent; position: static; }
     
-    /* Anular efectos 3D y anchos fijos en móvil */
     .tilt-wrapper { width: 100%; }
     .tilt-card { 
-        width: 100% !important; max-width: 100%; 
-        flex-direction: column; text-align: center; 
-        transform: none !important; /* Desactiva el 3D en cel */
-        padding: 15px; box-sizing: border-box;
+        width: 100% !important; flex-direction: column; text-align: center; 
+        transform: none !important; padding: 15px; box-sizing: border-box;
     }
     .tilt-card img { transform: none !important; margin-bottom: 10px; }
     .tilt-card .dep-info { transform: none !important; text-align: center !important; }
