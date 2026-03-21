@@ -87,11 +87,14 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 /* Modals */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 1; transition: opacity 0.2s; }
 .modal-overlay.hidden { display: none !important; opacity: 0; pointer-events: none; }
-.modal-content { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; width: 90%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-.modal-lg { max-width: 800px; max-height: 90vh; overflow-y: auto; }
 
-/* Estilos específicos del interior del modal del mod */
-.modal-header-mod { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+/* ---- ARREGLO DEL MODAL STICKY ---- */
+.modal-content { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 90%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); padding: 32px; }
+.modal-lg { max-width: 800px; padding: 0; display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
+
+.modal-header-mod { position: sticky; top: 0; z-index: 50; background: var(--bg-panel); padding: 24px 32px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start; }
+.modal-body-scroll { padding: 32px; overflow-y: auto; flex: 1; }
+
 .mod-header-info { display: flex; gap: 20px; align-items: center; }
 .mod-detail-icon { width: 80px; height: 80px; border-radius: 16px; background: var(--bg-main); padding: 8px; }
 .mod-stats-bar { display: flex; gap: 16px; margin-bottom: 24px; padding: 12px 16px; background: var(--bg-main); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.9rem; }
