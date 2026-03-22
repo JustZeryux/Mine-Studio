@@ -852,66 +852,75 @@ async function runAutoScanJEI(modId, mcVers, loader) {
             if (mobsGrid) mobsGrid.innerHTML = mobCount === 0 ? '' : mobsHTML;
 
             // 5. Motor Visual Dinámico 
+            // 5. Motor Visual Dinámico (Soporte Universal para Create, Mekanism, y Máquinas Raras)
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
                 const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
                 recipeViewer.style.display = 'block';
                 
                 if (!recipe) {
-                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot, generación de mundo o código cerrado.</div>`;
+                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot de un monstruo, generación de mundo o estar oculto en código cerrado.</div>`;
                     return;
                 }
 
                 const rData = recipe.data;
                 const mcVersionFallback = document.getElementById('mod-version-select').value || '1.20.1';
 
-                const renderSlot = (itemName, isResult = false) => {
+                // Función maestra para dibujar el cuadrado del ítem
+                const renderSlot = (itemName, isResult = false, count = 1) => {
                     if (!itemName || itemName === '?') return `<div class="crafting-slot"></div>`;
                     let cleanName = itemName.split(':').pop().split('/').pop();
                     let imgSrc = modTexturesCache[cleanName];
                     let slotClass = isResult ? 'crafting-result-slot' : 'crafting-slot';
                     let imgSize = isResult ? 'width:40px; height:40px;' : 'width:28px; height:28px;';
+                    let countBadge = count > 1 ? `<span class="crafting-count" style="position:absolute; bottom:2px; right:4px; font-weight:bold; font-size:14px; color:white; text-shadow:2px 2px 0 #000;">${count}</span>` : '';
                     
                     if (imgSrc) {
-                        return `<div class="${slotClass}" title="${cleanName.replace(/_/g, ' ')}"><img src="data:image/png;base64,${imgSrc}" style="${imgSize}"></div>`;
+                        return `<div class="${slotClass}" title="${cleanName.replace(/_/g, ' ')}"><img src="data:image/png;base64,${imgSrc}" style="${imgSize}">${countBadge}</div>`;
                     } else {
                         let vanillaUrl = `https://assets.mcasset.cloud/${mcVersionFallback}/assets/minecraft/textures/item/${cleanName}.png`;
                         let vanillaBlockUrl = `https://assets.mcasset.cloud/${mcVersionFallback}/assets/minecraft/textures/block/${cleanName}.png`;
                         return `<div class="${slotClass}" title="${cleanName.replace(/_/g, ' ')}">
                             <img src="${vanillaUrl}" style="${imgSize}" onerror="this.onerror=null; this.src='${vanillaBlockUrl}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';}">
                             <span class="crafting-slot-text" style="display:none; font-size: ${isResult? '10px' : '8px'};">${cleanName.substring(0,8)}</span>
+                            ${countBadge}
                         </div>`;
                     }
                 };
 
-                let resultHTML = '';
-                if (rData.result) {
-                    if (typeof rData.result === 'string') resultHTML = renderSlot(rData.result, true);
-                    else if (Array.isArray(rData.result)) { rData.result.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); }); }
-                    else {
-                        let rName = rData.result.item || rData.result.id || rawId;
-                        let countStr = rData.result.count > 1 ? `<span class="crafting-count">${rData.result.count}</span>` : '';
-                        resultHTML = `<div style="position:relative;">${renderSlot(rName, true)}${countStr}</div>`;
-                    }
-                } else if (rData.results && Array.isArray(rData.results)) { rData.results.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); }); } 
-                else { resultHTML = renderSlot(rawId, true); }
-
-                const typeStr = rData.type || "unknown";
+                let typeStr = rData.type || "Máquina del Mod";
                 let html = `<div class="recipe-visualizer" style="flex-direction: column; align-items: center;">`;
-                html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> Método: ${typeStr.split(':').pop()}</div>`;
+                html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> Máquina: ${typeStr.split(':').pop()}</div>`;
                 html += `<div style="display: flex; align-items: center; justify-content: center; gap: 20px;">`;
 
+                // ATrapa-Todo: Buscamos ingredientes en cualquier formato que use el mod
+                let inputs = [];
+                if (rData.ingredients) inputs = Array.isArray(rData.ingredients) ? rData.ingredients : [rData.ingredients];
+                else if (rData.ingredient) inputs = Array.isArray(rData.ingredient) ? rData.ingredient : [rData.ingredient];
+                else if (rData.input) inputs = Array.isArray(rData.input) ? rData.input : [rData.input];
+                else if (rData.inputs) inputs = Array.isArray(rData.inputs) ? rData.inputs : [rData.inputs];
+
+                // ATrapa-Todo: Buscamos resultados (Outputs)
+                let outputs = [];
+                if (rData.results) outputs = Array.isArray(rData.results) ? rData.results : [rData.results];
+                else if (rData.result) outputs = Array.isArray(rData.result) ? rData.result : [rData.result];
+                else if (rData.output) outputs = Array.isArray(rData.output) ? rData.output : [rData.output];
+                else if (rData.outputs) outputs = Array.isArray(rData.outputs) ? rData.outputs : [rData.outputs];
+                else outputs = [{ item: rawId }];
+
+                // LÓGICA 1: HORNOS Y FOGATAS
                 if (typeStr.includes("smelting") || typeStr.includes("blasting") || typeStr.includes("smoking") || typeStr.includes("campfire")) {
-                    let inputItem = '?';
-                    if (rData.ingredient) {
-                        if (Array.isArray(rData.ingredient)) inputItem = rData.ingredient[0].item || rData.ingredient[0].tag || '?';
-                        else inputItem = rData.ingredient.item || rData.ingredient.tag || '?';
-                    }
+                    let inputItem = inputs.length > 0 ? (inputs[0].item || inputs[0].tag || '?') : '?';
                     let time = rData.cookingtime ? `(${rData.cookingtime / 20}s)` : '';
                     html += renderSlot(inputItem);
                     html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted);"><i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i><span style="font-size:10px;">${time}</span><i class="ph-bold ph-arrow-right" style="font-size:24px; margin-top:5px;"></i></div>`;
-                    html += resultHTML;
-                } else if (typeStr.includes("shaped") && rData.pattern) {
+                    
+                    let outHTML = '';
+                    outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
+                    html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
+                } 
+                // LÓGICA 2: MESAS DE CRAFTEO (Con forma 3x3, 5x5, 9x9)
+                else if (typeStr.includes("shaped") && rData.pattern) {
                     const cols = rData.pattern[0].length;
                     html += `<div style="display:grid; grid-template-columns: repeat(${cols}, 40px); gap: 2px; background: #c6c6c6; padding: 6px; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; border-radius: 4px;">`;
                     rData.pattern.forEach(line => {
@@ -923,16 +932,28 @@ async function runAutoScanJEI(modId, mcVers, loader) {
                             } else { html += renderSlot('?'); }
                         }
                     });
-                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>${resultHTML}`;
-                } else if (rData.ingredients) {
+                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
+                    
+                    let outHTML = '';
+                    outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
+                    html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
+                } 
+                // LÓGICA 3: MÁQUINAS DE MODS (Milling, Pressing, Shapeless, Trituradoras)
+                else if (inputs.length > 0) {
                     html += `<div style="display:flex; flex-wrap:wrap; gap:4px; max-width: 150px; justify-content: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">`;
-                    rData.ingredients.forEach(ing => {
+                    inputs.forEach(ing => {
                         if(!ing) return; if(Array.isArray(ing) && ing.length > 0) ing = ing[0]; 
                         let itemRef = ing.item || ing.tag || '?'; html += renderSlot(itemRef);
                     });
-                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>${resultHTML}`;
-                } else {
-                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">Máquina propietaria del mod. <br>Aquí la lógica interna:</div></div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
+                    html += `</div><div style="display:flex; flex-direction:column; align-items:center;"><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i></div>`;
+                    
+                    let outHTML = '';
+                    outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
+                    html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
+                } 
+                // LÓGICA 4: EXTREMADAMENTE RARO (Sin inputs detectables)
+                else {
+                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">Máquina encriptada del mod. <br>Aquí la lógica interna:</div></div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
                 }
 
                 html += `</div></div>`;
