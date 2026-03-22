@@ -8,17 +8,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sharedPack = urlParams.get('pack');
     window.modpackCart = [];
 
-    if (sharedPack) {
+if (sharedPack) {
         try {
-            window.modpackCart = JSON.parse(atob(decodeURIComponent(sharedPack)));
+            // Compatibilidad con tu formato anterior (por si alguien ya tiene un link viejo)
+            if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
+                window.modpackCart = JSON.parse(atob(decodeURIComponent(sharedPack)));
+            } else {
+                // Leer el nuevo formato ultracompacto
+                const items = sharedPack.split('-');
+                window.modpackCart = items.map(item => {
+                    const parts = item.split('_');
+                    return { id: parts[0], title: 'Cargando título...', type: parts[1] || 'mod' };
+                });
+                
+                // Pedirle a Modrinth los títulos reales para que no diga "Cargando título..."
+                const ids = window.modpackCart.map(m => `"${m.id}"`).join(',');
+                if(ids) {
+                    fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
+                        .then(r => r.json())
+                        .then(data => {
+                            data.forEach(proj => {
+                                const cartItem = window.modpackCart.find(i => i.id === proj.id);
+                                if(cartItem) cartItem.title = proj.title;
+                            });
+                            window.updateCartUI();
+                        });
+                }
+            }
             alert("✨ ¡Modpack compartido cargado con éxito en tu ensamblador!");
             window.history.replaceState({}, document.title, window.location.pathname);
-        } catch(e) {}
+        } catch(e) {
+            console.error("Error cargando pack compartido", e);
+        }
     }
 
     // ==========================================
     // 0. SISTEMA DE SESIÓN 100% FRONTEND (MÓDULOS)
     // ==========================================
+
+    // ==========================================
+    // IMPORTADOR MÁGICO DE .JAR (CurseForge/Local)
+    // ==========================================
+    const btnImportJars = document.getElementById('btn-import-jars');
+    const inputImportJars = document.getElementById('import-jars-input');
+
+    if(btnImportJars && inputImportJars) {
+        btnImportJars.addEventListener('click', () => inputImportJars.click());
+
+        inputImportJars.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if(files.length === 0) return;
+
+            btnImportJars.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Analizando...';
+            btnImportJars.disabled = true;
+
+            const hashes = [];
+            
+            // 1. Calcular el SHA-1 de cada archivo .jar
+            for(let i=0; i<files.length; i++) {
+                const buffer = await files[i].arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-1', buffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                hashes.push(hashHex);
+            }
+
+            try {
+                // 2. Preguntarle a Modrinth de quién son estas huellas dactilares
+                const res = await fetch('https://api.modrinth.com/v2/version_files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hashes: hashes, algorithm: "sha1" })
+                });
+                const data = await res.json();
+                
+                let added = 0;
+                let notFound = 0;
+
+                // 3. Añadir al carrito
+                for (const hash of hashes) {
+                    if (data[hash]) {
+                        const projectId = data[hash].project_id;
+                        if (!window.modpackCart.some(item => item.id === projectId)) {
+                            window.modpackCart.push({ id: projectId, title: "Mod Importado", type: "mod" });
+                            added++;
+                        }
+                    } else {
+                        notFound++;
+                    }
+                }
+
+                // 4. Actualizar los títulos feos ("Mod Importado") por los nombres reales
+                if(added > 0) {
+                    const ids = window.modpackCart.filter(m => m.title === "Mod Importado").map(m => `"${m.id}"`).join(',');
+                    if(ids) {
+                        const pRes = await fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`);
+                        const pData = await pRes.json();
+                        pData.forEach(proj => {
+                            const cartItem = window.modpackCart.find(i => i.id === proj.id && i.title === "Mod Importado");
+                            if(cartItem) cartItem.title = proj.title;
+                        });
+                    }
+                }
+
+                window.updateCartUI();
+                alert(`📦 Importación Local Completada.\n\n✅ Encontrados en la base de datos: ${added}\n❌ Exclusivos de CurseForge / No reconocidos: ${notFound}\n\n¡Ahora puedes guardar el perfil o generar tu link para compartir!`);
+                
+            } catch(err) {
+                console.error(err);
+                alert("Hubo un error al conectar con la base de datos para verificar los archivos.");
+            }
+
+            btnImportJars.innerHTML = '<i class="ph-bold ph-upload-simple"></i> Importar .JAR';
+            btnImportJars.disabled = false;
+            inputImportJars.value = ''; // Resetear el input
+        });
+    }
     const isLoggedIn = localStorage.getItem('usuario_token'); 
     const profileSection = document.querySelector('.profile-section');
     const authModal = document.getElementById('auth-modal');
@@ -569,13 +674,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         });
 
-        document.querySelectorAll('.btn-share-profile').forEach(btn => {
+document.querySelectorAll('.btn-share-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const profile = profiles[e.currentTarget.dataset.index];
-                const dataStr = encodeURIComponent(btoa(JSON.stringify(profile.modsData)));
-                const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${dataStr}`;
+                // NUEVO FORMATO COMPACTO (ejemplo: abcd123-efgh456_shader-ijkl789)
+                const compactData = profile.modsData.map(m => `${m.id}${m.type !== 'mod' ? '_'+m.type : ''}`).join('-');
+                const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${compactData}`;
                 navigator.clipboard.writeText(shareUrl);
-                alert("🔗 ¡Enlace de tu Modpack copiado al portapapeles! Envíalo a tus amigos para que lo descarguen.");
+                alert("🔗 ¡Enlace ultraligero copiado! Ya no se romperá por el límite de caracteres.");
             });
         });
 
