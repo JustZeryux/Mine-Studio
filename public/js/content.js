@@ -804,7 +804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 2. Variables para almacenar sin límites
             const uniqueItemNames = new Set();
             const uniqueMobNames = new Set();
-            const modTexturesCache = {}; // Cache para texturas del mod
+            const modTexturesCache = {}; 
             
             let itemsHTML = '';
             let mobsHTML = '';
@@ -816,7 +816,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (path.endsWith('.png')) {
                     let rawName = path.split('/').pop().replace('.png', '');
                     
-                    // ÍTEMS Y BLOQUES
                     if ((path.includes('textures/item/') || path.includes('textures/block/')) && !uniqueItemNames.has(rawName)) {
                         uniqueItemNames.add(rawName);
                         itemCount++;
@@ -827,7 +826,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         itemsHTML += `<div class="jei-item-slot" title="${prettyName}" onclick="openVisualRecipe('${rawName}', '${prettyName}')"><img src="data:image/png;base64,${base64}"></div>`;
                     }
 
-                    // ENTIDADES Y MOBS
                     if (path.includes('textures/entity/') && !uniqueMobNames.has(rawName)) {
                         uniqueMobNames.add(rawName);
                         mobCount++;
@@ -840,7 +838,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-           // Ocultar o Mostrar Paneles (SEGURIDAD ANTI-CRASHEOS)
+            // Ocultar o Mostrar Paneles (SEGURIDAD ANTI-CRASHEOS)
             const itemsContainer = document.getElementById('jei-items-container');
             const mobsContainer = document.getElementById('jei-mobs-container');
 
@@ -858,7 +856,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mobsGrid.innerHTML = mobCount === 0 ? 'Vacío' : mobsHTML;
             }
 
-            // 5. Motor Visual Dinámico (Hornos, Mesas 9x9, Máquinas, Vanilla Textures)
+            // 5. Motor Visual Dinámico 
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
                 const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
@@ -966,4 +964,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(itemsGrid) itemsGrid.innerHTML = `<span style="color: var(--danger); font-size: 0.8rem; grid-column:1/-1;">Error interno.</span>`;
         }
     }
+
 });
