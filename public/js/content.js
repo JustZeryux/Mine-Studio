@@ -727,7 +727,15 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
         if (file) { const reader = new FileReader(); reader.onload = function(evt) { uploadedIconBase64 = evt.target.result; }; reader.readAsDataURL(file); }
     });
 
-    async function requestBuild(isSaving = false) {
+// ==========================================
+    // EXPORTACIÓN TURBO (Descargas en Paralelo + 3 Modos)
+    // ==========================================
+    const btnJustSave = document.getElementById('btn-just-save'); // El nuevo botón
+
+    async function requestBuild(action = 'download_only') {
+        const isSaving = (action === 'save_only' || action === 'save_download');
+        const isDownloading = (action === 'download_only' || action === 'save_download');
+
         if (isSaving && !isLoggedIn) {
             alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles.');
             if(authModal) authModal.classList.remove('hidden');
@@ -737,89 +745,141 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
 
         try {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
-            const btn = isSaving ? btnSaveAndDownload : btnJustDownload;
             const mcVersion = versionSelect.value;
             const loader = loaderSelect.value;
-            
             const isServerPack = document.getElementById('export-server-pack')?.checked;
             const isMrPack = document.getElementById('export-mrpack')?.checked;
-            
-            if(btn) { btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; btn.disabled = true; }
 
+            // Determinar qué botón apretó para ponerle el ícono de carga
+            let activeBtn = btnJustDownload;
+            if(action === 'save_only') activeBtn = btnJustSave;
+            if(action === 'save_download') activeBtn = btnSaveAndDownload;
+
+            if(activeBtn) { activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; activeBtn.disabled = true; }
+
+            // 1. LÓGICA DE GUARDAR PERFIL
             if (isSaving) {
                 const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
                 profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: window.modpackCart, iconBase64: uploadedIconBase64 });
-                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); loadMyProfiles();
-            }
+                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
+                loadMyProfiles();
 
-            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip. Revisa tu index.html.");
-            const zip = new JSZip();
-
-            if (uploadedIconBase64) {
-                const base64Data = uploadedIconBase64.split(',')[1];
-                zip.file("icon.png", base64Data, {base64: true});
-            }
-
-            if(Object.keys(window.modConfigs).length > 0) {
-                const confFolder = zip.folder("config");
-                for (const modId in window.modConfigs) {
-                    confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content);
+                if(action === 'save_only') {
+                    alert('✅ Perfil guardado correctamente en "Mis Modpacks".');
+                    modalSave.classList.add('hidden');
+                    if(activeBtn) { activeBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Solo Guardar Perfil'; activeBtn.disabled = false; }
+                    return; // Terminamos aquí porque no quiere descargar
                 }
             }
 
-            if (isMrPack) {
-                if(btn) btn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando Índices MRPack...`;
-                const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
-                for (let i = 0; i < window.modpackCart.length; i++) {
-                    const item = window.modpackCart[i];
-                    const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                    const versData = await versRes.json();
-                    if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                        const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
-                        let envData = { client: "required", server: "required" };
-                        if (isServerPack) { try { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') continue; } catch(e){} }
-                        let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
-                        mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
+            // 2. LÓGICA DE DESCARGA RÁPIDA (PARALELA)
+            if (isDownloading) {
+                if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
+                const zip = new JSZip();
+
+                if (uploadedIconBase64) {
+                    const base64Data = uploadedIconBase64.split(',')[1];
+                    zip.file("icon.png", base64Data, {base64: true});
+                }
+
+                if(Object.keys(window.modConfigs).length > 0) {
+                    const confFolder = zip.folder("config");
+                    for (const modId in window.modConfigs) {
+                        confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content);
                     }
                 }
-                zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
-            } else {
-                const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
-                const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
-                let propsContent = `# Generado por MinePack Studio\ngamemode=${wGamemode}\n`;
-                const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
-                zip.file("server.properties", propsContent);
 
-                if (isServerPack) {
-                    zip.file("eula.txt", "eula=true\n");
-                    zip.file("start.bat", "@echo off\necho INICIANDO SERVIDOR MINEPACK...\njava -Xmx4G -Xms4G -jar server.jar nogui\npause");
-                }
+                let procesados = 0;
+                const totalMods = window.modpackCart.length;
 
-                for (let i = 0; i < window.modpackCart.length; i++) {
-                    const item = window.modpackCart[i];
-                    if(btn) btn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descargando (${i+1}/${window.modpackCart.length})...`;
-                    if (isServerPack) { if (item.type === 'shader' || item.type === 'resourcepack') continue; try { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') continue; } catch(e) {} }
-                    const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                    const versData = await versRes.json();
-                    if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                        const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
-                        const fileRes = await fetch(fileObj.url);
-                        const fileBlob = await fileRes.blob();
-                        if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
+                if (isMrPack) {
+                    // MRPACK: Índice JSON
+                    if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando Índices MRPack...`;
+                    const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
+                    
+                    // Paralelizamos las consultas a la API (mucho más rápido)
+                    await Promise.all(window.modpackCart.map(async (item) => {
+                        try {
+                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                            const versData = await versRes.json();
+                            if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                                const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
+                                let envData = { client: "required", server: "required" };
+                                if (isServerPack) { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') return; }
+                                let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
+                                mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
+                            }
+                        } catch(e) {}
+                        finally {
+                            procesados++;
+                            if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Indexando (${procesados}/${totalMods})...`;
+                        }
+                    }));
+                    zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
+
+                } else {
+                    // ZIP CLÁSICO (Con lotes en paralelo)
+                    const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
+                    const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
+                    let propsContent = `# Generado por MinePack Studio\ngamemode=${wGamemode}\n`;
+                    const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
+                    zip.file("server.properties", propsContent);
+
+                    if (isServerPack) {
+                        zip.file("eula.txt", "eula=true\n");
+                        zip.file("start.bat", "@echo off\necho INICIANDO SERVIDOR...\njava -Xmx4G -Xms4G -jar server.jar nogui\npause");
+                    }
+
+                    // Acelerador: Procesamos de 10 en 10 para no colapsar la memoria, pero muchísimo más rápido que 1 por 1
+                    const batchSize = 10;
+                    for (let i = 0; i < totalMods; i += batchSize) {
+                        const batch = window.modpackCart.slice(i, i + batchSize);
+                        await Promise.all(batch.map(async (item) => {
+                            try {
+                                if (isServerPack && (item.type === 'shader' || item.type === 'resourcepack')) return; 
+                                if (isServerPack) { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') return; }
+                                
+                                const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                                const versData = await versRes.json();
+                                if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                                    const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                                    const fileRes = await fetch(fileObj.url);
+                                    const fileBlob = await fileRes.blob();
+                                    if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
+                                }
+                            } catch(err) {} 
+                            finally {
+                                procesados++;
+                                if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descarga Turbo (${procesados}/${totalMods})...`;
+                            }
+                        }));
                     }
                 }
+
+                // Generación ZIP (con compression STORE es casi instantáneo)
+                if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Finalizando ZIP...';
+                const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
+                const url = window.URL.createObjectURL(zipContent);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `${packName.replace(/\s+/g, '_')}${isServerPack ? '_SERVER' : ''}_${mcVersion}.${isMrPack ? 'mrpack' : 'zip'}`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                modalSave.classList.add('hidden');
             }
 
-            if(btn) btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
-            const zipContent = await zip.generateAsync({ type: "blob" });
-            const url = window.URL.createObjectURL(zipContent);
-            const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-            a.download = `${packName.replace(/\s+/g, '_')}${isServerPack ? '_SERVER' : ''}_${mcVersion}.${isMrPack ? 'mrpack' : 'zip'}`;
-            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-            modalSave.classList.add('hidden');
-        } catch (error) { alert("Error al descargar: " + error.message); } finally {
-            if(btnJustDownload) { btnJustDownload.innerHTML = 'Solo Descargar'; btnJustDownload.disabled = false; }
-            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = 'Guardar y Exportar'; btnSaveAndDownload.disabled = false; }
+        } catch (error) { 
+            alert("Error al procesar: " + error.message); 
+        } finally {
+            // Restaurar botones a su estado original
+            if(btnJustSave) { btnJustSave.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Solo Guardar Perfil'; btnJustSave.disabled = false; }
+            if(btnJustDownload) { btnJustDownload.innerHTML = '<i class="ph-bold ph-file-zip"></i> Solo Descargar'; btnJustDownload.disabled = false; }
+            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = '<i class="ph-bold ph-download-simple"></i> Guardar y Descargar'; btnSaveAndDownload.disabled = false; }
+        }
+    }
+
+    // Limpiamos los eventos anteriores y asignamos los nuevos
+    if(btnJustSave) btnJustSave.addEventListener('click', () => requestBuild('save_only'));
+    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild('download_only'));
+    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild('save_download'));
         }
     }
 
