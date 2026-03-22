@@ -768,14 +768,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-close-recipe')?.addEventListener('click', () => {
         if(recipeViewer) recipeViewer.style.display = 'none';
     });
-
-    async function runAutoScanJEI(modId, mcVers, loader) {
+async function runAutoScanJEI(modId, mcVers, loader) {
         const itemsGrid = document.getElementById('jei-items-grid');
         const mobsGrid = document.getElementById('jei-mobs-grid');
+        
+        // Seleccionamos las columnas grises enteras
+        const leftSidebar = document.querySelector('.jei-sidebar-left');
+        const rightSidebar = document.querySelector('.jei-sidebar-right');
+        
+        // Mostramos todo temporalmente mientras escanea
+        if(leftSidebar) leftSidebar.style.display = 'block';
+        if(rightSidebar) rightSidebar.style.display = 'flex';
+
         if(!itemsGrid || !mobsGrid) return;
         
-        itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo el 100% de los archivos... esto puede tomar unos segundos.</div>';
-        mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
+        itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo el 100% de los archivos...</div>';
+        mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
         if(recipeViewer) recipeViewer.style.display = 'none';
 
         try {
@@ -801,7 +809,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch(e) {}
             }
 
-            // 2. Variables para almacenar sin límites
+            // 2. Variables
             const uniqueItemNames = new Set();
             const uniqueMobNames = new Set();
             const modTexturesCache = {}; 
@@ -811,7 +819,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let itemCount = 0; 
             let mobCount = 0;
 
-            // 3. Procesar TODOS los archivos .png 
+            // 3. Procesar Archivos
             for (let path of allFiles) {
                 if (path.endsWith('.png')) {
                     let rawName = path.split('/').pop().replace('.png', '');
@@ -822,7 +830,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const base64 = await unzipped.files[path].async('base64');
                         modTexturesCache[rawName] = base64; 
                         const prettyName = rawName.replace(/_/g, ' ');
-                        
                         itemsHTML += `<div class="jei-item-slot" title="${prettyName}" onclick="openVisualRecipe('${rawName}', '${prettyName}')"><img src="data:image/png;base64,${base64}"></div>`;
                     }
 
@@ -832,29 +839,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const base64 = await unzipped.files[path].async('base64');
                         const prettyName = rawName.replace(/_/g, ' ');
                         const imgSrc = `data:image/png;base64,${base64}`;
-                        
                         mobsHTML += `<div class="jei-item-slot" title="Ver Modelo 3D: ${prettyName}" style="border-color: #d97706 #fcd34d #fcd34d #d97706;" onclick="triggerMob3D('${prettyName}', '${imgSrc}')"><img src="${imgSrc}"></div>`;
                     }
                 }
             }
 
-            // Ocultar o Mostrar Paneles (SEGURIDAD ANTI-CRASHEOS)
-            const itemsContainer = document.getElementById('jei-items-container');
-            const mobsContainer = document.getElementById('jei-mobs-container');
+            // 4. OCULTAR COLUMNAS GRISES COMPLETAS SI NO HAY NADA (Anti-Bordes)
+            if (leftSidebar) leftSidebar.style.display = mobCount === 0 ? 'none' : 'block';
+            if (rightSidebar) rightSidebar.style.display = itemCount === 0 ? 'none' : 'flex';
 
-            if (itemsContainer) {
-                if(itemCount === 0) itemsContainer.style.display = 'none';
-                else { itemsContainer.style.display = 'block'; itemsGrid.innerHTML = itemsHTML; }
-            } else if (itemsGrid) {
-                itemsGrid.innerHTML = itemCount === 0 ? 'Vacío' : itemsHTML;
-            }
-
-            if (mobsContainer) {
-                if(mobCount === 0) mobsContainer.style.display = 'none';
-                else { mobsContainer.style.display = 'block'; mobsGrid.innerHTML = mobsHTML; }
-            } else if (mobsGrid) {
-                mobsGrid.innerHTML = mobCount === 0 ? 'Vacío' : mobsHTML;
-            }
+            if (itemsGrid) itemsGrid.innerHTML = itemCount === 0 ? '' : itemsHTML;
+            if (mobsGrid) mobsGrid.innerHTML = mobCount === 0 ? '' : mobsHTML;
 
             // 5. Motor Visual Dinámico 
             window.openVisualRecipe = (rawId, prettyName) => {
@@ -961,7 +956,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (error) {
             console.error("Error JEI:", error);
-            if(itemsGrid) itemsGrid.innerHTML = `<span style="color: var(--danger); font-size: 0.8rem; grid-column:1/-1;">Error interno.</span>`;
+            if (leftSidebar) leftSidebar.style.display = 'none';
+            if (rightSidebar) rightSidebar.style.display = 'none';
         }
     }
 
