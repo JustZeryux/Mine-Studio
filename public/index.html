@@ -86,10 +86,15 @@
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+   <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
                                 <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
                                 <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
                                 <button id="btn-randomizer" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #8b5cf6; border:none;"><i class="ph-bold ph-magic-wand"></i> Auto-Modpacker</button>
+                                
+                                <button id="btn-import-jars" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #3b82f6; border:none;" title="Selecciona los .jar de tu carpeta mods">
+                                    <i class="ph-bold ph-upload-simple"></i> Importar .JAR
+                                </button>
+                                <input type="file" id="import-jars-input" multiple accept=".jar" style="display: none;">
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
