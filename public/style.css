@@ -442,3 +442,45 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     position: absolute; bottom: 2px; right: 4px; font-weight: bold;
     font-size: 16px; color: white; text-shadow: 2px 2px 0 #373737;
 }
+
+/* ---- REDISEÑO MODAL ESTILO JEI 3 COLUMNAS ---- */
+.modal-jei {
+    max-width: 98vw !important; width: 1600px; height: 95vh;
+    padding: 0 !important; display: flex !important; flex-direction: row;
+    background: var(--bg-main) !important; overflow: hidden; border-radius: 16px;
+}
+.jei-sidebar-left { width: 300px; background: var(--bg-panel); border-right: 1px solid var(--border-color); overflow-y: auto; flex-shrink: 0; }
+.jei-center-content { flex: 1; overflow-y: auto; background: var(--bg-main); position: relative; }
+.jei-sidebar-right { width: 360px; background: var(--bg-panel); border-left: 1px solid var(--border-color); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+.jei-header { padding: 15px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--accent); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(5px); }
+
+/* Cuadrícula de inventario */
+.jei-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 4px; }
+.jei-item-slot {
+    width: 42px; height: 42px; background: #8b8b8b; border: 2px solid;
+    border-color: #373737 #ffffff #ffffff #373737; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; transition: transform 0.1s; position: relative;
+}
+.jei-item-slot:hover { background: #a0a0a0; transform: scale(1.15); box-shadow: 0 0 10px var(--accent); z-index: 10; }
+.jei-item-slot img { width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain; }
+
+/* ---- MOTOR 3D HUMANOIDE DE MINECRAFT (BIPED) ---- */
+.mc-biped-container { width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; perspective: 800px; }
+.mc-biped { position: relative; transform-style: preserve-3d; animation: spinBiped 8s infinite linear; }
+.mc-part { position: absolute; transform-style: preserve-3d; background-size: cover; image-rendering: pixelated; }
+
+/* Dimensiones base del cuerpo de Minecraft */
+.mc-part.head { width: 32px; height: 32px; transform: translate(-16px, -48px) translateZ(16px); }
+.mc-part.body { width: 32px; height: 48px; transform: translate(-16px, -16px); }
+.mc-part.arm-left { width: 16px; height: 48px; transform: translate(-32px, -16px); }
+.mc-part.arm-right { width: 16px; height: 48px; transform: translate(16px, -16px); }
+.mc-part.leg-left { width: 16px; height: 48px; transform: translate(-16px, 32px); }
+.mc-part.leg-right { width: 16px; height: 48px; transform: translate(0px, 32px); }
+
+/* Para dar volumen visual, añadimos bordes y sombras para simular las caras 3D */
+.mc-part { border: 1px solid rgba(0,0,0,0.5); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+
+@keyframes spinBiped {
+    0% { transform: rotateY(0deg) rotateX(-10deg) scale(2); }
+    100% { transform: rotateY(360deg) rotateX(-10deg) scale(2); }
+}
