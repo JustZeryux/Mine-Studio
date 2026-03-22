@@ -189,65 +189,68 @@
         </main>
     </div>
 
-   <div class="modal-overlay hidden" id="mod-details-modal">
+  <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;">
         <div class="modal-content modal-jei"> 
             
             <div class="jei-sidebar-left custom-scrollbar">
-                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="position:absolute; top:10px; left:10px;"><i class="ph-bold ph-arrow-left"></i></button>
+                <div class="jei-header" style="color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs</div>
+                <div id="jei-mobs-grid" class="jei-items-grid" style="padding: 15px;">
+                    <div class="muted-text text-sm"><i class="ph ph-spinner ph-spin"></i> Extrayendo mobs...</div>
+                </div>
+            </div>
+
+            <div class="jei-center-content custom-scrollbar" style="position: relative;">
+                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="position:absolute; top:20px; left:20px; background: rgba(239,68,68,0.1); padding: 5px; border-radius: 8px;"><i class="ph-bold ph-x" style="font-size: 20px;"></i></button>
                 
-                <div style="text-align: center; margin-top: 30px;">
-                    <img id="detail-icon" src="" style="width: 100px; height: 100px; border-radius: 16px; background: var(--bg-main); padding: 5px; margin-bottom: 10px;">
+                <div style="text-align: center; margin-top: 20px;">
+                    <img id="detail-icon" src="" style="width: 80px; height: 80px; border-radius: 16px; background: var(--bg-main); padding: 5px; margin-bottom: 10px;">
                     <h2 id="detail-title" class="title" style="font-size: 1.5rem; margin-bottom: 5px;">Cargando...</h2>
                     <p id="detail-author" class="muted-text text-sm mb-10"></p>
                     <span id="detail-downloads-badge" class="downloads-badge mb-20"><i class="ph-bold ph-download-simple"></i> 0</span>
                 </div>
 
-                <div id="detail-dependencies" style="margin-top: 20px;"></div>
+                <div id="detail-dependencies" style="margin-top: 20px; padding: 0 20px;"></div>
                 
-                <div style="margin-top: 20px;">
-                    <button id="btn-scan-mod" class="btn btn-secondary w-100" style="border: 1px solid var(--accent); color: var(--accent);"><i class="ph-bold ph-scan"></i> Escanear Ítems Internos</button>
-                    <div id="mod-scan-stats" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px;"></div>
-                </div>
-            </div>
-
-            <div class="jei-center-content custom-scrollbar">
-                <div class="mod-description-body" id="detail-description">
+                <div class="mod-description-body" id="detail-description" style="padding: 20px;">
                     <div style="text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i></div>
                 </div>
-                <h3 class="subtitle mt-20 mb-10"><i class="ph-bold ph-image"></i> Galería Oficial</h3>
-                <div id="detail-gallery" class="gallery-grid"></div>
             </div>
 
-<div class="jei-sidebar-right custom-scrollbar">
-                <div class="jei-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span><i class="ph-bold ph-magnifying-glass-plus"></i> Panel JEI</span>
-                    <span id="jei-status" class="text-sm muted-text">Esperando escaneo...</span>
-                </div>
+            <div class="jei-sidebar-right custom-scrollbar">
+                <div class="jei-header"><i class="ph-bold ph-sword"></i> Ítems y Crafteos</div>
                 
-                <div id="jei-empty-state" style="text-align: center; padding: 40px; color: var(--muted);">
-                    <i class="ph-duotone ph-package" style="font-size: 40px; margin-bottom: 10px;"></i>
-                    <p class="text-sm">Presiona "Escanear" en el panel izquierdo.</p>
+                <div id="jei-recipe-viewer" style="display: none; background: var(--bg-main); border-bottom: 1px solid var(--border-color); padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin:0; font-size: 0.9rem; color: var(--accent);"><i class="ph-bold ph-hammer"></i> Receta de Crafteo</h4>
+                        <button class="btn-icon-danger" id="btn-close-recipe" style="width: 24px; height: 24px;"><i class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div id="jei-recipe-content" style="font-family: monospace; font-size: 0.75rem; color: #d4d4d8; background: var(--bg-panel); padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; border: 1px solid var(--border-color);"></div>
                 </div>
 
-                <div id="mod-scan-gallery" style="display: none; flex-direction: column; gap: 20px; padding: 15px;">
-                    <div id="jei-recipe-viewer" style="display: none; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h4 style="margin:0; font-size: 0.9rem; color: var(--text-main);"><i class="ph-bold ph-hammer"></i> Crafteo / Info</h4>
-                            <button class="btn-icon-danger" id="btn-close-recipe" style="width: 24px; height: 24px; font-size: 14px;"><i class="ph-bold ph-x"></i></button>
-                        </div>
-                        <div id="jei-recipe-content" style="font-family: monospace; font-size: 0.75rem; color: #d4d4d8; background: var(--bg-main); padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">
-                            </div>
-                    </div>
+                <div id="jei-items-grid" class="jei-items-grid" style="padding: 15px;">
+                    <div class="muted-text text-sm"><i class="ph ph-spinner ph-spin"></i> Destripando .jar...</div>
+                </div>
+            </div>
 
-                    <div>
-                        <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom: 5px;"><i class="ph-bold ph-sword"></i> Ítems / Bloques (Clic para ver)</h4>
-                        <div id="scanner-items-grid" class="jei-items-grid"></div>
-                    </div>
-                    
-                    <div>
-                        <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: #f59e0b; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;"><i class="ph-bold ph-skull"></i> Entidades (Clic para 3D)</h4>
-                        <div id="scanner-mobs-grid" class="jei-items-grid"></div>
-                    </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 class="title" id="mob-3d-title" style="color: var(--accent);"><i class="ph-bold ph-user"></i> Modelo 3D</h2>
+                <button class="btn-icon-danger" onclick="document.getElementById('mob-3d-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <p class="muted-text mb-20 text-sm">Textura del mod proyectada en modelo estándar de Minecraft.</p>
+            
+            <div class="mc-biped-container">
+                <div class="mc-biped" id="mc-biped-model">
+                    <div class="mc-part head"></div>
+                    <div class="mc-part body"></div>
+                    <div class="mc-part arm-left"></div>
+                    <div class="mc-part arm-right"></div>
+                    <div class="mc-part leg-left"></div>
+                    <div class="mc-part leg-right"></div>
                 </div>
             </div>
         </div>
