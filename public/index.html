@@ -189,38 +189,53 @@
     </div>
 
 <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;">
-        <div class="modal-content modal-jei"> 
-            
-            <div class="jei-sidebar-left custom-scrollbar">
-                <div id="jei-mobs-container" style="display: none;">
-                    <div class="jei-header" style="color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs</div>
-                    <div id="jei-mobs-grid" class="jei-items-grid" style="padding: 15px;"></div>
-                </div>
+    <div class="modal-content modal-jei"> 
+        
+        <div class="jei-sidebar-left custom-scrollbar" style="display: none;">
+            <div id="jei-mobs-container">
+                <div class="jei-header" style="color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs</div>
+                <div id="jei-mobs-grid" class="jei-items-grid" style="padding: 15px;"></div>
             </div>
+        </div>
 
-<div class="jei-center-content custom-scrollbar" style="padding: 0; position: relative;">
+        <div class="jei-center-content custom-scrollbar" style="padding: 0; position: relative;">
+            <div style="position: sticky; top: 0; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 15px 25px; display: flex; align-items: center; gap: 20px; z-index: 50;">
+                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: 8px;"><i class="ph-bold ph-arrow-left" style="font-size: 20px;"></i></button>
                 
-                <div style="position: sticky; top: 0; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 15px 25px; display: flex; align-items: center; gap: 20px; z-index: 50;">
-                    <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: 8px;"><i class="ph-bold ph-arrow-left" style="font-size: 20px;"></i></button>
-                    
-                    <img id="detail-icon" src="" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
-                    <div style="flex: 1; text-align: left;">
-                        <h2 id="detail-title" class="title" style="font-size: 1.5rem; margin-bottom: 5px;">Cargando...</h2>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <p id="detail-author" class="muted-text text-sm" style="margin:0;"></p>
-                            <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
-                        </div>
+                <img id="detail-icon" src="" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
+                <div style="flex: 1; text-align: left;">
+                    <h2 id="detail-title" class="title" style="font-size: 1.5rem; margin-bottom: 5px;">Cargando...</h2>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <p id="detail-author" class="muted-text text-sm" style="margin:0;"></p>
+                        <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
                     </div>
                 </div>
-
-                <div id="detail-dependencies" style="margin-top: 20px; padding: 0 25px;"></div>
-                
-                <div class="mod-description-body" id="detail-description" style="padding: 20px 25px;"></div>
-                
-                <h3 class="subtitle mt-20 mb-10" style="padding: 0 25px;"><i class="ph-bold ph-image"></i> Galería</h3>
-                <div id="detail-gallery" class="gallery-grid" style="padding: 0 25px 25px 25px;"></div>
             </div>
 
+            <div id="detail-dependencies" style="margin-top: 20px; padding: 0 25px;"></div>
+            <div class="mod-description-body" id="detail-description" style="padding: 20px 25px;"></div>
+            <h3 class="subtitle mt-20 mb-10" style="padding: 0 25px;"><i class="ph-bold ph-image"></i> Galería</h3>
+            <div id="detail-gallery" class="gallery-grid" style="padding: 0 25px 25px 25px;"></div>
+        </div>
+
+        <div class="jei-sidebar-right custom-scrollbar" style="display: none;">
+            <div id="jei-items-container">
+                <div class="jei-header" style="color: var(--accent);"><i class="ph-bold ph-cube"></i> Ítems / Bloques</div>
+                
+                <div id="jei-recipe-viewer" style="display: none; padding: 15px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                        <span style="font-weight: bold; font-size: 0.85rem;"><i class="ph-bold ph-book-open"></i> Receta</span>
+                        <button class="btn-icon-danger" id="btn-close-recipe" style="font-size: 16px;"><i class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div id="jei-recipe-content"></div>
+                </div>
+
+                <div id="jei-items-grid" class="jei-items-grid" style="padding: 15px;"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
     <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
         <div class="modal-content" style="max-width: 400px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
