@@ -876,13 +876,6 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
         }
     }
 
-    // Limpiamos los eventos anteriores y asignamos los nuevos
-    if(btnJustSave) btnJustSave.addEventListener('click', () => requestBuild('save_only'));
-    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild('download_only'));
-    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild('save_download'));
-        }
-    }
-
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
     sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
