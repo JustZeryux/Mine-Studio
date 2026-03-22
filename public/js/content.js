@@ -841,18 +841,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Ocultar o Mostrar los paneles si están vacíos
-            if(itemCount === 0) {
-                document.getElementById('jei-items-container').style.display = 'none';
+            // 4. Imprimir en pantalla de forma SEGURA (Anti-Crasheos)
+            const itemsContainer = document.getElementById('jei-items-container');
+            const mobsContainer = document.getElementById('jei-mobs-container');
+
+            // Lógica para los Ítems
+            if (itemsContainer) {
+                if(itemCount === 0) itemsContainer.style.display = 'none';
+                else { itemsContainer.style.display = 'block'; itemsGrid.innerHTML = itemsHTML; }
             } else {
-                document.getElementById('jei-items-container').style.display = 'block';
-                itemsGrid.innerHTML = itemsHTML;
+                if(itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin ítems descubiertos.</p>';
+                else itemsGrid.innerHTML = itemsHTML;
             }
 
-            if(mobCount === 0) {
-                document.getElementById('jei-mobs-container').style.display = 'none';
+            // Lógica para los Mobs
+            if (mobsContainer) {
+                if(mobCount === 0) mobsContainer.style.display = 'none';
+                else { mobsContainer.style.display = 'block'; mobsGrid.innerHTML = mobsHTML; }
             } else {
-                document.getElementById('jei-mobs-container').style.display = 'block';
-                mobsGrid.innerHTML = mobsHTML;
+                if(mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin entidades descubiertas.</p>';
+                else mobsGrid.innerHTML = mobsHTML;
             }
 
             // Función para activar el 3D 
