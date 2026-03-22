@@ -337,27 +337,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.classList.remove('hidden');
     }
 
-    // ==========================================
-    // HERRAMIENTAS (PLANTILLAS Y RULETA)
+// ==========================================
+    // HERRAMIENTAS (PLANTILLAS MASIVAS Y AUTO-MODPACKER)
     // ==========================================
     async function installTemplate(slugs, buttonId, text) {
         const btn = document.getElementById(buttonId); btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; btn.disabled = true; let añadidos = 0;
         for (const slug of slugs) {
             try { const res = await fetch(`https://api.modrinth.com/v2/project/${slug}`); if (res.ok) { const modData = await res.json(); if (!window.modpackCart.some(item => item.id === modData.id)) { window.modpackCart.push({ id: modData.id, title: modData.title, type: 'mod' }); añadidos++; } } } catch(e) {}
         }
-        window.updateCartUI(); btn.innerHTML = text; btn.disabled = false; if(añadidos > 0) alert(`Se añadieron ${añadidos} mods.`);
+        window.updateCartUI(); btn.innerHTML = text; btn.disabled = false; if(añadidos > 0) alert(`Se añadieron ${añadidos} mods a tu ensamblador.`);
     }
 
-    document.getElementById('btn-template-rpg')?.addEventListener('click', () => installTemplate(['better-combat', 'waystones', 'farmers-delight', 'appleskin'], 'btn-template-rpg', '<i class="ph-bold ph-sword"></i> Plantilla RPG'));
-    document.getElementById('btn-template-tech')?.addEventListener('click', () => installTemplate(['create', 'jei', 'mouse-tweaks', 'jade'], 'btn-template-tech', '<i class="ph-bold ph-gear"></i> Plantilla Técnica'));
-    document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización'));
+    // Plantillas de 15+ mods esenciales
+    document.getElementById('btn-template-rpg')?.addEventListener('click', () => installTemplate(['better-combat', 'waystones', 'farmers-delight', 'appleskin', 'ice-and-fire-dragons', 'irons-spells-n-spellbooks', 'apotheosis', 'corail-tombstone', 'sophisticated-backpacks', 'blood-magic', 'twilight-forest', 'valhelsia-structures', 'artifacts', 'alexs-mobs'], 'btn-template-rpg', '<i class="ph-bold ph-sword"></i> Plantilla RPG'));
     
+    document.getElementById('btn-template-tech')?.addEventListener('click', () => installTemplate(['create', 'jei', 'mouse-tweaks', 'jade', 'applied-energistics-2', 'mekanism', 'thermal-expansion', 'industrial-foregoing', 'iron-chests', 'powah', 'flux-networks', 'cc-tweaked', 'immersive-engineering', 'botania'], 'btn-template-tech', '<i class="ph-bold ph-gear"></i> Plantilla Técnica'));
+    
+    document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling', 'indium', 'krypton', 'lazydfu', 'starlight', 'memoryleakfix', 'modernfix', 'cull-leaves'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización'));
+    
+    // Auto-Modpacker Masivo (50 a 150 mods compatibles de golpe)
     document.getElementById('btn-randomizer')?.addEventListener('click', async () => {
-        if(!confirm("Esto vaciará tu carrito actual para crear un reto aleatorio. ¿Continuar?")) return;
+        if(!confirm("Esto vaciará tu carrito actual y generará un Modpack de 50 a 150 mods compatibles. ¿Continuar?")) return;
+        const btn = document.getElementById('btn-randomizer');
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...'; btn.disabled = true;
+        
         window.modpackCart = []; window.updateCartUI();
-        const randomSlugs = ['rlcraft', 'ice-and-fire', 'alexs-mobs', 'terralith', 'biomesoplenty', 'bloodmagic', 'twilightforest', 'botania', 'vampirism', 'mutant-monsters'];
-        const numMods = Math.floor(Math.random() * 4) + 2; const selected = randomSlugs.sort(() => 0.5 - Math.random()).slice(0, numMods);
-        await installTemplate(selected, 'btn-randomizer', '<i class="ph-bold ph-dice-three"></i> Ruleta Aleatoria');
+        
+        const mcVers = document.getElementById('mod-version-select').value;
+        const loader = document.getElementById('mod-loader-select').value;
+        const limit = Math.floor(Math.random() * (150 - 50 + 1)) + 50; 
+        
+        try {
+            // Buscamos mods TOP directamente de la API filtrando por tu versión y loader
+            const res = await fetch(`https://api.modrinth.com/v2/search?limit=${limit}&index=downloads&facets=[["versions:${mcVers}"],["categories:${loader}"],["project_type:mod"]]`);
+            const data = await res.json();
+            
+            data.hits.forEach(mod => {
+                window.modpackCart.push({ id: mod.project_id, title: mod.title, type: mod.project_type });
+            });
+            window.updateCartUI();
+            alert(`📦 ¡Auto-Modpacker completado! Se añadieron ${data.hits.length} mods 100% compatibles con ${mcVers} - ${loader}.`);
+        } catch(e) {
+            alert("Hubo un error conectando con la API de Modrinth.");
+        }
+        btn.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Auto-Modpacker'; btn.disabled = false;
     });
 
     // ==========================================
@@ -817,13 +840,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // 4. Imprimir en pantalla
-            if(itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin ítems descubiertos.</p>';
-            else itemsGrid.innerHTML = itemsHTML;
+            // Ocultar o Mostrar los paneles si están vacíos
+            if(itemCount === 0) {
+                document.getElementById('jei-items-container').style.display = 'none';
+            } else {
+                document.getElementById('jei-items-container').style.display = 'block';
+                itemsGrid.innerHTML = itemsHTML;
+            }
 
-            if(mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin entidades descubiertas.</p>';
-            else mobsGrid.innerHTML = mobsHTML;
+            if(mobCount === 0) {
+                document.getElementById('jei-mobs-container').style.display = 'none';
+            } else {
+                document.getElementById('jei-mobs-container').style.display = 'block';
+                mobsGrid.innerHTML = mobsHTML;
+            }
 
+            // Función para activar el 3D 
+            window.triggerMob3D = (name, base64Src) => {
+                const modal = document.getElementById('mob-3d-modal');
+                document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-user"></i> 3D: ${name.toUpperCase()}`;
+                const bipedModel = document.getElementById('mc-biped-model');
+                
+                document.querySelectorAll('.mc-part').forEach(part => {
+                    part.style.backgroundImage = `url(${base64Src})`;
+                });
+                
+                // Activar animación de caminar al abrir
+                bipedModel.classList.add('walking');
+                modal.classList.remove('hidden');
+            };
+
+        } catch (error) {
+            console.error(error);
+        }
             // 5. Motor de Traducción de Recetas a Mesa de Crafteo 3x3 (Con Integración Vanilla)
             // 5. Motor de Traducción Visual Dinámico (Hornos, Mesas 9x9, Máquinas)
             window.openVisualRecipe = (rawId, prettyName) => {
