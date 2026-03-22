@@ -409,3 +409,36 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     image-rendering: pixelated;
     object-fit: contain;
 }
+
+/* ---- VISUALIZADOR DE CRAFTEOS (MESA 3x3) ---- */
+.recipe-visualizer {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 20px; background: rgba(0,0,0,0.3); border-radius: 12px;
+    border: 1px solid var(--border-color); margin-top: 10px;
+}
+.crafting-grid-3x3 {
+    display: grid; grid-template-columns: repeat(3, 40px); gap: 2px;
+    background: #c6c6c6; padding: 6px; border: 2px solid #373737;
+    border-top-color: #fff; border-left-color: #fff; border-radius: 4px;
+}
+.crafting-slot {
+    width: 40px; height: 40px; background: #8b8b8b;
+    border: 2px solid; border-color: #373737 #ffffff #ffffff #373737;
+    display: flex; justify-content: center; align-items: center; position: relative;
+    overflow: hidden;
+}
+.crafting-slot img { width: 28px; height: 28px; image-rendering: pixelated; object-fit: contain; }
+.crafting-slot-text {
+    font-size: 8px; line-height: 1; word-break: break-all; text-align: center;
+    color: white; text-shadow: 1px 1px 0 #000; padding: 2px;
+}
+.crafting-result-slot {
+    width: 56px; height: 56px; background: #8b8b8b;
+    border: 3px solid; border-color: #373737 #ffffff #ffffff #373737;
+    display: flex; justify-content: center; align-items: center; position: relative;
+}
+.crafting-result-slot img { width: 40px; height: 40px; image-rendering: pixelated; }
+.crafting-count {
+    position: absolute; bottom: 2px; right: 4px; font-weight: bold;
+    font-size: 16px; color: white; text-shadow: 2px 2px 0 #373737;
+}
