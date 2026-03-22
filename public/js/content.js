@@ -840,63 +840,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Ocultar o Mostrar los paneles si están vacíos
-            // 4. Imprimir en pantalla de forma SEGURA (Anti-Crasheos)
+           // Ocultar o Mostrar Paneles (SEGURIDAD ANTI-CRASHEOS)
             const itemsContainer = document.getElementById('jei-items-container');
             const mobsContainer = document.getElementById('jei-mobs-container');
 
-            // Lógica para los Ítems
             if (itemsContainer) {
                 if(itemCount === 0) itemsContainer.style.display = 'none';
                 else { itemsContainer.style.display = 'block'; itemsGrid.innerHTML = itemsHTML; }
-            } else {
-                if(itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin ítems descubiertos.</p>';
-                else itemsGrid.innerHTML = itemsHTML;
+            } else if (itemsGrid) {
+                itemsGrid.innerHTML = itemCount === 0 ? 'Vacío' : itemsHTML;
             }
 
-            // Lógica para los Mobs
             if (mobsContainer) {
                 if(mobCount === 0) mobsContainer.style.display = 'none';
                 else { mobsContainer.style.display = 'block'; mobsGrid.innerHTML = mobsHTML; }
-            } else {
-                if(mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin entidades descubiertas.</p>';
-                else mobsGrid.innerHTML = mobsHTML;
+            } else if (mobsGrid) {
+                mobsGrid.innerHTML = mobCount === 0 ? 'Vacío' : mobsHTML;
             }
 
-            // Función para activar el 3D 
-            window.triggerMob3D = (name, base64Src) => {
-                const modal = document.getElementById('mob-3d-modal');
-                document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-user"></i> 3D: ${name.toUpperCase()}`;
-                const bipedModel = document.getElementById('mc-biped-model');
-                
-                document.querySelectorAll('.mc-part').forEach(part => {
-                    part.style.backgroundImage = `url(${base64Src})`;
-                });
-                
-                // Activar animación de caminar al abrir
-                bipedModel.classList.add('walking');
-                modal.classList.remove('hidden');
-            };
-
-        } catch (error) {
-            console.error(error);
-        }
-            // 5. Motor de Traducción de Recetas a Mesa de Crafteo 3x3 (Con Integración Vanilla)
-            // 5. Motor de Traducción Visual Dinámico (Hornos, Mesas 9x9, Máquinas)
+            // 5. Motor Visual Dinámico (Hornos, Mesas 9x9, Máquinas, Vanilla Textures)
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
                 const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
                 recipeViewer.style.display = 'block';
                 
                 if (!recipe) {
-                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna detectada para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser un drop de mob, generación de mundo, o una máquina en código cerrado.</div>`;
+                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot, generación de mundo o código cerrado.</div>`;
                     return;
                 }
 
                 const rData = recipe.data;
                 const mcVersionFallback = document.getElementById('mod-version-select').value || '1.20.1';
 
-                // Función maestra para renderizar un cuadrito (Textura del mod o de la Nube Vanilla)
                 const renderSlot = (itemName, isResult = false) => {
                     if (!itemName || itemName === '?') return `<div class="crafting-slot"></div>`;
                     let cleanName = itemName.split(':').pop().split('/').pop();
@@ -916,27 +891,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 };
 
-                // Extraer el Resultado (Output)
                 let resultHTML = '';
                 if (rData.result) {
                     if (typeof rData.result === 'string') resultHTML = renderSlot(rData.result, true);
-                    else if (Array.isArray(rData.result)) {
-                        rData.result.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); });
-                    } else {
+                    else if (Array.isArray(rData.result)) { rData.result.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); }); }
+                    else {
                         let rName = rData.result.item || rData.result.id || rawId;
                         let countStr = rData.result.count > 1 ? `<span class="crafting-count">${rData.result.count}</span>` : '';
                         resultHTML = `<div style="position:relative;">${renderSlot(rName, true)}${countStr}</div>`;
                     }
-                } else if (rData.results && Array.isArray(rData.results)) { // Máquinas Modded complejas
-                    rData.results.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); });
-                } else { resultHTML = renderSlot(rawId, true); }
+                } else if (rData.results && Array.isArray(rData.results)) { rData.results.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); }); } 
+                else { resultHTML = renderSlot(rawId, true); }
 
                 const typeStr = rData.type || "unknown";
                 let html = `<div class="recipe-visualizer" style="flex-direction: column; align-items: center;">`;
                 html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> Método: ${typeStr.split(':').pop()}</div>`;
                 html += `<div style="display: flex; align-items: center; justify-content: center; gap: 20px;">`;
 
-                // LÓGICA 1: HORNOS (Smelting, Blasting, Smoking, Campfire)
                 if (typeStr.includes("smelting") || typeStr.includes("blasting") || typeStr.includes("smoking") || typeStr.includes("campfire")) {
                     let inputItem = '?';
                     if (rData.ingredient) {
@@ -944,76 +915,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                         else inputItem = rData.ingredient.item || rData.ingredient.tag || '?';
                     }
                     let time = rData.cookingtime ? `(${rData.cookingtime / 20}s)` : '';
-                    
                     html += renderSlot(inputItem);
-                    html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted);">
-                                <i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i>
-                                <span style="font-size:10px;">${time}</span>
-                                <i class="ph-bold ph-arrow-right" style="font-size:24px; margin-top:5px;"></i>
-                             </div>`;
+                    html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted);"><i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i><span style="font-size:10px;">${time}</span><i class="ph-bold ph-arrow-right" style="font-size:24px; margin-top:5px;"></i></div>`;
                     html += resultHTML;
-                }
-                
-                // LÓGICA 2: MESA CRAFTEO SHAPED (Dinámico: 3x3, 5x5, 9x9...)
-                else if (typeStr.includes("shaped") && rData.pattern) {
-                    const rows = rData.pattern.length;
-                    const cols = rData.pattern[0].length; // Detecta si la mesa es más grande de 3x3
-                    
+                } else if (typeStr.includes("shaped") && rData.pattern) {
+                    const cols = rData.pattern[0].length;
                     html += `<div style="display:grid; grid-template-columns: repeat(${cols}, 40px); gap: 2px; background: #c6c6c6; padding: 6px; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; border-radius: 4px;">`;
-                    
                     rData.pattern.forEach(line => {
                         for (let c = 0; c < cols; c++) {
                             let char = line[c];
                             if (char && char !== ' ' && rData.key && rData.key[char]) {
-                                let kData = rData.key[char];
-                                if (Array.isArray(kData)) kData = kData[0]; // Si permite varios ítems, agarramos el 1ro
-                                let itemRef = kData.item || kData.tag || '?';
-                                html += renderSlot(itemRef);
+                                let kData = rData.key[char]; if (Array.isArray(kData)) kData = kData[0];
+                                let itemRef = kData.item || kData.tag || '?'; html += renderSlot(itemRef);
                             } else { html += renderSlot('?'); }
                         }
                     });
-                    
-                    html += `</div>`;
-                    html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
-                    html += resultHTML;
-                }
-                
-                // LÓGICA 3: MÁQUINAS RARAS Y SHAPELESS
-                else if (rData.ingredients) {
+                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>${resultHTML}`;
+                } else if (rData.ingredients) {
                     html += `<div style="display:flex; flex-wrap:wrap; gap:4px; max-width: 150px; justify-content: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">`;
                     rData.ingredients.forEach(ing => {
-                        if(!ing) return;
-                        if(Array.isArray(ing) && ing.length > 0) ing = ing[0]; 
-                        let itemRef = ing.item || ing.tag || '?';
-                        html += renderSlot(itemRef);
+                        if(!ing) return; if(Array.isArray(ing) && ing.length > 0) ing = ing[0]; 
+                        let itemRef = ing.item || ing.tag || '?'; html += renderSlot(itemRef);
                     });
-                    html += `</div>`;
-                    html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
-                    html += resultHTML;
-                }
-                
-                // LÓGICA 4: CÓDIGO CERRADO DEL MOD
-                else {
-                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">El formato de esta máquina es propietario del mod. <br>Aquí tienes la lógica interna:</div>`;
-                    html += `</div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
+                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>${resultHTML}`;
+                } else {
+                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">Máquina propietaria del mod. <br>Aquí la lógica interna:</div></div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
                 }
 
                 html += `</div></div>`;
                 recipeContent.innerHTML = html;
             };
-            // Función para activar el 3D 
+
+            // 6. Lanzador Visual 3D
             window.triggerMob3D = (name, base64Src) => {
                 const modal = document.getElementById('mob-3d-modal');
+                if(!modal) return;
                 document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-user"></i> 3D: ${name.toUpperCase()}`;
+                const bipedModel = document.getElementById('mc-biped-model');
+                
                 document.querySelectorAll('.mc-part').forEach(part => {
                     part.style.backgroundImage = `url(${base64Src})`;
                 });
+                
+                if(bipedModel) bipedModel.classList.add('walking');
                 modal.classList.remove('hidden');
             };
 
         } catch (error) {
-            itemsGrid.innerHTML = `<span style="color: var(--danger); font-size: 0.8rem; grid-column:1/-1;">Error: ${error.message}</span>`;
-            mobsGrid.innerHTML = '';
+            console.error("Error JEI:", error);
+            if(itemsGrid) itemsGrid.innerHTML = `<span style="color: var(--danger); font-size: 0.8rem; grid-column:1/-1;">Error interno.</span>`;
         }
     }
 });
