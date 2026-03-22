@@ -860,20 +860,20 @@ async function runAutoScanJEI(modId, mcVers, loader) {
 
             // 5. Motor Visual Dinámico 
             // 5. Motor Visual Dinámico (Soporte Universal para Create, Mekanism, y Máquinas Raras)
+            // 5. Motor Visual Dinámico Universal
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
                 const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
                 recipeViewer.style.display = 'block';
                 
                 if (!recipe) {
-                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot de un monstruo, generación de mundo o estar oculto en código cerrado.</div>`;
+                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot, generación de mundo o estar oculto.</div>`;
                     return;
                 }
 
                 const rData = recipe.data;
                 const mcVersionFallback = document.getElementById('mod-version-select').value || '1.20.1';
 
-                // Función maestra para dibujar el cuadrado del ítem
                 const renderSlot = (itemName, isResult = false, count = 1) => {
                     if (!itemName || itemName === '?') return `<div class="crafting-slot"></div>`;
                     let cleanName = itemName.split(':').pop().split('/').pop();
@@ -895,19 +895,27 @@ async function runAutoScanJEI(modId, mcVers, loader) {
                     }
                 };
 
-                let typeStr = rData.type || "Máquina del Mod";
-                let html = `<div class="recipe-visualizer" style="flex-direction: column; align-items: center;">`;
-                html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> Máquina: ${typeStr.split(':').pop()}</div>`;
+                // NUEVO: Extractor ultra agresivo de ítems para mods que anidan arrays
+                const extractItem = (ing) => {
+                    if (!ing) return '?';
+                    if (Array.isArray(ing)) return extractItem(ing[0]); // Si es array, toma la primera variante
+                    if (typeof ing === 'string') return ing;
+                    return ing.item || ing.tag || '?';
+                };
+
+                let typeStr = rData.type || "Máquina Especial";
+                let html = `<div class="recipe-visualizer" style="flex-direction: column; align-items: center; border:none; background:transparent; padding:0;">`;
+                html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> ${typeStr.split(':').pop().replace(/_/g, ' ')}</div>`;
                 html += `<div style="display: flex; align-items: center; justify-content: center; gap: 20px;">`;
 
-                // ATrapa-Todo: Buscamos ingredientes en cualquier formato que use el mod
+                // Recopilamos inputs
                 let inputs = [];
                 if (rData.ingredients) inputs = Array.isArray(rData.ingredients) ? rData.ingredients : [rData.ingredients];
                 else if (rData.ingredient) inputs = Array.isArray(rData.ingredient) ? rData.ingredient : [rData.ingredient];
                 else if (rData.input) inputs = Array.isArray(rData.input) ? rData.input : [rData.input];
                 else if (rData.inputs) inputs = Array.isArray(rData.inputs) ? rData.inputs : [rData.inputs];
 
-                // ATrapa-Todo: Buscamos resultados (Outputs)
+                // Recopilamos outputs
                 let outputs = [];
                 if (rData.results) outputs = Array.isArray(rData.results) ? rData.results : [rData.results];
                 else if (rData.result) outputs = Array.isArray(rData.result) ? rData.result : [rData.result];
@@ -917,50 +925,47 @@ async function runAutoScanJEI(modId, mcVers, loader) {
 
                 // LÓGICA 1: HORNOS Y FOGATAS
                 if (typeStr.includes("smelting") || typeStr.includes("blasting") || typeStr.includes("smoking") || typeStr.includes("campfire")) {
-                    let inputItem = inputs.length > 0 ? (inputs[0].item || inputs[0].tag || '?') : '?';
+                    let inputItem = inputs.length > 0 ? extractItem(inputs[0]) : '?';
                     let time = rData.cookingtime ? `(${rData.cookingtime / 20}s)` : '';
                     html += renderSlot(inputItem);
-                    html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted);"><i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i><span style="font-size:10px;">${time}</span><i class="ph-bold ph-arrow-right" style="font-size:24px; margin-top:5px;"></i></div>`;
-                    
+                    html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted); margin:0 10px;"><i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i><span style="font-size:10px;">${time}</span></div>`;
                     let outHTML = '';
                     outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
                     html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
                 } 
-                // LÓGICA 2: MESAS DE CRAFTEO (Con forma 3x3, 5x5, 9x9)
-                else if (typeStr.includes("shaped") && rData.pattern) {
+                // LÓGICA 2: MESA CON PATRÓN (Soporta mesas vanilla y modded de cualquier tamaño)
+                else if (rData.pattern && rData.key) {
                     const cols = rData.pattern[0].length;
                     html += `<div style="display:grid; grid-template-columns: repeat(${cols}, 40px); gap: 2px; background: #c6c6c6; padding: 6px; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; border-radius: 4px;">`;
                     rData.pattern.forEach(line => {
                         for (let c = 0; c < cols; c++) {
                             let char = line[c];
                             if (char && char !== ' ' && rData.key && rData.key[char]) {
-                                let kData = rData.key[char]; if (Array.isArray(kData)) kData = kData[0];
-                                let itemRef = kData.item || kData.tag || '?'; html += renderSlot(itemRef);
-                            } else { html += renderSlot('?'); }
+                                html += renderSlot(extractItem(rData.key[char]));
+                            } else { 
+                                html += renderSlot('?'); 
+                            }
                         }
                     });
-                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
-                    
+                    html += `</div><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted); margin:0 10px;"></i>`;
                     let outHTML = '';
                     outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
                     html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
                 } 
-                // LÓGICA 3: MÁQUINAS DE MODS (Milling, Pressing, Shapeless, Trituradoras)
+                // LÓGICA 3: MÁQUINAS SIN PATRÓN O CRAFTEOS SHAPELESS
                 else if (inputs.length > 0) {
-                    html += `<div style="display:flex; flex-wrap:wrap; gap:4px; max-width: 150px; justify-content: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">`;
+                    html += `<div style="display:flex; flex-wrap:wrap; gap:4px; max-width: 160px; justify-content: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">`;
                     inputs.forEach(ing => {
-                        if(!ing) return; if(Array.isArray(ing) && ing.length > 0) ing = ing[0]; 
-                        let itemRef = ing.item || ing.tag || '?'; html += renderSlot(itemRef);
+                        html += renderSlot(extractItem(ing));
                     });
-                    html += `</div><div style="display:flex; flex-direction:column; align-items:center;"><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i></div>`;
-                    
+                    html += `</div><div style="display:flex; flex-direction:column; align-items:center; margin:0 10px;"><i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i></div>`;
                     let outHTML = '';
                     outputs.forEach(out => { let rName = typeof out === 'string' ? out : (out.item || out.id || rawId); outHTML += renderSlot(rName, true, out.count || 1); });
                     html += `<div style="display:flex; gap: 5px;">${outHTML}</div>`;
                 } 
-                // LÓGICA 4: EXTREMADAMENTE RARO (Sin inputs detectables)
+                // LÓGICA 4: EXTREMADAMENTE RARO (Imposible de procesar, mostramos JSON como respaldo)
                 else {
-                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">Máquina encriptada del mod. <br>Aquí la lógica interna:</div></div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
+                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">Máquina no estándar.<br>Código interno del mod:</div></div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px; border-radius:6px; overflow-x:auto;">${JSON.stringify(rData, null, 2)}</pre>`;
                 }
 
                 html += `</div></div>`;
