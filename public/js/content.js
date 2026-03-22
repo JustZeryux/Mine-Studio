@@ -769,24 +769,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(recipeViewer) recipeViewer.style.display = 'none';
     });
 async function runAutoScanJEI(modId, mcVers, loader) {
-        const itemsGrid = document.getElementById('jei-items-grid');
-        const mobsGrid = document.getElementById('jei-mobs-grid');
-        
-        // Seleccionamos las columnas grises enteras
-        const leftSidebar = document.querySelector('.jei-sidebar-left');
-        const rightSidebar = document.querySelector('.jei-sidebar-right');
-        
-        // Mostramos todo temporalmente mientras escanea
-        if(leftSidebar) leftSidebar.style.display = 'block';
-        if(rightSidebar) rightSidebar.style.display = 'flex';
+    const itemsGrid = document.getElementById('jei-items-grid');
+    const mobsGrid = document.getElementById('jei-mobs-grid');
+    
+    const leftSidebar = document.querySelector('.jei-sidebar-left');
+    const rightSidebar = document.querySelector('.jei-sidebar-right');
+    const recipeViewer = document.getElementById('jei-recipe-viewer');
+    
+    // 1. Ocultar los paneles grises al instante de abrir un nuevo mod (para resetear estado anterior)
+    if(leftSidebar) leftSidebar.style.display = 'none';
+    if(rightSidebar) rightSidebar.style.display = 'none';
 
-        if(!itemsGrid || !mobsGrid) return;
-        
-        itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo el 100% de los archivos...</div>';
-        mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
-        if(recipeViewer) recipeViewer.style.display = 'none';
+    // 2. Si faltan partes en el HTML, abortamos silenciosamente
+    if(!itemsGrid || !mobsGrid) return;
 
-        try {
+    // 3. Mostramos las barras temporalmente para ver el spinner
+    leftSidebar.style.display = 'block';
+    rightSidebar.style.display = 'flex';
+    
+    if(recipeViewer) recipeViewer.style.display = 'none';
+
+    // 4. Inyectamos los spinners (AHORA SÍ SERÁN VISIBLES PORQUE ARREGLAMOS EL HTML)
+    itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo el 100% de los archivos...</div>';
+    mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
+
+    try {
             const versRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
             const versData = await versRes.json();
             if (versData.length === 0 || versData[0].files.length === 0) throw new Error("Sin archivos Java.");
