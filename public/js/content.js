@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod')) return; 
                 const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
+                // INICIAR AUTO-ESCANEO JEI DE GOLPE
+                runAutoScanJEI(mod.project_id, versionSelect.value, loaderSelect.value);
                 window.currentModIdForScan = mod.project_id;
                 const scanStats = document.getElementById('mod-scan-stats'); 
                 const scanGallery = document.getElementById('mod-scan-gallery'); 
@@ -735,160 +737,192 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 // ==========================================
-    // MOD SCANNER PROFUNDO (JEI + Crafteos + 3D)
+    // AUTO-SCANNER JEI (SIN LÍMITES + MESA DE CRAFTEO VISUAL)
     // ==========================================
-    const btnScanMod = document.getElementById('btn-scan-mod');
-    const scanStats = document.getElementById('mod-scan-stats');
-    const scanGallery = document.getElementById('mod-scan-gallery');
-    const itemsGrid = document.getElementById('scanner-items-grid');
-    const mobsGrid = document.getElementById('scanner-mobs-grid');
-    const emptyState = document.getElementById('jei-empty-state');
-    const jeiStatus = document.getElementById('jei-status');
     const recipeViewer = document.getElementById('jei-recipe-viewer');
     const recipeContent = document.getElementById('jei-recipe-content');
-
-    // Cerrar el visor de crafteos
+    
     document.getElementById('btn-close-recipe')?.addEventListener('click', () => {
-        recipeViewer.style.display = 'none';
+        if(recipeViewer) recipeViewer.style.display = 'none';
     });
 
-    if (btnScanMod && scanStats) {
-        btnScanMod.addEventListener('click', async () => {
-            if(!window.currentModIdForScan) return;
-            
-            // UI Prep
-            btnScanMod.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Extrayendo Archivos...';
-            btnScanMod.disabled = true;
-            emptyState.style.display = 'none';
-            scanGallery.style.display = 'none';
-            recipeViewer.style.display = 'none';
-            jeiStatus.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Analizando...';
-            itemsGrid.innerHTML = ''; mobsGrid.innerHTML = '';
-            
-            try {
-                const mcVers = document.getElementById('mod-version-select').value;
-                const loader = document.getElementById('mod-loader-select').value;
-                
-                const versRes = await fetch(`https://api.modrinth.com/v2/project/${window.currentModIdForScan}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
-                const versData = await versRes.json();
+    async function runAutoScanJEI(modId, mcVers, loader) {
+        const itemsGrid = document.getElementById('jei-items-grid');
+        const mobsGrid = document.getElementById('jei-mobs-grid');
+        if(!itemsGrid || !mobsGrid) return;
+        
+        itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo el 100% de los archivos... esto puede tomar unos segundos.</div>';
+        mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
+        if(recipeViewer) recipeViewer.style.display = 'none';
 
-                if (versData.length === 0 || versData[0].files.length === 0) throw new Error("No hay .jar para escanear.");
+        try {
+            const versRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+            const versData = await versRes.json();
+            if (versData.length === 0 || versData[0].files.length === 0) throw new Error("Sin archivos Java.");
 
-                const fileUrl = versData[0].files.find(f => f.primary)?.url || versData[0].files[0].url;
-                const fileRes = await fetch(fileUrl);
-                const fileBlob = await fileRes.blob();
+            const fileUrl = versData[0].files.find(f => f.primary)?.url || versData[0].files[0].url;
+            const fileRes = await fetch(fileUrl);
+            const fileBlob = await fileRes.blob();
+            const zip = new JSZip();
+            const unzipped = await zip.loadAsync(fileBlob);
+
+            const allFiles = Object.keys(unzipped.files);
+            
+            // 1. Extraer Recetas (.json)
+            const recipeFiles = allFiles.filter(p => p.includes('data/') && p.includes('recipes/') && p.endsWith('.json'));
+            const parsedRecipes = [];
+            for (let path of recipeFiles) {
+                try {
+                    const content = await unzipped.files[path].async('string');
+                    parsedRecipes.push({ path: path, data: JSON.parse(content) });
+                } catch(e) {}
+            }
+
+            // 2. Variables para almacenar sin límites
+            const uniqueItemNames = new Set();
+            const uniqueMobNames = new Set();
+            const modTexturesCache = {}; // Guardará Base64 para usarlos en la mesa de crafteo
+            
+            let itemsHTML = '';
+            let mobsHTML = '';
+            let itemCount = 0; 
+            let mobCount = 0;
+
+            // 3. Procesar TODOS los archivos .png (Cero Límites)
+            for (let path of allFiles) {
+                if (path.endsWith('.png')) {
+                    let rawName = path.split('/').pop().replace('.png', '');
+                    
+                    // ÍTEMS Y BLOQUES
+                    if ((path.includes('textures/item/') || path.includes('textures/block/')) && !uniqueItemNames.has(rawName)) {
+                        uniqueItemNames.add(rawName);
+                        itemCount++;
+                        const base64 = await unzipped.files[path].async('base64');
+                        modTexturesCache[rawName] = base64; // Lo guardamos para la mesa de crafteo
+                        const prettyName = rawName.replace(/_/g, ' ');
+                        
+                        // Añadimos el HTML a la variable en vez de al DOM para evitar lag
+                        itemsHTML += `<div class="jei-item-slot" title="${prettyName}" onclick="openVisualRecipe('${rawName}', '${prettyName}')"><img src="data:image/png;base64,${base64}"></div>`;
+                    }
+
+                    // ENTIDADES Y MOBS
+                    if (path.includes('textures/entity/') && !uniqueMobNames.has(rawName)) {
+                        uniqueMobNames.add(rawName);
+                        mobCount++;
+                        const base64 = await unzipped.files[path].async('base64');
+                        const prettyName = rawName.replace(/_/g, ' ');
+                        const imgSrc = `data:image/png;base64,${base64}`;
+                        
+                        mobsHTML += `<div class="jei-item-slot" title="Ver Modelo 3D: ${prettyName}" style="border-color: #d97706 #fcd34d #fcd34d #d97706;" onclick="triggerMob3D('${prettyName}', '${imgSrc}')"><img src="${imgSrc}"></div>`;
+                    }
+                }
+            }
+
+            // 4. Imprimir de golpe en la pantalla (Súper Rápido)
+            if(itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin ítems descubiertos.</p>';
+            else itemsGrid.innerHTML = itemsHTML;
+
+            if(mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin entidades descubiertas.</p>';
+            else mobsGrid.innerHTML = mobsHTML;
+
+            // 5. Motor de Traducción de Recetas a Mesa de Crafteo 3x3
+            window.openVisualRecipe = (rawId, prettyName) => {
+                if(!recipeViewer) return;
+                const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
+                recipeViewer.style.display = 'block';
                 
-                const zip = new JSZip();
-                const unzipped = await zip.loadAsync(fileBlob);
-                const allFiles = Object.keys(unzipped.files);
-                
-                // Extraer Recetas (.json) EN MEMORIA
-                const recipeFiles = allFiles.filter(p => p.includes('data/') && p.includes('recipes/') && p.endsWith('.json'));
-                const parsedRecipes = [];
-                for (let path of recipeFiles) {
-                    try {
-                        const content = await unzipped.files[path].async('string');
-                        parsedRecipes.push({ path: path, data: JSON.parse(content) });
-                    } catch(e) {} // Ignorar JSON corruptos del mod
+                if (!recipe) {
+                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta de crafteo estándar para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot de monstruo, generación de mundo, o requiere una máquina especial del mod.</div>`;
+                    return;
                 }
 
-                // Extraer Ítems y Mobs (FILTRANDO DUPLICADOS con un Set)
-                const uniqueItemNames = new Set();
-                const uniqueMobNames = new Set();
-                
-                let itemCount = 0; let mobCount = 0;
+                const rData = recipe.data;
+                // Si no es un crafteo tradicional (ej. Prensas de Create)
+                if (!rData.type || !rData.type.includes("crafting")) {
+                    recipeContent.innerHTML = `<div style="padding:10px; background:rgba(0,0,0,0.5); border-radius:8px;">Tipo de receta especial: <b style="color:var(--accent);">${rData.type.split(':').pop()}</b><br><span style="color:var(--muted); font-size:0.8rem;">Este ítem se procesa en una máquina del mod, no en la mesa tradicional.</span></div><pre style="font-size:10px; margin-top:10px;">${JSON.stringify(rData, null, 2)}</pre>`;
+                    return;
+                }
 
-                for (let path of allFiles) {
-                    if (path.endsWith('.png')) {
-                        let rawName = path.split('/').pop().replace('.png', '');
-                        
-                        // Si es ítem o bloque y no lo hemos procesado aún (Límite 60 para no laggear)
-                        if ((path.includes('textures/item/') || path.includes('textures/block/')) && !uniqueItemNames.has(rawName) && itemCount < 60) {
-                            uniqueItemNames.add(rawName);
-                            itemCount++;
-                            const base64 = await unzipped.files[path].async('base64');
-                            const prettyName = rawName.replace(/_/g, ' ');
-                            
-                            // Crear Slot JEI
-                            const slot = document.createElement('div');
-                            slot.className = 'jei-item-slot';
-                            slot.title = prettyName;
-                            slot.innerHTML = `<img src="data:image/png;base64,${base64}">`;
-                            
-                            // Evento Clic JEI -> Buscar Crafteo
-                            slot.onclick = () => {
-                                const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawName));
-                                recipeViewer.style.display = 'block';
-                                if(recipe) {
-                                    // Muestra el JSON del crafteo formateado bonito
-                                    recipeContent.textContent = JSON.stringify(recipe.data, null, 2);
-                                } else {
-                                    recipeContent.textContent = `No se encontró receta de crafteo para:\n${prettyName}\n\n(Puede ser un drop, loot de cofre o bloque natural).`;
-                                }
-                            };
-                            itemsGrid.appendChild(slot);
+                // Generar Cuadrícula 3x3
+                let grid = Array(9).fill(null);
+                if (rData.type.includes("shaped") && rData.pattern) {
+                    let row = 0;
+                    rData.pattern.forEach(line => {
+                        for (let col = 0; col < line.length; col++) {
+                            let char = line[col];
+                            if (char !== ' ' && rData.key[char]) {
+                                let itemRef = rData.key[char].item || rData.key[char].tag || '?';
+                                grid[row * 3 + col] = itemRef.split(':').pop();
+                            }
                         }
+                        row++;
+                    });
+                } else if (rData.ingredients) {
+                    let idx = 0;
+                    rData.ingredients.forEach(ing => {
+                        if(Array.isArray(ing)) ing = ing[0]; // Soporta arrays de alternativas
+                        let itemRef = ing.item || ing.tag || '?';
+                        if (idx < 9) grid[idx++] = itemRef.split(':').pop();
+                    });
+                }
 
-                        // Si es Mob/Entidad (Límite 20)
-                        if (path.includes('textures/entity/') && !uniqueMobNames.has(rawName) && mobCount < 20) {
-                            uniqueMobNames.add(rawName);
-                            mobCount++;
-                            const base64 = await unzipped.files[path].async('base64');
-                            const prettyName = rawName.replace(/_/g, ' ');
-                            const imgSrc = `data:image/png;base64,${base64}`;
-                            
-                            const slot = document.createElement('div');
-                            slot.className = 'jei-item-slot';
-                            slot.title = "Ver modelo 3D: " + prettyName;
-                            slot.style.borderColor = '#d97706 #fcd34d #fcd34d #d97706'; // Borde dorado
-                            slot.innerHTML = `<img src="${imgSrc}">`;
-                            
-                            // Evento Clic 3D Holograma
-                            slot.onclick = () => {
-                                const modal = document.getElementById('mob-3d-modal');
-                                document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-cube"></i> Holograma: ${prettyName.toUpperCase()}`;
-                                document.querySelectorAll('.hologram-face').forEach(face => {
-                                    face.style.backgroundImage = `url(${imgSrc})`;
-                                });
-                                modal.classList.remove('hidden');
-                            };
-                            mobsGrid.appendChild(slot);
-                        }
+                // Extraer el Resultado
+                let resultName = rawId;
+                let resultCount = "";
+                if (rData.result) {
+                    if(typeof rData.result === 'string') resultName = rData.result.split(':').pop();
+                    else {
+                        resultName = (rData.result.item || rData.result.id || rawId).split(':').pop();
+                        if(rData.result.count > 1) resultCount = rData.result.count;
                     }
                 }
 
-                if (itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1;">Sin texturas descubiertas.</p>';
-                if (mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1;">Sin entidades descubiertas.</p>';
-
-                // Mostrar Galería
-                scanGallery.style.display = 'flex';
-                scanStats.style.display = 'block';
-                scanStats.innerHTML = `<button class="btn btn-secondary w-100 mt-10" disabled><i class="ph-bold ph-check"></i> ${itemCount} Texturas | ${parsedRecipes.length} Crafteos descubiertos</button>`;
+                // Construir HTML Visual
+                let html = `<div class="recipe-visualizer"><div class="crafting-grid-3x3">`;
+                for (let i = 0; i < 9; i++) {
+                    let item = grid[i];
+                    if (item) {
+                        let imgSrc = modTexturesCache[item];
+                        if (imgSrc) {
+                            html += `<div class="crafting-slot" title="${item}"><img src="data:image/png;base64,${imgSrc}"></div>`;
+                        } else {
+                            // Para ítems Vanilla (hierro, madera) mostramos el nombre
+                            html += `<div class="crafting-slot" title="${item}"><span class="crafting-slot-text">${item.substring(0, 8)}</span></div>`;
+                        }
+                    } else {
+                        html += `<div class="crafting-slot"></div>`;
+                    }
+                }
+                html += `</div>`;
                 
-                btnScanMod.innerHTML = '<i class="ph-bold ph-check"></i> Análisis Completado';
-                jeiStatus.innerHTML = '<i class="ph-bold ph-check" style="color:var(--success);"></i> Listo';
+                // Flecha y Resultado
+                html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
+                
+                let resImgSrc = modTexturesCache[resultName];
+                html += `<div>`;
+                if (resImgSrc) {
+                    html += `<div class="crafting-result-slot" title="${resultName}"><img src="data:image/png;base64,${resImgSrc}"><span class="crafting-count">${resultCount}</span></div>`;
+                } else {
+                    html += `<div class="crafting-result-slot" title="${resultName}"><span class="crafting-slot-text">${resultName}</span><span class="crafting-count">${resultCount}</span></div>`;
+                }
+                html += `</div></div>`;
 
-            } catch (error) {
-                jeiStatus.innerHTML = `<i class="ph-bold ph-warning" style="color:var(--danger);"></i> Error`;
-                btnScanMod.innerHTML = '<i class="ph-bold ph-scan"></i> Reintentar Escaneo';
-                btnScanMod.disabled = false;
-                emptyState.style.display = 'block';
-                emptyState.innerHTML = `<p style="color:var(--danger);">${error.message}</p>`;
-            }
-        });
-    }
+                recipeContent.innerHTML = html;
+            };
 
-    // ABRIR EL VISUALIZADOR 3D
-    function openMob3D(name, base64Src) {
-        const modal = document.getElementById('mob-3d-modal');
-        document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-cube"></i> Holograma: ${name.toUpperCase()}`;
-        
-        // Aplicar la textura extraída a todas las caras del cubo holográfico
-        const faces = document.querySelectorAll('.hologram-face');
-        faces.forEach(face => {
-            face.style.backgroundImage = `url(${base64Src})`;
-        });
-        
-        modal.classList.remove('hidden');
+            // Función para activar el 3D desde HTML dinámico
+            window.triggerMob3D = (name, base64Src) => {
+                const modal = document.getElementById('mob-3d-modal');
+                document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-user"></i> 3D: ${name.toUpperCase()}`;
+                document.querySelectorAll('.mc-part').forEach(part => {
+                    part.style.backgroundImage = `url(${base64Src})`;
+                });
+                modal.classList.remove('hidden');
+            };
+
+        } catch (error) {
+            itemsGrid.innerHTML = `<span style="color: var(--danger); font-size: 0.8rem; grid-column:1/-1;">Error: ${error.message}</span>`;
+            mobsGrid.innerHTML = '';
+        }
     }
 });
