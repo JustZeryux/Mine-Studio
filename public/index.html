@@ -218,20 +218,23 @@
             <div id="detail-gallery" class="gallery-grid" style="padding: 0 25px 25px 25px;"></div>
         </div>
 
-        <div class="jei-sidebar-right custom-scrollbar" style="display: none;">
-            <div id="jei-items-container">
-                <div class="jei-header" style="color: var(--accent);"><i class="ph-bold ph-cube"></i> Ítems / Bloques</div>
-                
-                <div id="jei-recipe-viewer" style="display: none; padding: 15px; border-bottom: 1px solid var(--border-color);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-                        <span style="font-weight: bold; font-size: 0.85rem;"><i class="ph-bold ph-book-open"></i> Receta</span>
-                        <button class="btn-icon-danger" id="btn-close-recipe" style="font-size: 16px;"><i class="ph-bold ph-x"></i></button>
-                    </div>
-                    <div id="jei-recipe-content"></div>
-                </div>
-
-                <div id="jei-items-grid" class="jei-items-grid" style="padding: 15px;"></div>
+        <div class="jei-sidebar-right" style="display: none; flex-direction: column; overflow: hidden; height: 100%;">
+            
+            <div class="jei-header" style="color: var(--accent); flex-shrink: 0; z-index: 30;">
+                <i class="ph-bold ph-cube"></i> Ítems / Bloques
             </div>
+            
+            <div id="jei-recipe-viewer" style="display: none; padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); flex-shrink: 0; z-index: 20; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                    <span style="font-weight: bold; font-size: 0.85rem;"><i class="ph-bold ph-book-open"></i> Crafteo Seleccionado</span>
+                    <button class="btn-icon-danger" id="btn-close-recipe" style="font-size: 16px;"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <div id="jei-recipe-content"></div>
+            </div>
+
+            <div id="jei-items-grid" class="jei-items-grid custom-scrollbar" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
+            
+        </div>
         </div>
 
     </div>
