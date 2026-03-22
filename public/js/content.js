@@ -737,7 +737,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 // ==========================================
-    // AUTO-SCANNER JEI (SIN LÍMITES + MESA DE CRAFTEO VISUAL)
+    // AUTO-SCANNER JEI (SIN LÍMITES + MESA CRAFTEO + VANILLA ASSETS)
     // ==========================================
     const recipeViewer = document.getElementById('jei-recipe-viewer');
     const recipeContent = document.getElementById('jei-recipe-content');
@@ -781,14 +781,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 2. Variables para almacenar sin límites
             const uniqueItemNames = new Set();
             const uniqueMobNames = new Set();
-            const modTexturesCache = {}; // Guardará Base64 para usarlos en la mesa de crafteo
+            const modTexturesCache = {}; // Cache para texturas del mod
             
             let itemsHTML = '';
             let mobsHTML = '';
             let itemCount = 0; 
             let mobCount = 0;
 
-            // 3. Procesar TODOS los archivos .png (Cero Límites)
+            // 3. Procesar TODOS los archivos .png 
             for (let path of allFiles) {
                 if (path.endsWith('.png')) {
                     let rawName = path.split('/').pop().replace('.png', '');
@@ -798,10 +798,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         uniqueItemNames.add(rawName);
                         itemCount++;
                         const base64 = await unzipped.files[path].async('base64');
-                        modTexturesCache[rawName] = base64; // Lo guardamos para la mesa de crafteo
+                        modTexturesCache[rawName] = base64; 
                         const prettyName = rawName.replace(/_/g, ' ');
                         
-                        // Añadimos el HTML a la variable en vez de al DOM para evitar lag
                         itemsHTML += `<div class="jei-item-slot" title="${prettyName}" onclick="openVisualRecipe('${rawName}', '${prettyName}')"><img src="data:image/png;base64,${base64}"></div>`;
                     }
 
@@ -818,99 +817,134 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // 4. Imprimir de golpe en la pantalla (Súper Rápido)
+            // 4. Imprimir en pantalla
             if(itemCount === 0) itemsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin ítems descubiertos.</p>';
             else itemsGrid.innerHTML = itemsHTML;
 
             if(mobCount === 0) mobsGrid.innerHTML = '<p class="muted-text text-sm" style="grid-column:1/-1; padding:20px;">Sin entidades descubiertas.</p>';
             else mobsGrid.innerHTML = mobsHTML;
 
-            // 5. Motor de Traducción de Recetas a Mesa de Crafteo 3x3
+            // 5. Motor de Traducción de Recetas a Mesa de Crafteo 3x3 (Con Integración Vanilla)
+            // 5. Motor de Traducción Visual Dinámico (Hornos, Mesas 9x9, Máquinas)
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
                 const recipe = parsedRecipes.find(r => JSON.stringify(r.data).includes(rawId));
                 recipeViewer.style.display = 'block';
                 
                 if (!recipe) {
-                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta de crafteo estándar para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser loot de monstruo, generación de mundo, o requiere una máquina especial del mod.</div>`;
+                    recipeContent.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">No hay receta interna detectada para <b>${prettyName}</b>.<br><br><i class="ph-bold ph-info" style="font-size:24px; margin-top:10px;"></i><br>Puede ser un drop de mob, generación de mundo, o una máquina en código cerrado.</div>`;
                     return;
                 }
 
                 const rData = recipe.data;
-                // Si no es un crafteo tradicional (ej. Prensas de Create)
-                if (!rData.type || !rData.type.includes("crafting")) {
-                    recipeContent.innerHTML = `<div style="padding:10px; background:rgba(0,0,0,0.5); border-radius:8px;">Tipo de receta especial: <b style="color:var(--accent);">${rData.type.split(':').pop()}</b><br><span style="color:var(--muted); font-size:0.8rem;">Este ítem se procesa en una máquina del mod, no en la mesa tradicional.</span></div><pre style="font-size:10px; margin-top:10px;">${JSON.stringify(rData, null, 2)}</pre>`;
-                    return;
-                }
+                const mcVersionFallback = document.getElementById('mod-version-select').value || '1.20.1';
 
-                // Generar Cuadrícula 3x3
-                let grid = Array(9).fill(null);
-                if (rData.type.includes("shaped") && rData.pattern) {
-                    let row = 0;
-                    rData.pattern.forEach(line => {
-                        for (let col = 0; col < line.length; col++) {
-                            let char = line[col];
-                            if (char !== ' ' && rData.key[char]) {
-                                let itemRef = rData.key[char].item || rData.key[char].tag || '?';
-                                grid[row * 3 + col] = itemRef.split(':').pop();
-                            }
-                        }
-                        row++;
-                    });
-                } else if (rData.ingredients) {
-                    let idx = 0;
-                    rData.ingredients.forEach(ing => {
-                        if(Array.isArray(ing)) ing = ing[0]; // Soporta arrays de alternativas
-                        let itemRef = ing.item || ing.tag || '?';
-                        if (idx < 9) grid[idx++] = itemRef.split(':').pop();
-                    });
-                }
-
-                // Extraer el Resultado
-                let resultName = rawId;
-                let resultCount = "";
-                if (rData.result) {
-                    if(typeof rData.result === 'string') resultName = rData.result.split(':').pop();
-                    else {
-                        resultName = (rData.result.item || rData.result.id || rawId).split(':').pop();
-                        if(rData.result.count > 1) resultCount = rData.result.count;
-                    }
-                }
-
-                // Construir HTML Visual
-                let html = `<div class="recipe-visualizer"><div class="crafting-grid-3x3">`;
-                for (let i = 0; i < 9; i++) {
-                    let item = grid[i];
-                    if (item) {
-                        let imgSrc = modTexturesCache[item];
-                        if (imgSrc) {
-                            html += `<div class="crafting-slot" title="${item}"><img src="data:image/png;base64,${imgSrc}"></div>`;
-                        } else {
-                            // Para ítems Vanilla (hierro, madera) mostramos el nombre
-                            html += `<div class="crafting-slot" title="${item}"><span class="crafting-slot-text">${item.substring(0, 8)}</span></div>`;
-                        }
+                // Función maestra para renderizar un cuadrito (Textura del mod o de la Nube Vanilla)
+                const renderSlot = (itemName, isResult = false) => {
+                    if (!itemName || itemName === '?') return `<div class="crafting-slot"></div>`;
+                    let cleanName = itemName.split(':').pop().split('/').pop();
+                    let imgSrc = modTexturesCache[cleanName];
+                    let slotClass = isResult ? 'crafting-result-slot' : 'crafting-slot';
+                    let imgSize = isResult ? 'width:40px; height:40px;' : 'width:28px; height:28px;';
+                    
+                    if (imgSrc) {
+                        return `<div class="${slotClass}" title="${cleanName.replace(/_/g, ' ')}"><img src="data:image/png;base64,${imgSrc}" style="${imgSize}"></div>`;
                     } else {
-                        html += `<div class="crafting-slot"></div>`;
+                        let vanillaUrl = `https://assets.mcasset.cloud/${mcVersionFallback}/assets/minecraft/textures/item/${cleanName}.png`;
+                        let vanillaBlockUrl = `https://assets.mcasset.cloud/${mcVersionFallback}/assets/minecraft/textures/block/${cleanName}.png`;
+                        return `<div class="${slotClass}" title="${cleanName.replace(/_/g, ' ')}">
+                            <img src="${vanillaUrl}" style="${imgSize}" onerror="this.onerror=null; this.src='${vanillaBlockUrl}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';}">
+                            <span class="crafting-slot-text" style="display:none; font-size: ${isResult? '10px' : '8px'};">${cleanName.substring(0,8)}</span>
+                        </div>`;
                     }
-                }
-                html += `</div>`;
-                
-                // Flecha y Resultado
-                html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
-                
-                let resImgSrc = modTexturesCache[resultName];
-                html += `<div>`;
-                if (resImgSrc) {
-                    html += `<div class="crafting-result-slot" title="${resultName}"><img src="data:image/png;base64,${resImgSrc}"><span class="crafting-count">${resultCount}</span></div>`;
-                } else {
-                    html += `<div class="crafting-result-slot" title="${resultName}"><span class="crafting-slot-text">${resultName}</span><span class="crafting-count">${resultCount}</span></div>`;
-                }
-                html += `</div></div>`;
+                };
 
+                // Extraer el Resultado (Output)
+                let resultHTML = '';
+                if (rData.result) {
+                    if (typeof rData.result === 'string') resultHTML = renderSlot(rData.result, true);
+                    else if (Array.isArray(rData.result)) {
+                        rData.result.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); });
+                    } else {
+                        let rName = rData.result.item || rData.result.id || rawId;
+                        let countStr = rData.result.count > 1 ? `<span class="crafting-count">${rData.result.count}</span>` : '';
+                        resultHTML = `<div style="position:relative;">${renderSlot(rName, true)}${countStr}</div>`;
+                    }
+                } else if (rData.results && Array.isArray(rData.results)) { // Máquinas Modded complejas
+                    rData.results.forEach(res => { let rName = typeof res === 'string' ? res : (res.item || res.id || rawId); resultHTML += renderSlot(rName, true); });
+                } else { resultHTML = renderSlot(rawId, true); }
+
+                const typeStr = rData.type || "unknown";
+                let html = `<div class="recipe-visualizer" style="flex-direction: column; align-items: center;">`;
+                html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class="ph-bold ph-wrench"></i> Método: ${typeStr.split(':').pop()}</div>`;
+                html += `<div style="display: flex; align-items: center; justify-content: center; gap: 20px;">`;
+
+                // LÓGICA 1: HORNOS (Smelting, Blasting, Smoking, Campfire)
+                if (typeStr.includes("smelting") || typeStr.includes("blasting") || typeStr.includes("smoking") || typeStr.includes("campfire")) {
+                    let inputItem = '?';
+                    if (rData.ingredient) {
+                        if (Array.isArray(rData.ingredient)) inputItem = rData.ingredient[0].item || rData.ingredient[0].tag || '?';
+                        else inputItem = rData.ingredient.item || rData.ingredient.tag || '?';
+                    }
+                    let time = rData.cookingtime ? `(${rData.cookingtime / 20}s)` : '';
+                    
+                    html += renderSlot(inputItem);
+                    html += `<div style="display:flex; flex-direction:column; align-items:center; color:var(--muted);">
+                                <i class="ph-fill ph-fire" style="color: #f59e0b; font-size: 24px;"></i>
+                                <span style="font-size:10px;">${time}</span>
+                                <i class="ph-bold ph-arrow-right" style="font-size:24px; margin-top:5px;"></i>
+                             </div>`;
+                    html += resultHTML;
+                }
+                
+                // LÓGICA 2: MESA CRAFTEO SHAPED (Dinámico: 3x3, 5x5, 9x9...)
+                else if (typeStr.includes("shaped") && rData.pattern) {
+                    const rows = rData.pattern.length;
+                    const cols = rData.pattern[0].length; // Detecta si la mesa es más grande de 3x3
+                    
+                    html += `<div style="display:grid; grid-template-columns: repeat(${cols}, 40px); gap: 2px; background: #c6c6c6; padding: 6px; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; border-radius: 4px;">`;
+                    
+                    rData.pattern.forEach(line => {
+                        for (let c = 0; c < cols; c++) {
+                            let char = line[c];
+                            if (char && char !== ' ' && rData.key && rData.key[char]) {
+                                let kData = rData.key[char];
+                                if (Array.isArray(kData)) kData = kData[0]; // Si permite varios ítems, agarramos el 1ro
+                                let itemRef = kData.item || kData.tag || '?';
+                                html += renderSlot(itemRef);
+                            } else { html += renderSlot('?'); }
+                        }
+                    });
+                    
+                    html += `</div>`;
+                    html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
+                    html += resultHTML;
+                }
+                
+                // LÓGICA 3: MÁQUINAS RARAS Y SHAPELESS
+                else if (rData.ingredients) {
+                    html += `<div style="display:flex; flex-wrap:wrap; gap:4px; max-width: 150px; justify-content: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">`;
+                    rData.ingredients.forEach(ing => {
+                        if(!ing) return;
+                        if(Array.isArray(ing) && ing.length > 0) ing = ing[0]; 
+                        let itemRef = ing.item || ing.tag || '?';
+                        html += renderSlot(itemRef);
+                    });
+                    html += `</div>`;
+                    html += `<i class="ph-bold ph-arrow-right" style="font-size:28px; color:var(--muted);"></i>`;
+                    html += resultHTML;
+                }
+                
+                // LÓGICA 4: CÓDIGO CERRADO DEL MOD
+                else {
+                    html += `<div style="color:var(--muted); font-size:0.8rem; text-align:center;">El formato de esta máquina es propietario del mod. <br>Aquí tienes la lógica interna:</div>`;
+                    html += `</div><pre style="font-size:10px; margin-top:10px; width:100%; text-align:left; background: var(--bg-main); padding: 10px;">${JSON.stringify(rData, null, 2)}</pre>`;
+                }
+
+                html += `</div></div>`;
                 recipeContent.innerHTML = html;
             };
-
-            // Función para activar el 3D desde HTML dinámico
+            // Función para activar el 3D 
             window.triggerMob3D = (name, base64Src) => {
                 const modal = document.getElementById('mob-3d-modal');
                 document.getElementById('mob-3d-title').innerHTML = `<i class="ph-bold ph-user"></i> 3D: ${name.toUpperCase()}`;
