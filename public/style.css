@@ -301,7 +301,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 }
 .scanner-mob-btn:hover { background: rgba(245, 158, 11, 0.1); transform: translateY(-3px); }
 
-/* Motor 3D Holográfico CSS */
+/* ---- MOTOR 3D HOLOGRÁFICO ---- */
 .hologram-container {
     width: 100%; height: 250px; display: flex; justify-content: center; align-items: center;
     perspective: 800px;
@@ -309,14 +309,14 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .hologram-cube {
     width: 100px; height: 100px; position: relative;
     transform-style: preserve-3d;
-    animation: rotateHologram 10s infinite linear;
+    animation: rotateHologram 8s infinite linear;
 }
 .hologram-face {
     position: absolute; width: 100px; height: 100px;
     background-size: cover; background-position: center;
-    image-rendering: pixelated; border: 1px solid rgba(99, 102, 241, 0.5);
-    box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.5);
-    opacity: 0.9;
+    image-rendering: pixelated; border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: inset 0 0 15px rgba(99, 102, 241, 0.4);
+    opacity: 0.95;
 }
 .hologram-face.front  { transform: translateZ(50px); }
 .hologram-face.back   { transform: rotateY(180deg) translateZ(50px); }
@@ -329,7 +329,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     0% { transform: rotateX(-15deg) rotateY(0deg); }
     100% { transform: rotateX(-15deg) rotateY(360deg); }
 }
-
 /* ---- REDISEÑO EXTREMO MODAL ESTILO JEI ---- */
 .modal-jei {
     max-width: 95vw !important;
