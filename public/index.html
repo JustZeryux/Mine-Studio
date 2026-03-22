@@ -198,15 +198,22 @@
                 </div>
             </div>
 
-            <div class="jei-center-content custom-scrollbar" style="position: relative;">
+<div class="jei-center-content custom-scrollbar" style="position: relative;">
                 <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="position:absolute; top:20px; left:20px; background: rgba(239,68,68,0.1); padding: 5px; border-radius: 8px;"><i class="ph-bold ph-x" style="font-size: 20px;"></i></button>
+                
                 <div style="text-align: center; margin-top: 20px;">
                     <img id="detail-icon" src="" style="width: 80px; height: 80px; border-radius: 16px; background: var(--bg-main); padding: 5px; margin-bottom: 10px;">
                     <h2 id="detail-title" class="title" style="font-size: 1.5rem; margin-bottom: 5px;">Cargando...</h2>
                     <p id="detail-author" class="muted-text text-sm mb-10"></p>
+                    <span id="detail-downloads-badge" class="downloads-badge mb-20"><i class="ph-bold ph-download-simple"></i> 0</span>
                 </div>
+
                 <div id="detail-dependencies" style="margin-top: 20px; padding: 0 20px;"></div>
+                
                 <div class="mod-description-body" id="detail-description" style="padding: 20px;"></div>
+                
+                <h3 class="subtitle mt-20 mb-10" style="padding: 0 20px;"><i class="ph-bold ph-image"></i> Galería</h3>
+                <div id="detail-gallery" class="gallery-grid" style="padding: 0 20px 20px 20px;"></div>
             </div>
 
             <div class="jei-sidebar-right custom-scrollbar">
