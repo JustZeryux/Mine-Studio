@@ -876,8 +876,9 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
         }
     }
 
-    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild(false));
-    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild(true));
+if(btnJustSave) btnJustSave.addEventListener('click', () => requestBuild('save_only'));
+    if(btnJustDownload) btnJustDownload.addEventListener('click', () => requestBuild('download_only'));
+    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild('save_download'));
     sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
     let timeout = null; searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
     if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
