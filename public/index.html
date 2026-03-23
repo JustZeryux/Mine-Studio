@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoreMod Studio</title>
+    <title>CoreMod</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -208,10 +208,14 @@
                 </div>
 
                 <aside class="cart-panel panel">
+                    
                     <div class="cart-header">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
-                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
+                                <button id="btn-close-cart-mobile" class="btn-icon-danger hidden-desktop" style="font-size: 24px; padding: 0 5px;"><i class="ph-bold ph-x"></i></button>
+                            </div>
                         </div>
                         <p class="muted-text text-sm mt-10">Target: <strong id="cart-version-label" style="color: var(--text-main);">1.20.1 Forge</strong></p>
                     </div>
