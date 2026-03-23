@@ -1704,6 +1704,6 @@ async function runAutoScanJEI(modId, mcVers, loader) {
             }
 
             
-
+fetchRealMods();
         });
     }
