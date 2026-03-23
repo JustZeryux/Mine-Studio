@@ -1227,146 +1227,304 @@ async function runAutoScanJEI(modId, mcVers, loader) {
 
 });
 
-// ==========================================
-    // IA MODPACK BUILDER (AGENTE INTELIGENTE)
-    // ==========================================
+// ============================================================
+    // MOTOR DE DESCARGA DIRECTA DE .JAR (+ Gestión de Librerías)
+    // ============================================================
+
+    // 1. Delegación de eventos para capturar los clics en los nuevos botones
+    document.addEventListener('click', (e) => {
+        // Buscamos si el clic fue en un botón de descarga o dentro de un icono de descarga
+        const btn = e.target.closest('.btn-download-jar');
+        if (btn) {
+            const modId = btn.dataset.id;
+            const modTitle = btn.dataset.title;
+            if(modId) initiateSingleJarDownload(modId, modTitle);
+        }
+    });
+
+    // 2. Función Principal de Descarga Directa
+    async function initiateSingleJarDownload(modId, modTitle) {
+        if(!confirm(`⚠️ ATENCIÓN: Esta acción descargará archivos .jar directos a tu carpeta de descargas.\n\n¿Estás seguro de querer descargar ${modTitle}?`)) return;
+
+        const mcVers = document.getElementById('mod-version-select').value;
+        const loader = document.getElementById('mod-loader-select').value;
+        
+        const loaderText = document.querySelector('.jei-sidebar-left') ? '<i class="ph ph-spinner ph-spin"></i> Conectando...' : 'Buscando...';
+        // (Opcional) Podrías poner un spinner en el botón que pulsó
+        
+        try {
+            // A. Verificamos compatibilidad y servidor
+            const projRes = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
+            if(!projRes.ok) throw new Error("No se pudo conectar con Modrinth");
+            const projData = await projRes.json();
+            
+            // Si la web está en modo "Server Pack", verificar si el mod es compatible con server
+            const isServerMode = document.getElementById('export-server-pack')?.checked;
+            if(isServerMode && projData.server_side === 'unsupported') {
+                alert(`❌ Error: ${modTitle} NO es compatible con servidores.`);
+                return;
+            }
+
+            // B. Buscamos la versión específica
+            const versRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+            if(!versRes.ok) throw new Error("Error buscando versiones compatibles.");
+            const versData = await versRes.json();
+            
+            if(versData.length === 0 || versData[0].files.length === 0) {
+                alert(`❌ Error: No se encontró ninguna versión de .jar compatible con Minecraft ${mcVers} y ${loader} para ${modTitle}.`);
+                return;
+            }
+
+            const primaryFile = versData[0].files.find(f => f.primary) || versData[0].files[0];
+            const dependencies = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+
+            let urlsToDownload = [primaryFile.url]; // Empezamos con el mod principal
+
+            // C. Gestión Mágica de Librerías
+            if(dependencies.length > 0) {
+                if(confirm(`📦 ${modTitle} REQUIERE LIBRERÍAS:\n\nEste mod necesita ${dependencies.length} archivos adicionales (librerías) para funcionar correctamente.\n\n¿Deseas descargar TAMBIÉN las librerías necesarias automáticamente?`)) {
+                    
+                    // Buscamos los .jar de las librerías
+                    for(let dep of dependencies) {
+                        try {
+                            const dVersRes = await fetch(`https://api.modrinth.com/v2/project/${dep.project_id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                            const dVersData = await dVersRes.json();
+                            if(dVersData.length > 0 && dVersData[0].files.length > 0) {
+                                const dFile = dVersData[0].files.find(f => f.primary) || dVersData[0].files[0];
+                                urlsToDownload.push(dFile.url); // Añadimos la URL de la librería
+                            }
+                        } catch(depErr) {
+                            console.error(`Error buscando librería ${dep.project_id}`);
+                        }
+                    }
+                }
+            }
+
+            // D. EJECUCIÓN DE DESCARGAS MÚLTIPLES (¡Cuidado con los bloqueadores de pop-ups!)
+            // La forma más segura de descargar .jar múltiples sin ZIP es usar iframes invisibles
+            urlsToDownload.forEach((url, index) => {
+                // Pequeño delay para no colapsar el navegador
+                setTimeout(() => {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = url;
+                    document.body.appendChild(iframe);
+                    // Los eliminamos después de 2 minutos por seguridad
+                    setTimeout(() => document.body.removeChild(iframe), 120000); 
+                }, index * 500); // 0.5s entre cada descarga
+            });
+
+            if(urlsToDownload.length > 1) {
+                alert(`🚀 Descarga Turbo Iniciada.\n\nSe están descargando ${urlsToDownload.length} archivos .jar limpios.\n\nSi el navegador te pregunta, dale permiso para 'Descargas Múltiples'.`);
+            }
+
+        } catch(err) {
+            alert(`❌ Error en la descarga directa: ${err.message}`);
+        }
+    }
+
+// ============================================================
+    // IA MODPACK BUILDER PRO (Multilingüe + Descarga Directa)
+    // ============================================================
     const btnAiBuilder = document.getElementById('btn-ai-builder');
     const aiModal = document.getElementById('ai-builder-modal');
     const aiPrompt = document.getElementById('ai-prompt-input');
     const aiTerminal = document.getElementById('ai-terminal');
-    const btnGenerateAi = document.getElementById('btn-generate-ai');
+    const btnGenerateAiDownload = document.getElementById('btn-generate-ai-download');
+    const btnAiCancel = document.getElementById('btn-ai-cancel');
 
     if (btnAiBuilder && aiModal) {
         btnAiBuilder.addEventListener('click', () => {
             aiModal.classList.remove('hidden');
             aiTerminal.style.display = 'none';
-            aiTerminal.innerHTML = '> IA Iniciada...<br>';
+            aiTerminal.innerHTML = '> IA Esperando órdenes en cualquier idioma...<br>';
             aiPrompt.value = '';
-            btnGenerateAi.disabled = false;
+            btnGenerateAiDownload.disabled = false;
         });
 
-        const aiLog = (msg) => {
+        if(btnAiCancel) btnAiCancel.addEventListener('click', () => aiModal.classList.add('hidden'));
+
+        const aiLog = (msg, type = 'info') => {
             aiTerminal.style.display = 'block';
-            aiTerminal.innerHTML += `> ${msg}<br>`;
+            let color = '#4ade80';
+            let icon = '>';
+            if(type === 'warn') { color = '#f59e0b'; icon = '⚠️'; }
+            if(type === 'error') { color = '#ef4444'; icon = '❌'; }
+            if(type === 'success') { color = '#8b5cf6'; icon = '✨'; }
+            
+            aiTerminal.innerHTML += `<span style="color: ${color}">${icon} ${msg}</span><br>`;
             aiTerminal.scrollTop = aiTerminal.scrollHeight;
         };
 
-        btnGenerateAi.addEventListener('click', async () => {
-            const prompt = aiPrompt.value.toLowerCase().trim();
-            if (prompt.length < 5) return alert("¡Sé un poco más descriptivo!");
+        btnGenerateAiDownload.addEventListener('click', async () => {
+            let promptRaw = aiPrompt.value;
+            let prompt = promptRaw.toLowerCase().trim();
+            if (prompt.length < 5) return alert("¡Sé un poco más descriptivo, por favor!");
 
-            btnGenerateAi.disabled = true;
-            btnGenerateAi.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+            btnGenerateAiDownload.disabled = true;
+            btnGenerateAiDownload.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando tu cerebro...';
+            aiLog("Leyendo pensamientos (Analizando prompt)...");
             
-            // Vaciar el carrito si el usuario acepta
-            if(window.modpackCart.length > 0) {
-                if(!confirm("La IA necesita un carrito vacío para trabajar. ¿Vaciar tu modpack actual?")) {
-                    btnGenerateAi.innerHTML = '<i class="ph-bold ph-brain"></i> Crear mi Modpack';
-                    btnGenerateAi.disabled = false;
-                    return;
-                }
-                window.modpackCart = [];
-            }
-
             const mcVers = document.getElementById('mod-version-select').value;
             const loader = document.getElementById('mod-loader-select').value;
             
-            // 1. Análisis NLP (Procesamiento de Lenguaje Natural) Simulado
-            aiLog("Analizando tus especificaciones...");
-            let keywords = [];
-            let includeOptimization = false;
-            let includeBase = true; // JEI, Mouse Tweaks, etc.
-
-            if (prompt.includes("rpg") || prompt.includes("aventura") || prompt.includes("explorar") || prompt.includes("dragones")) keywords.push("adventure");
-            if (prompt.includes("magia") || prompt.includes("hechizos") || prompt.includes("bruja")) keywords.push("magic");
-            if (prompt.includes("tecnologia") || prompt.includes("tech") || prompt.includes("maquinas")) keywords.push("technology");
-            if (prompt.includes("dificil") || prompt.includes("hardcore") || prompt.includes("jefes") || prompt.includes("combate")) keywords.push("combat");
-            if (prompt.includes("decoracion") || prompt.includes("muebles") || prompt.includes("bonito")) keywords.push("decoration");
-            if (prompt.includes("animales") || prompt.includes("mobs") || prompt.includes("criaturas")) keywords.push("mobs");
-            if (prompt.includes("comida") || prompt.includes("cultivos") || prompt.includes("granjas")) keywords.push("food");
-            if (prompt.includes("optimizado") || prompt.includes("rendimiento") || prompt.includes("fps") || prompt.includes("lag")) includeOptimization = true;
-
-            if (keywords.length === 0) {
-                // Si escribe algo muy genérico, buscamos la palabra tal cual
-                const fallback = prompt.split(' ')[0];
-                keywords.push(fallback);
-                aiLog(`Detectado tema libre: "${fallback}"`);
-            } else {
-                aiLog(`Temáticas detectadas: ${keywords.join(', ')}`);
-            }
-
-            let modsAñadidos = 0;
-            let modsList = [];
-
-            // 2. Extraer Mods Base/Esenciales (siempre vienen bien)
-            if (includeBase) {
-                aiLog("Añadiendo mods de calidad de vida (JEI, etc)...");
-                const bases = ['jei', 'mouse-tweaks', 'appleskin'];
-                for (let slug of bases) modsList.push(slug);
-            }
-
-            if (includeOptimization) {
-                aiLog("Configurando paquete de Ultra-Rendimiento...");
-                const fps = ['sodium', 'lithium', 'entityculling', 'ferrite-core']; // Modrinth mapeará a Rubidium/Embeddium en forge
-                for (let slug of fps) modsList.push(slug);
-            }
-
-            // 3. Búsqueda en Modrinth por cada palabra clave
-            for (let cat of keywords) {
-                try {
-                    aiLog(`Buscando los mejores mods de ${cat}...`);
-                    const res = await fetch(`https://api.modrinth.com/v2/search?limit=4&index=relevance&facets=[["versions:${mcVers}"],["categories:${loader}"],["categories:${cat}"],["project_type:mod"]]`);
-                    const data = await res.json();
-                    data.hits.forEach(m => modsList.push(m.project_id));
-                } catch(e) {
-                    aiLog(`<span style="color:red">Error buscando ${cat}</span>`);
+            // 1. EXTRACTOR DE ESPECIFICACIONES NUMÉRICAS (Regex avanzado)
+            // Busca patrones como "10 mods", "around 20", "un modpack de 5"
+            let targetModCount = 15; // Por defecto
+            const numMatch = prompt.match(/(\d+)\s*(mod|mods|archivo|files)/i);
+            if(numMatch) {
+                targetModCount = parseInt(numMatch[1]);
+                if(targetModCount < 1) targetModCount = 1;
+                if(targetModCount > 60) {
+                    targetModCount = 60;
+                    aiLog(`Límite de seguridad alcanzado. Reduciendo a 60 mods para no saturar Modrinth.`, 'warn');
+                } else {
+                    aiLog(`Entendido: Buscaremos aproximadamente ${targetModCount} mods coherentes.`, 'success');
                 }
             }
 
-            // 4. Filtrar, Validar e Instalar Librerías Recursivamente
-            aiLog("Ensamblando y resolviendo dependencias...");
+            // 2. MOTOR DE TRADUCCIÓN/DETECCIÓN MULTILINGÜE
+            // Usamos un diccionario de sinónimos clave que mapean a categorías de Modrinth
+            const categoryDictionary = [
+                { cat: 'adventure', keywords: ['aventura', 'adventure', 'explorar', 'explore', 'exploring', 'dungeon', 'mazmorra'] },
+                { cat: 'magic', keywords: ['magia', 'magic', 'sorcery', 'hechizo', 'spell', 'wizard', 'witch', 'bruja'] },
+                { cat: 'technology', keywords: ['tecnologia', 'technology', 'tech', 'industrial', 'maquina', 'machine', 'factory', 'create'] },
+                { cat: 'combat', keywords: ['combate', 'combat', 'pve', 'pvp', 'dificil', 'hardcore', 'hard', 'harder', 'jefe', 'boss'] },
+                { cat: 'decoration', keywords: ['decoracion', 'decoration', 'mueble', 'furniture', 'bonito', 'pretty'] },
+                { cat: 'mobs', keywords: ['criatura', 'criaturas', 'creatures', 'animal', 'animales', 'mods', 'dragones', 'dragon'] },
+                { cat: 'food', keywords: ['comida', 'food', 'cultivo', 'farming', 'agriculture', 'granjas'] },
+                { cat: 'optimization', keywords: ['optimizado', 'optimized', 'fps', 'rendimiento', 'performance', 'performance', 'lag'] },
+                { cat: 'mechanics', keywords: ['mecánicas', 'mechanics', 'animación', 'animations', 'mo bends', 'bends', 'dynamic', 'dinamico'] } // Aquí atrapamos "animaciones"
+            ];
+
+            let detectedCats = [];
+            categoryDictionary.forEach(entry => {
+                if(entry.keywords.some(kw => prompt.includes(kw))) {
+                    detectedCats.push(entry.cat);
+                }
+            });
+
+            // Si no detecta nada, usamos la primera palabra como keyword libre
+            if (detectedCats.length === 0) {
+                const fallback = prompt.split(' ')[0];
+                detectedCats.push(`q=${fallback}`); // Busqueda libre
+                aiLog(`Idioma no reconocido o tema muy específico. Buscando libremente: "${fallback}"`);
+            } else {
+                aiLog(`Interpretando intenciones: Temas detectados [ ${detectedCats.join(', ')} ]`);
+            }
+
+            let initialModsToFetch = [];
             
-            // Función auxiliar para procesar un mod y sus dependencias (reutiliza lógica existente)
-            const addModAndDeps = async (modId) => {
-                if(window.modpackCart.some(m => m.id === modId)) return; // Ya existe
+            // 3. BASE IMPRESCINDIBLE (JEI, etc)
+            const qol = ['jei', 'mouse-tweaks', 'appleskin'];
+            for(let slug of qol) initialModsToFetch.push(slug);
+
+            // 4. PAQUETE DE RENDIMIENTO (Si se detecta)
+            if(detectedCats.includes('optimization')) {
+                aiLog("Configurando módulo de ultra-rendimiento...");
+                const fps = ['sodium', 'lithium', 'ferrite-core']; // Modrinth mapea sodium -> rubidium/embeddium automáticamente en forge
+                for(let slug of fps) initialModsToFetch.push(slug);
+                detectedCats = detectedCats.filter(c => c !== 'optimization'); // Limpiamos para no volver a buscarlo
+            }
+
+            // 5. BÚSQUEDA DISTRIBUIDA EN MODRINTH
+            // Repartimos el límite de mods entre las categorías detectadas
+            const modsPerCat = targetModCount > 5 ? Math.ceil((targetModCount - initialModsToFetch.length) / detectedCats.length) : 1;
+            
+            for (let cat of detectedCats) {
+                try {
+                    let searchUrl = `https://api.modrinth.com/v2/search?limit=${modsPerCat}&index=relevance&facets=[["versions:${mcVers}"],["categories:${loader}"],["project_type:mod"]]`;
+                    if(cat.startsWith('q=')) {
+                        searchUrl += `&query=${cat.substring(2)}`;
+                    } else {
+                        searchUrl += `&facets=[["categories:${cat}"]]`;
+                    }
+                    
+                    const res = await fetch(searchUrl);
+                    const data = await res.json();
+                    data.hits.forEach(m => initialModsToFetch.push(m.project_id));
+                } catch(e) {
+                    aiLog(`Error buscando la categoría ${cat}`, 'error');
+                }
+            }
+
+            // 6. INSTALADOR NEURONAL RECURSIVO (Ignora el carrito, crea lista temporal)
+            aiLog(`Compilando lista final y resolviendo dependencias recursivamente...`);
+            let tempAiCart = []; // Esta es la lista que se irá llenando
+            let procesados = 0;
+            const totalIniciales = [...new Set(initialModsToFetch)];
+
+            const resolveDepsAndAddTemp = async (modId) => {
+                // Prevenir duplicados en la lista temporal
+                if(tempAiCart.some(m => m.id === modId)) return;
 
                 try {
                     const pRes = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
+                    if(!pRes.ok) return;
                     const pData = await pRes.json();
                     
-                    // Verificar versión específica
+                    // Verificar versión específica (Mismo MC y Loader)
                     const vRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
                     const vData = await vRes.json();
                     
                     if (vData.length > 0) {
-                        window.modpackCart.push({ id: pData.id, title: pData.title, type: 'mod' });
-                        modsAñadidos++;
-                        
-                        // Buscar dependencias
+                        tempAiCart.push({ id: pData.id, title: pData.title, type: 'mod' });
+                        procesados++;
+                        aiLog(`[${procesados}] Sincronizando ${pData.title}...`);
+
+                        // Buscar dependencias recursivamente
                         const deps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
                         for (let d of deps) {
-                            await addModAndDeps(d.project_id); // Llamada recursiva mágica
+                            await resolveDepsAndAddTemp(d.project_id); // Llamada recursiva mágica
                         }
                     }
                 } catch(e) {}
             };
 
-            // Ejecutar la instalación de la lista en paralelo (lotes pequeños para no saturar)
-            for(let id of [...new Set(modsList)]) {
-                await addModAndDeps(id);
-                aiTerminal.scrollTop = aiTerminal.scrollHeight;
+            // Ejecutar el resolutor de dependencias para cada mod base
+            for(let id of totalIniciales) {
+                await resolveDepsAndAddTemp(id);
+                aiTerminal.scrollTop = aiTerminal.scrollHeight; // Auto-scroll
             }
 
-            window.updateCartUI();
+            if(tempAiCart.length === 0) {
+                aiLog("Error crítico: No se encontró ningún mod compatible con tu versión. Ensamblaje cancelado.", 'error');
+                btnGenerateAiDownload.innerHTML = '<i class="ph-bold ph-brain-cell"></i> Reintentar';
+                btnGenerateAiDownload.disabled = false;
+                return;
+            }
+
+            // 7. EJECUCIÓN DEL MOTOR DESCARGA TURBO (Integración directa)
+            aiLog(`Ensamblaje completado con ${tempAiCart.length} mods. Conectando con el motor de descarga turbo...`, 'success');
+            btnGenerateAiDownload.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
+
+            // ESTA ES LA MAGIA: Llamamos a requestBuild pasándole la lista temporal
+            try {
+                // Modificamos temporalmente la variable global solo para la ejecución
+                const originalCart = window.modpackCart;
+                window.modpackCart = tempAiCart; 
+                
+                // Usamos la acción 'download_only' para que no lo guarde en localstorage
+                await requestBuild('download_only');
+                
+                // Restauramos el carrito original
+                window.modpackCart = originalCart;
+
+                aiLog(`¡Felicidades! Tu modpack está listo y debería haberse descargado automáticamente.`, 'success');
+                btnGenerateAiDownload.innerHTML = '<i class="ph-bold ph-check-square"></i> ¡Modpack Generado!';
+                setTimeout(() => {
+                    aiModal.classList.add('hidden');
+                    btnGenerateAiDownload.innerHTML = '<i class="ph-bold ph-lightning"></i> Generar y Descargar Modpack Directo';
+                    btnGenerateAiDownload.disabled = false;
+                }, 4000);
+
+            } catch(e) {
+                aiLog(`Falló la fase de empaquetado final: ${e.message}`, 'error');
+                btnGenerateAiDownload.innerHTML = '<i class="ph-bold ph-brain-cell"></i> Reintentar ZIP';
+                btnGenerateAiDownload.disabled = false;
+            }
+
             
-            aiLog("¡Modpack completado con éxito!");
-            aiLog(`Se añadieron un total de ${modsAñadidos} mods (incluyendo librerías).`);
-            
-            btnGenerateAi.innerHTML = '<i class="ph-bold ph-check"></i> ¡Listo!';
-            
-            setTimeout(() => {
-                aiModal.classList.add('hidden');
-                btnGenerateAi.innerHTML = '<i class="ph-bold ph-brain"></i> Crear mi Modpack';
-            }, 3000);
+
         });
     }
