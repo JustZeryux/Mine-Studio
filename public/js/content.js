@@ -859,6 +859,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
     // ============================================================
+    const btnTemplateRpg = document.getElementById('btn-template-rpg');
     const btnTemplateTech = document.getElementById('btn-template-tech');
     const btnFpsBoost = document.getElementById('btn-fps-boost');
     const btnRandomizer = document.getElementById('btn-randomizer'); // Botón de la Ruleta
