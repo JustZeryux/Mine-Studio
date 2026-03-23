@@ -1036,8 +1036,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(confirm(msg + `\n\n¿Aplicar cambio a la versión ${newVers}?`)) { versionSelect.value = newVers; updateSearch(); }
     });
 
-    // ==========================================
-    // 10. GESTIÓN DE PERFILES GUARDADOS
+   // ==========================================
+    // 10. GESTIÓN DE PERFILES GUARDADOS (REDISEÑO PREMIUM)
     // ==========================================
     window.loadMyProfiles = function() {
         const grid = document.getElementById('profiles-grid');
@@ -1049,52 +1049,121 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         grid.innerHTML = '';
         profiles.forEach((p, index) => {
+            const modsCount = p.modsData ? p.modsData.length : 0;
+            
+            // 1. Generar la fila visual de iconos superpuestos
+            let modsPreviewHtml = '';
+            if(p.modsData && p.modsData.length > 0) {
+                const maxPreview = 8;
+                const previewMods = p.modsData.slice(0, maxPreview);
+                previewMods.forEach((mod, i) => {
+                    const icon = mod.icon || 'https://via.placeholder.com/32/18181b/ffffff?text=?';
+                    // Z-index inverso para que se superpongan correctamente de izquierda a derecha
+                    modsPreviewHtml += `<img src="${icon}" title="${mod.title}" style="z-index: ${maxPreview - i};">`;
+                });
+                if(modsCount > maxPreview) {
+                    modsPreviewHtml += `<div class="profile-mods-extra">+${modsCount - maxPreview}</div>`;
+                }
+            } else {
+                modsPreviewHtml = '<span class="muted-text text-sm" style="margin-left: -10px;">Perfil Vacío</span>';
+            }
+
+            // 2. Extraer imágenes del primer mod para el banner/logo si el usuario no subió uno
+            const profileIcon = p.iconBase64 || (p.modsData && p.modsData[0] && p.modsData[0].icon) || 'https://via.placeholder.com/64/18181b/ffffff?text=P';
+            const profileBanner = (p.modsData && p.modsData[0] && p.modsData[0].banner) || 'https://via.placeholder.com/400x120/18181b/27272a';
+
+            // 3. Inyectar la Tarjeta Premium
             grid.innerHTML += `
-                <div class="profile-card panel" style="padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                        <div style="font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                            ${p.iconBase64 ? `<img src="${p.iconBase64}" style="width:24px; height:24px; border-radius:4px;">` : `<i class="ph-fill ph-package" style="color:var(--accent);"></i>`}
-                            ${p.name}
+                <div class="profile-card">
+                    <div class="profile-banner" style="background-image: url('${profileBanner}');"></div>
+                    <div class="profile-content">
+                        
+                        <div class="profile-header">
+                            <img src="${profileIcon}" class="profile-icon">
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn-config-cart btn-edit-name" data-index="${index}" title="Renombrar Perfil" style="position: relative; right:0; top:0; background: rgba(255,255,255,0.1);"><i class="ph-bold ph-pencil-simple"></i></button>
+                                <button class="btn-config-cart btn-share-profile" data-index="${index}" title="Compartir Modpack" style="position: relative; right:0; top:0; background: rgba(99,102,241,0.2); color: var(--accent);"><i class="ph-bold ph-link"></i></button>
+                                <button class="btn-remove-cart btn-delete-profile" data-index="${index}" title="Eliminar" style="position: relative; right:0; top:0;"><i class="ph-bold ph-trash"></i></button>
+                            </div>
                         </div>
-                        <div>
-                            <button class="btn btn-secondary btn-share-profile" data-index="${index}" style="padding:5px;"><i class="ph-bold ph-link"></i></button>
-                            <button class="btn btn-text btn-delete-profile" data-index="${index}" style="color:var(--danger); padding:5px;"><i class="ph-bold ph-trash"></i></button>
+                        
+                        <div class="profile-title">${p.name}</div>
+                        
+                        <div class="profile-badges">
+                            <span class="p-badge" style="color: var(--success); border-color: rgba(16,185,129,0.3);"><i class="ph-bold ph-game-controller"></i> ${p.mcVersion}</span>
+                            <span class="p-badge" style="color: #f59e0b; border-color: rgba(245,158,11,0.3);"><i class="ph-bold ph-hammer"></i> ${p.modLoader.toUpperCase()}</span>
+                            <span class="p-badge"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} Mods</span>
+                        </div>
+
+                        <p class="muted-text text-sm" style="margin-bottom: 8px; font-weight: 600;">Contenido del Pack:</p>
+                        <div class="profile-mods-preview">
+                            ${modsPreviewHtml}
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="btn btn-primary btn-edit-profile w-100" data-index="${index}" style="padding: 12px; font-size: 0.95rem;">
+                                <i class="ph-bold ph-folder-open"></i> Cargar al Ensamblador
+                            </button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 15px; margin-top: 10px; margin-bottom: 10px;">
-                        <span style="background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; color: var(--success);"><i class="ph-bold ph-game-controller"></i> ${p.mcVersion}</span>
-                        <span style="background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; color: #f59e0b;"><i class="ph-bold ph-hammer"></i> ${p.modLoader.toUpperCase()}</span>
-                        <span style="background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem;"><i class="ph-bold ph-puzzle-piece"></i> ${p.modsData ? p.modsData.length : 0} Items</span>
-                    </div>
-                    <button class="btn btn-secondary btn-edit-profile w-100" data-index="${index}"><i class="ph-bold ph-pencil-simple"></i> Cargar al Ensamblador</button>
                 </div>
             `;
         });
 
+        // --- ASIGNACIÓN DE EVENTOS A LOS BOTONES ---
+
+        // 1. Botón: Renombrar Perfil
+        document.querySelectorAll('.btn-edit-name').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = e.currentTarget.dataset.index;
+                const newName = prompt("Escribe el nuevo nombre para este modpack:", profiles[idx].name);
+                if(newName && newName.trim() !== '') {
+                    profiles[idx].name = newName.trim();
+                    localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles));
+                    window.loadMyProfiles(); // Recargar la vista
+                }
+            });
+        });
+
+        // 2. Botón: Compartir
         document.querySelectorAll('.btn-share-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const profile = profiles[e.currentTarget.dataset.index];
                 const compactData = profile.modsData.map(m => `${m.id}${m.type !== 'mod' ? '_'+m.type : ''}`).join('-');
                 navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?pack=${compactData}`);
-                alert("🔗 ¡Enlace ultraligero copiado!");
+                alert("🔗 ¡Enlace copiado al portapapeles!\nCualquier persona que lo abra podrá descargar o editar tu modpack.");
             });
         });
 
+        // 3. Botón: Eliminar
         document.querySelectorAll('.btn-delete-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                if(confirm("¿Eliminar este perfil?")) { profiles.splice(e.currentTarget.dataset.index, 1); localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); window.loadMyProfiles(); }
+                if(confirm("⚠️ ¿Estás seguro de que quieres eliminar este perfil para siempre?")) { 
+                    profiles.splice(e.currentTarget.dataset.index, 1); 
+                    localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
+                    window.loadMyProfiles(); 
+                }
             });
         });
 
+        // 4. Botón: Cargar al Ensamblador (Editar mods)
         document.querySelectorAll('.btn-edit-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const profile = profiles[e.currentTarget.dataset.index];
-                window.modpackCart = profile.modsData; versionSelect.value = profile.mcVersion; loaderSelect.value = profile.modLoader;
-                window.updateCartUI(); document.querySelector('.nav-btn[data-target="mods"]').click(); updateSearch();
+                window.modpackCart = profile.modsData; 
+                versionSelect.value = profile.mcVersion; 
+                loaderSelect.value = profile.modLoader;
+                
+                // Actualizar la interfaz del carrito y abrir el buscador
+                window.updateCartUI(); 
+                document.querySelector('.nav-btn[data-target="mods"]').click(); 
+                
+                // Disparar un evento 'change' en los selects para que Modrinth busque la versión correcta
+                const event = new Event('change');
+                versionSelect.dispatchEvent(event);
             });
         });
     }
-
     // ==========================================
     // 11. SCROLL INFINITO PARA EL PANEL
     // ==========================================
