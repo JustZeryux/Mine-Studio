@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
@@ -189,7 +188,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const packNameInput = document.getElementById('pack-name-input');
     
     if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => {
-        document.querySelector('.cart-panel').style.right = '-400px'; 
+        document.querySelector('.cart-panel').style.right = ''; 
+        document.querySelector('.cart-panel').classList.remove('active');
         modalSave.classList.remove('hidden');
     });
 
@@ -938,15 +938,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const cartPanel = document.querySelector('.cart-panel');
     if (mobileBtn && cartPanel) {
-        // En lugar de poner propiedades sueltas aquí, se confía en el CSS que lo hace "fixed" y "flex" estricto.
         mobileBtn.addEventListener('click', () => {
-            if (cartPanel.classList.contains('active') || cartPanel.style.right === '0px') {
+            if (cartPanel.classList.contains('active')) {
                 cartPanel.classList.remove('active');
-                cartPanel.style.right = '-400px';
+                cartPanel.style.right = ''; 
                 mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
             } else {
                 cartPanel.classList.add('active');
-                cartPanel.style.right = '0px';
+                cartPanel.style.right = ''; 
                 mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
             }
         });
@@ -1356,6 +1355,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const btnAiBuilderMobile = document.getElementById('btn-ai-builder-mobile');
+    
+    if (btnAiBuilderMobile && aiModal) {
+        btnAiBuilderMobile.addEventListener('click', () => {
+            aiModal.classList.remove('hidden'); aiTerminal.style.display = 'none'; aiTerminal.innerHTML = '> Esperando órdenes...<br>'; aiPrompt.value = ''; btnGenerateAiDownload.disabled = false;
+        });
+    }
+
     // ==========================================
     // 18. SCROLL INFINITO Y AUTO-INICIO
     // ==========================================
@@ -1376,4 +1383,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     fetchRealMods(); 
 
-}); // FIN DEL ARCHIVO - NO HAY MAS LLAVES ABAJO
+});
