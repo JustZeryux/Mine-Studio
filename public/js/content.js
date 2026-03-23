@@ -390,20 +390,27 @@ if (sharedPack) {
                 });
             }
 
+            // Generador de Tarjeta Premium
             card.innerHTML = `
                 <div class="mod-banner" style="background-image: url('${bannerUrl}'); pointer-events: none;"></div>
-                <div class="mod-info" style="pointer-events: none; padding-bottom: 10px;">
-                    <img src="${iconUrl}" class="mod-avatar">
+                <div class="mod-info" style="pointer-events: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <img src="${iconUrl}" class="mod-avatar">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding-bottom: 5px;">
+                            <i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(mod.downloads || 0)}
+                        </span>
+                    </div>
                     <h3 class="mod-title">${mod.title}</h3>
                     <div class="mod-tags-container">${tagsHtml}</div>
-                    <p class="mod-desc">${mod.description.substring(0, 60)}...</p>
+                    <p class="mod-desc">${mod.description.substring(0, 75)}...</p>
                 </div>
-                <div style="padding: 0 10px 10px 10px; z-index: 10; margin-top: auto; display: flex; gap: 8px;">
-                    <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 2; ${isAdded ? 'background: var(--success); color: white;' : ''}">
+                
+                <div style="padding: 0 15px 15px 15px; z-index: 10; margin-top: auto; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 1; font-size: 0.85rem; ${isAdded ? 'background: rgba(16,185,129,0.2); color: var(--success); border: 1px solid var(--success);' : ''}">
                         <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
                     </button>
-                    <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="flex: 1; padding: 0; display: flex; justify-content: center; align-items: center; border-color: #8b5cf6; color: #8b5cf6;">
-                        <i class="ph-bold ph-download-simple" style="font-size: 18px;"></i>
+                    <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="padding: 0 12px; border-color: rgba(139, 92, 246, 0.5); color: #a78bfa;">
+                        <i class="ph-bold ph-download-simple" style="font-size: 16px;"></i>
                     </button>
                 </div>
             `;
