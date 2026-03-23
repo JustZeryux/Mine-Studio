@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
@@ -127,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const proj = projectMap[item.id];
                                 if(proj) {
                                     item.title = proj.title;
-                                    const icon = proj.icon_url || 'https://placehold.co/48x48/18181b/ffffff?text=?';
+                                    const icon = proj.icon_url || 'https://placehold.co/48x48/18181b/ffffff?text=M';
                                     const desc = proj.description ? proj.description.substring(0, 75) + '...' : 'Sin descripción disponible.';
                                     let typeColor = 'var(--accent)', typeText = 'MOD', iconType = 'ph-puzzle-piece';
                                     
@@ -433,8 +434,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderRealMods(mods) {
         mods.forEach(mod => {
             const card = document.createElement('div'); card.className = 'mod-card';
-            const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=?';
-            const bannerUrl = (mod.gallery && mod.gallery[0]) ? mod.gallery[0] : 'https://placehold.co/400x150/18181b/27272a';
+            const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
+            
+            // FIX: Ya no usamos placehold para los banners vacíos, el fallback es el ícono del mod
+            const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : iconUrl;
+            
             const isAdded = window.modpackCart.some(item => item.id === mod.project_id);
             
             let tagsHtml = '';
@@ -490,7 +494,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (deps && deps.length > 0) {
                         const missingDeps = deps.filter(dep => !window.modpackCart.some(item => item.id === dep.id));
                         if (missingDeps.length > 0) {
-                            showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type }, missingDeps, this);
+                            showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type, iconUrl, bannerUrl, categories: mod.display_categories }, missingDeps, this);
                             this.innerHTML = originalHtml; this.disabled = false; return; 
                         }
                     }
@@ -574,7 +578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                                 depProjs.forEach(dep => { 
                                     if (!window.modpackCart.some(item => item.id === dep.id)) {
-                                        window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: null, categories: ['library'] });
+                                        window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: dep.icon_url, categories: ['library'] });
                                     }
                                 });
                                 window.updateCartUI();
@@ -620,7 +624,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btn-epic-add-all').onclick = () => {
             if (!window.modpackCart.some(item => item.id === mainMod.id)) window.modpackCart.push({ id: mainMod.id, title: mainMod.title, type: mainMod.type || 'mod', icon: mainMod.iconUrl, banner: mainMod.bannerUrl, categories: mainMod.categories });
-            missingDeps.forEach(dep => { if (!window.modpackCart.some(item => item.id === dep.id)) window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: null, categories: ['library'] }); });
+            missingDeps.forEach(dep => { if (!window.modpackCart.some(item => item.id === dep.id)) window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: dep.icon_url, categories: ['library'] }); });
             window.updateCartUI();
             if(triggerButton) { triggerButton.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; triggerButton.style.background = 'var(--success)'; triggerButton.disabled = true; }
             modal.classList.add('hidden');
@@ -720,7 +724,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
             recItem.querySelector('.btn-add-rec').onclick = function() {
-                window.modpackCart.push({ id: p.id, title: p.title, type: p.project_type || 'mod', icon: p.icon_url, banner: (p.gallery && p.gallery[0]) ? p.gallery[0].url : null, categories: p.categories });
+                window.modpackCart.push({ id: p.id, title: p.title, type: p.project_type || 'mod', icon: p.icon_url, banner: (p.gallery && p.gallery.length > 0) ? p.gallery[0].url : p.icon_url, categories: p.categories });
                 window.updateCartUI();
             };
         } catch(e) { recBox.style.display = 'none'; }
@@ -778,7 +782,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 target.main.style.display = 'block';
 
                 const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=M';
-                const banner = item.banner || 'https://placehold.co/300x60/18181b/27272a';
+                // FIX: El carrito ahora usa item.icon si banner está vacío (en vez de placehold)
+                const banner = item.banner || item.icon || '';
 
                 const li = document.createElement('li');
                 li.className = 'cart-item';
@@ -849,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let finalType = p.project_type || 'mod';
                     if(p.categories.includes('library')) finalType = 'library';
 
-                    window.modpackCart.push({ id: p.id, title: p.title, type: finalType, icon: p.icon_url, banner: (p.gallery && p.gallery.length > 0) ? p.gallery[0].url : null, categories: p.categories });
+                    window.modpackCart.push({ id: p.id, title: p.title, type: finalType, icon: p.icon_url, banner: (p.gallery && p.gallery.length > 0) ? p.gallery[0].url : p.icon_url, categories: p.categories });
                     addedCount++;
                 });
                 window.updateCartUI();
@@ -896,7 +901,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const data = await res.json();
                 
                 data.hits.forEach(mod => {
-                    window.modpackCart.push({ id: mod.project_id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: (mod.gallery && mod.gallery[0]) ? mod.gallery[0] : null });
+                    window.modpackCart.push({ id: mod.project_id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url });
                 });
 
                 window.updateCartUI();
@@ -933,15 +938,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const cartPanel = document.querySelector('.cart-panel');
     if (mobileBtn && cartPanel) {
-        cartPanel.style.position = 'fixed'; cartPanel.style.top = '70px'; cartPanel.style.height = 'calc(100vh - 70px)';
-        cartPanel.style.zIndex = '9999'; cartPanel.style.transition = 'right 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        cartPanel.style.right = '-400px'; 
-
+        // En lugar de poner propiedades sueltas aquí, se confía en el CSS que lo hace "fixed" y "flex" estricto.
         mobileBtn.addEventListener('click', () => {
-            if (cartPanel.style.right === '0px') {
+            if (cartPanel.classList.contains('active') || cartPanel.style.right === '0px') {
+                cartPanel.classList.remove('active');
                 cartPanel.style.right = '-400px';
                 mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
             } else {
+                cartPanel.classList.add('active');
                 cartPanel.style.right = '0px';
                 mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
             }
@@ -1000,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const profileIcon = p.iconBase64 || (p.modsData && p.modsData[0] && p.modsData[0].icon) || 'https://placehold.co/64x64/18181b/10b981?text=Pack';
-            const profileBanner = (p.modsData && p.modsData[0] && p.modsData[0].banner) || 'https://placehold.co/400x120/121212/27272a?text=Modpack';
+            const profileBanner = (p.modsData && p.modsData[0] && p.modsData[0].banner) || profileIcon;
 
             grid.innerHTML += `
                 <div class="profile-card panel" style="padding:0; overflow:hidden; display:flex; flex-direction:column; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-panel);">
@@ -1026,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <span class="p-badge" style="background:rgba(255,255,255,0.1); color:#fff; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} Mods</span>
                         </div>
 
-                        <div class="profile-mods-preview" style="display: flex; margin-bottom: 20px; padding-left: 10px;">
+                        <div class="profile-mods-preview" style="display: flex; margin-bottom: 20px; align-items: center; padding-left: 10px;">
                             ${modsPreviewHtml}
                         </div>
                         
@@ -1328,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const pRes = await fetch(`https://api.modrinth.com/v2/project/${modId}`); if(!pRes.ok) return; const pData = await pRes.json();
                     const vRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`); const vData = await vRes.json();
                     if (vData.length > 0) {
-                        tempAiCart.push({ id: pData.id, title: pData.title, type: 'mod' }); procesados++; aiLog(`[${procesados}] Añadido ${pData.title}...`);
+                        tempAiCart.push({ id: pData.id, title: pData.title, type: 'mod', icon: pData.icon_url, banner: (pData.gallery && pData.gallery.length > 0) ? pData.gallery[0].url : pData.icon_url }); procesados++; aiLog(`[${procesados}] Añadido ${pData.title}...`);
                         const deps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
                         for (let d of deps) await resolveDepsAndAddTemp(d.project_id);
                     }
