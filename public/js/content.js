@@ -384,9 +384,12 @@ if (sharedPack) {
                     <div class="mod-tags-container">${tagsHtml}</div>
                     <p class="mod-desc">${mod.description.substring(0, 60)}...</p>
                 </div>
-                <div style="padding: 0 10px 10px 10px; z-index: 10; margin-top: auto;">
-                    <button class="btn btn-primary w-100 btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="${isAdded ? 'background: var(--success); color: white;' : ''}">
+                <div style="padding: 0 10px 10px 10px; z-index: 10; margin-top: auto; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 2; ${isAdded ? 'background: var(--success); color: white;' : ''}">
                         <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
+                    </button>
+                    <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="flex: 1; padding: 0; display: flex; justify-content: center; align-items: center; border-color: #8b5cf6; color: #8b5cf6;">
+                        <i class="ph-bold ph-download-simple" style="font-size: 18px;"></i>
                     </button>
                 </div>
             `;
