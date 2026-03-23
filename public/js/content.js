@@ -759,16 +759,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 10. REFORMA TOTAL DEL CARRITO (Lógica Categorizada y Premium)
     // ============================================================
 
-    // Referencias a los nuevos contenedores dinámicos del HTML
-    const cartContainers = {
-        'mod': { main: document.getElementById('cart-cat-mods'), list: document.getElementById('cart-list-mods') },
-        'resourcepack': { main: document.getElementById('cart-cat-resourcepacks'), list: document.getElementById('cart-list-resourcepacks') },
-        'shader': { main: document.getElementById('cart-cat-shaders'), list: document.getElementById('cart-list-shaders') },
-        'library': { main: document.getElementById('cart-cat-libraries'), list: document.getElementById('cart-list-libraries') }
-    };
-
     window.updateCartUI = function() {
-        // 1. Limpiar todas las listas físicas
+        const cartBody = document.querySelector('.cart-body');
+        if(!cartBody) return;
+
+        // 1. Auto-Reparación: Si no existen los contenedores en el HTML, los creamos mágicamente
+        if(!document.getElementById('cart-cat-mods')) {
+            cartBody.innerHTML = `
+                <div id="empty-cart-msg" class="empty-state"><i class="ph-duotone ph-ghost" style="color: var(--border-color); font-size: 60px;"></i><p>Tu modpack está vacío.</p></div>
+                <div id="cart-cat-mods" class="cart-category-container"><div class="cart-category-header" style="color: var(--accent);"><i class="ph-fill ph-puzzle-piece"></i> Mods de Juego</div><ul id="cart-list-mods" class="cart-item-list"></ul></div>
+                <div id="cart-cat-resourcepacks" class="cart-category-container"><div class="cart-category-header" style="color: #10b981;"><i class="ph-fill ph-paint-brush"></i> Texturas</div><ul id="cart-list-resourcepacks" class="cart-item-list"></ul></div>
+                <div id="cart-cat-shaders" class="cart-category-container"><div class="cart-category-header" style="color: #f59e0b;"><i class="ph-fill ph-aperture"></i> Shaders</div><ul id="cart-list-shaders" class="cart-item-list"></ul></div>
+                <div id="cart-cat-libraries" class="cart-category-container"><div class="cart-category-header" style="color: #6366f1;"><i class="ph-fill ph-books"></i> Librerías</div><ul id="cart-list-libraries" class="cart-item-list"></ul></div>
+                <div id="recommendations-box" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; display: none; background: rgba(16,185,129,0.05); padding: 15px; border-radius: var(--radius-md);"><p class="muted-text text-sm mb-10"><i class="ph-fill ph-lightbulb" style="color: #fbbf24;"></i> <strong style="color:white;">Sugerencia Coherente:</strong></p><div id="rec-item"></div></div>
+            `;
+        }
+
+        // 2. AHORA SÍ: Definimos las referencias DESPUÉS de que se crearon (Este era el bug)
+        const cartContainers = {
+            'mod': { main: document.getElementById('cart-cat-mods'), list: document.getElementById('cart-list-mods') },
+            'resourcepack': { main: document.getElementById('cart-cat-resourcepacks'), list: document.getElementById('cart-list-resourcepacks') },
+            'shader': { main: document.getElementById('cart-cat-shaders'), list: document.getElementById('cart-list-shaders') },
+            'library': { main: document.getElementById('cart-cat-libraries'), list: document.getElementById('cart-list-libraries') }
+        };
+
+        // 3. Limpiar todas las listas físicas
         Object.values(cartContainers).forEach(c => {
             if(c.list) c.list.innerHTML = '';
             if(c.main) c.main.style.display = 'none'; // Ocultar categoría por defecto
@@ -784,78 +799,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(emptyMsg) emptyMsg.style.display = 'none';
             if(btnFinalizar) btnFinalizar.disabled = false;
 
-            // 2. Iterar por el carrito y renderizar el HTML Premium (con Banner y Avatar)
+            // 4. Iterar por el carrito y renderizar el HTML Premium
             window.modpackCart.forEach((item, index) => {
-                
-                // Determinar la categoría real (separando librerías de mods comunes)
                 let renderCat = item.type;
                 if(item.type === 'mod' && item.categories && item.categories.includes('library')) renderCat = 'library';
                 
                 const target = cartContainers[renderCat];
-                if(!target) return; // Por si acaso llega un tipo desconocido
+                if(!target) return; // Protección anti-crasheos
 
                 // Encender el encabezado de la categoría
                 target.main.style.display = 'block';
 
-                // Definir Iconos y Banners predeterminados si no existen
-                const icon = item.icon || 'https://via.placeholder.com/48/18181b/ffffff?text=?';
-                const banner = item.banner || 'https://via.placeholder.com/300x60/18181b/27272a';
+                const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=?';
+                const banner = item.banner || 'https://placehold.co/300x60/18181b/27272a';
 
                 const li = document.createElement('li');
                 li.className = 'cart-item';
                 li.innerHTML = `
-                    <button class="btn-config-cart" data-id="${item.id}" data-title="${item.title}" title="Configurar .json/.toml">
-                        <i class="ph-bold ph-gear"></i>
-                    </button>
-                    <button class="btn-remove-cart" data-index="${index}" title="Eliminar de mi Pack">
-                        <i class="ph-bold ph-trash"></i>
-                    </button>
-                
+                    <button class="btn-config-cart" data-id="${item.id}" data-title="${item.title}" title="Configurar .json/.toml"><i class="ph-bold ph-gear"></i></button>
+                    <button class="btn-remove-cart" data-index="${index}" title="Eliminar de mi Pack"><i class="ph-bold ph-trash"></i></button>
                     <div class="cart-item-banner" style="background-image: url('${banner}');"></div>
                     <img src="${icon}" class="cart-item-avatar">
-                
-                    <div class="cart-item-info">
-                        <span class="cart-item-title">${item.title}</span>
-                    </div>
+                    <div class="cart-item-info"><span class="cart-item-title">${item.title}</span></div>
                 `;
                 target.list.appendChild(li);
             });
 
-            // 3. Re-asignar listeners a los nuevos botones flotantes del carrito
+            // 5. Listeners para los botones flotantes del carrito
             document.querySelectorAll('.btn-remove-cart').forEach(btn => {
                 btn.addEventListener('click', function() {
                     window.modpackCart.splice(this.dataset.index, 1);
                     window.updateCartUI();
-                    fetchRealMods(false); // Actualizar los botones de "Añadir" en la rejilla principal
+                    fetchRealMods(false); 
                 });
             });
 
             document.querySelectorAll('.btn-config-cart').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const modId = this.dataset.id;
                     const editor = document.getElementById('config-editor-modal');
                     if(!editor) return;
-                    
+                    document.getElementById('config-mod-id').value = this.dataset.id;
                     document.getElementById('config-mod-title').innerHTML = `<i class="ph-bold ph-gear"></i> Config: ${this.dataset.title}`;
-                    document.getElementById('config-mod-id').value = modId;
-                    
-                    if(window.modConfigs[modId]) {
-                        document.getElementById('config-filename').value = window.modConfigs[modId].filename;
-                        document.getElementById('config-content').value = window.modConfigs[modId].content;
-                    } else {
-                        document.getElementById('config-filename').value = `${this.dataset.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-common.toml`;
-                        document.getElementById('config-content').value = ``;
-                    }
+                    document.getElementById('config-filename').value = `${this.dataset.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.toml`;
                     editor.classList.remove('hidden');
                 });
             });
         }
 
-        // 4. Actualizar el contador del botón flotante circular
+        // 6. Actualizar el contador del botón flotante circular
         const mobileBadge = document.querySelector('#mobile-cart-toggle-btn .badge');
         if(mobileBadge) mobileBadge.textContent = window.modpackCart.length;
         
-        // 5. Llamar a las recomendaciones inteligentes
+        // 7. Llamar a las recomendaciones
         window.updateRecommendations();
     };
 
