@@ -1,4 +1,3 @@
-
 /* =========================================
    1. PALETA PREMIUM (Estilo Modrinth/Zinc)
    ========================================= */
@@ -145,6 +144,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     background-position: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     position: relative;
+    background-color: var(--bg-main); /* Fallback */
 }
 
 /* Efecto oscuro encima del banner para que destaque el logo */
@@ -193,14 +193,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     margin-bottom: 15px;
     flex: 1;
 }
-
-/* Cart Panel */
-.cart-header, .cart-footer { padding: 20px; background-color: rgba(0,0,0,0.2); }
-.cart-body { flex: 1; overflow-y: auto; padding: 20px; }
-.empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; }
-.empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
-.btn-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; }
-.btn-remove:hover { background: rgba(239, 68, 68, 0.1); }
 
 /* Modals */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 1; transition: opacity 0.2s; }
@@ -379,27 +371,11 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
     .mod-desc, .mod-tags-container { display: none; } 
 
-.cart-panel {
-    position: fixed;
-    top: 70px;
-    right: -400px; /* Un poco más de margen para esconderlo bien */
-    width: 340px;
-    height: calc(100vh - 70px) !important;
-    background-color: var(--bg-panel);
-    border-left: 1px solid var(--border-color);
-    display: flex; 
-    flex-direction: column;
-    z-index: 9999; /* Asegurar que esté por encima de los mods */
-    transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-    padding: 0; 
-    overflow: hidden;
-}    .cart-panel.active-mobile { right: 0; }
-    .cart-body { flex: 1; overflow-y: auto; padding-bottom: 90px; }
-    .cart-footer { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); padding: 15px; border-top: 1px solid var(--border-color); z-index: 20; }
-    
-    .mobile-cart-toggle { position: fixed; bottom: 80px; right: 15px; z-index: 1001; background: var(--accent); color: white; border: none; width: 55px; height: 55px; border-radius: 50%; box-shadow: 0 5px 15px rgba(16,185,129,0.5); display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; }
-    .mobile-cart-toggle .badge { position: absolute; top: -2px; right: -2px; background: var(--danger); font-size: 11px; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+    /* El carrito móvil ocupa casi toda la pantalla */
+    .cart-panel { top: 0; height: 100vh !important; width: 85vw !important; right: -90vw; }
+    .cart-panel.active-mobile, .cart-panel.active { right: 0; }
+    /* El botón circular sube un poco para no tapar la navbar móvil inferior */
+    .mobile-cart-toggle { bottom: 80px; }
 }
 
 /* ---- COMPARADOR DE SHADERS ---- */
@@ -497,39 +473,58 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .mobile-cart-toggle:hover { transform: scale(1.1) translateY(-5px); background: var(--accent-hover); }
 .mobile-cart-toggle .badge { position: absolute; top: -3px; right: -3px; background: var(--danger); font-size: 11px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid var(--bg-panel); }
 
-/* 2. Panel del Carrito (Oculto por defecto en Escritorio también) */
+/* 2. Panel del Carrito (FIX: Flexbox y Sticky Footer) */
 .cart-panel {
     position: fixed;
-    top: 70px; /* Debajo de la topbar */
-    right: -360px; /* Totalmente oculto a la derecha */
-    width: 340px;
+    top: 70px;
+    right: -400px; /* Oculto por defecto */
+    width: 380px; /* Un poco más ancho */
     height: calc(100vh - 70px) !important;
     background-color: var(--bg-panel);
     border-left: 1px solid var(--border-color);
-    display: flex; flex-direction: column;
+    display: flex !important; /* Estrictamente flex */
+    flex-direction: column !important; /* Estrictamente columna */
     z-index: 1000;
-    transition: right 0.3s ease-in-out; /* Transición suave */
+    transition: right 0.3s ease-in-out;
     box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-    padding: 0; overflow: hidden;
+    padding: 0; 
+    overflow: hidden; /* Que el panel principal NO haga scroll */
 }
 
-/* Estado Activo (Cuando se presiona el botón circular) */
+/* Estado Activo */
 .cart-panel.active { right: 0; }
 
-.cart-header, .cart-footer { padding: 20px; background-color: rgba(0,0,0,0.3); border-color: var(--border-color); flex-shrink: 0; }
-.cart-body { flex: 1; overflow-y: auto; padding: 20px; }
+.cart-header { padding: 20px; background-color: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-color); flex-shrink: 0 !important; }
+
+/* El BODY es el único que scrollea */
+.cart-body { flex: 1 1 auto !important; overflow-y: auto !important; padding: 20px; padding-bottom: 30px; }
+
+/* Footer estrictamente pegado abajo */
+.cart-footer { 
+    padding: 20px; 
+    background-color: var(--bg-panel); /* Fondo sólido */
+    border-top: 1px solid var(--border-color); 
+    flex-shrink: 0 !important; 
+    position: sticky; 
+    bottom: 0; 
+    width: 100%;
+    z-index: 20;
+}
+
+.empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; }
+.empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.btn-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; }
+.btn-remove:hover { background: rgba(239, 68, 68, 0.1); }
 
 /* 3. Estilos de Categorización Dinámica */
-.cart-category-container { 
-    margin-bottom: 25px; 
-    display: block; 
-}.cart-category-header {
+.cart-category-container { margin-bottom: 25px; display: block; }
+.cart-category-header {
     font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
     display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .cart-category-header i { font-size: 1rem; }
 
-/* 4. Nuevo Tarjeta del Item del Carrito (Icono + Banner + Premium) */
+/* 4. Nuevo Tarjeta del Item del Carrito */
 .cart-item-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .cart-item {
     background: var(--bg-main); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-md);
@@ -537,8 +532,15 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 }
 .cart-item:hover { border-color: var(--accent); transform: translateX(-3px); }
 
-/* Banner pequeño de fondo en el carrito */
-.cart-item-banner { height: 45px; background-size: cover; background-position: center; position: relative; }
+/* Banner pequeño de fondo en el carrito (HACEMOS MÁS ALTO EL BANNER) */
+.cart-item-banner { 
+    height: 75px; /* Más grande para que SÍ se vea */
+    background-size: cover; 
+    background-position: center; 
+    background-repeat: no-repeat;
+    position: relative; 
+    background-color: #27272a; /* Fondo gris en caso de error */
+}
 .cart-item-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(18,18,18,0.9)); }
 
 /* Avatar flotante sobre el banner en el carrito */
@@ -558,36 +560,3 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 /* Botón Trash (Eliminar) flotante a la derecha */
 .btn-remove-cart { position: absolute; top: 5px; right: 5px; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; z-index: 3; }
 .btn-remove-cart:hover { background: var(--danger); color: white; }
-
-
-/* ============================================================
-   RESPONSIVIDAD MÓVIL (Correcciones para el nuevo carrito)
-   ============================================================ */
-@media (max-width: 992px) {
-    /* El carrito móvil ocupa casi toda la pantalla */
-    .cart-panel { top: 0; height: 100vh !important; width: 85vw; right: -90vw; }
-    .cart-panel.active { right: 0; }
-    /* El botón circular sube un poco para no tapar la navbar móvil inferior */
-    .mobile-cart-toggle { bottom: 80px; }
-}
-
-.cart-item-banner { 
-    height: 60px; 
-    background-size: cover; 
-    background-position: center; 
-    position: relative; 
-    background-color: #27272a; /* Fondo por si falla la imagen */
-}
-
-.cart-item-avatar {
-    width: 40px; 
-    height: 40px; 
-    border-radius: 8px; 
-    border: 3px solid var(--bg-panel);
-    position: absolute; 
-    left: 12px; 
-    bottom: 15px; /* Ajustado para que flote sobre la info */
-    z-index: 2; 
-    object-fit: cover; 
-    background: var(--bg-main);
-}
