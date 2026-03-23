@@ -1155,3 +1155,147 @@ async function runAutoScanJEI(modId, mcVers, loader) {
     }
 
 });
+
+// ==========================================
+    // IA MODPACK BUILDER (AGENTE INTELIGENTE)
+    // ==========================================
+    const btnAiBuilder = document.getElementById('btn-ai-builder');
+    const aiModal = document.getElementById('ai-builder-modal');
+    const aiPrompt = document.getElementById('ai-prompt-input');
+    const aiTerminal = document.getElementById('ai-terminal');
+    const btnGenerateAi = document.getElementById('btn-generate-ai');
+
+    if (btnAiBuilder && aiModal) {
+        btnAiBuilder.addEventListener('click', () => {
+            aiModal.classList.remove('hidden');
+            aiTerminal.style.display = 'none';
+            aiTerminal.innerHTML = '> IA Iniciada...<br>';
+            aiPrompt.value = '';
+            btnGenerateAi.disabled = false;
+        });
+
+        const aiLog = (msg) => {
+            aiTerminal.style.display = 'block';
+            aiTerminal.innerHTML += `> ${msg}<br>`;
+            aiTerminal.scrollTop = aiTerminal.scrollHeight;
+        };
+
+        btnGenerateAi.addEventListener('click', async () => {
+            const prompt = aiPrompt.value.toLowerCase().trim();
+            if (prompt.length < 5) return alert("¡Sé un poco más descriptivo!");
+
+            btnGenerateAi.disabled = true;
+            btnGenerateAi.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+            
+            // Vaciar el carrito si el usuario acepta
+            if(window.modpackCart.length > 0) {
+                if(!confirm("La IA necesita un carrito vacío para trabajar. ¿Vaciar tu modpack actual?")) {
+                    btnGenerateAi.innerHTML = '<i class="ph-bold ph-brain"></i> Crear mi Modpack';
+                    btnGenerateAi.disabled = false;
+                    return;
+                }
+                window.modpackCart = [];
+            }
+
+            const mcVers = document.getElementById('mod-version-select').value;
+            const loader = document.getElementById('mod-loader-select').value;
+            
+            // 1. Análisis NLP (Procesamiento de Lenguaje Natural) Simulado
+            aiLog("Analizando tus especificaciones...");
+            let keywords = [];
+            let includeOptimization = false;
+            let includeBase = true; // JEI, Mouse Tweaks, etc.
+
+            if (prompt.includes("rpg") || prompt.includes("aventura") || prompt.includes("explorar") || prompt.includes("dragones")) keywords.push("adventure");
+            if (prompt.includes("magia") || prompt.includes("hechizos") || prompt.includes("bruja")) keywords.push("magic");
+            if (prompt.includes("tecnologia") || prompt.includes("tech") || prompt.includes("maquinas")) keywords.push("technology");
+            if (prompt.includes("dificil") || prompt.includes("hardcore") || prompt.includes("jefes") || prompt.includes("combate")) keywords.push("combat");
+            if (prompt.includes("decoracion") || prompt.includes("muebles") || prompt.includes("bonito")) keywords.push("decoration");
+            if (prompt.includes("animales") || prompt.includes("mobs") || prompt.includes("criaturas")) keywords.push("mobs");
+            if (prompt.includes("comida") || prompt.includes("cultivos") || prompt.includes("granjas")) keywords.push("food");
+            if (prompt.includes("optimizado") || prompt.includes("rendimiento") || prompt.includes("fps") || prompt.includes("lag")) includeOptimization = true;
+
+            if (keywords.length === 0) {
+                // Si escribe algo muy genérico, buscamos la palabra tal cual
+                const fallback = prompt.split(' ')[0];
+                keywords.push(fallback);
+                aiLog(`Detectado tema libre: "${fallback}"`);
+            } else {
+                aiLog(`Temáticas detectadas: ${keywords.join(', ')}`);
+            }
+
+            let modsAñadidos = 0;
+            let modsList = [];
+
+            // 2. Extraer Mods Base/Esenciales (siempre vienen bien)
+            if (includeBase) {
+                aiLog("Añadiendo mods de calidad de vida (JEI, etc)...");
+                const bases = ['jei', 'mouse-tweaks', 'appleskin'];
+                for (let slug of bases) modsList.push(slug);
+            }
+
+            if (includeOptimization) {
+                aiLog("Configurando paquete de Ultra-Rendimiento...");
+                const fps = ['sodium', 'lithium', 'entityculling', 'ferrite-core']; // Modrinth mapeará a Rubidium/Embeddium en forge
+                for (let slug of fps) modsList.push(slug);
+            }
+
+            // 3. Búsqueda en Modrinth por cada palabra clave
+            for (let cat of keywords) {
+                try {
+                    aiLog(`Buscando los mejores mods de ${cat}...`);
+                    const res = await fetch(`https://api.modrinth.com/v2/search?limit=4&index=relevance&facets=[["versions:${mcVers}"],["categories:${loader}"],["categories:${cat}"],["project_type:mod"]]`);
+                    const data = await res.json();
+                    data.hits.forEach(m => modsList.push(m.project_id));
+                } catch(e) {
+                    aiLog(`<span style="color:red">Error buscando ${cat}</span>`);
+                }
+            }
+
+            // 4. Filtrar, Validar e Instalar Librerías Recursivamente
+            aiLog("Ensamblando y resolviendo dependencias...");
+            
+            // Función auxiliar para procesar un mod y sus dependencias (reutiliza lógica existente)
+            const addModAndDeps = async (modId) => {
+                if(window.modpackCart.some(m => m.id === modId)) return; // Ya existe
+
+                try {
+                    const pRes = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
+                    const pData = await pRes.json();
+                    
+                    // Verificar versión específica
+                    const vRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                    const vData = await vRes.json();
+                    
+                    if (vData.length > 0) {
+                        window.modpackCart.push({ id: pData.id, title: pData.title, type: 'mod' });
+                        modsAñadidos++;
+                        
+                        // Buscar dependencias
+                        const deps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+                        for (let d of deps) {
+                            await addModAndDeps(d.project_id); // Llamada recursiva mágica
+                        }
+                    }
+                } catch(e) {}
+            };
+
+            // Ejecutar la instalación de la lista en paralelo (lotes pequeños para no saturar)
+            for(let id of [...new Set(modsList)]) {
+                await addModAndDeps(id);
+                aiTerminal.scrollTop = aiTerminal.scrollHeight;
+            }
+
+            window.updateCartUI();
+            
+            aiLog("¡Modpack completado con éxito!");
+            aiLog(`Se añadieron un total de ${modsAñadidos} mods (incluyendo librerías).`);
+            
+            btnGenerateAi.innerHTML = '<i class="ph-bold ph-check"></i> ¡Listo!';
+            
+            setTimeout(() => {
+                aiModal.classList.add('hidden');
+                btnGenerateAi.innerHTML = '<i class="ph-bold ph-brain"></i> Crear mi Modpack';
+            }, 3000);
+        });
+    }
