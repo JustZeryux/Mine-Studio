@@ -78,26 +78,32 @@ if (sharedPack) {
                             });
 
                             // Acción: Botón Instalar
-                            btnInstall.onclick = () => {
-                                btnInstall.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Instalando...';
+// Acción: Botón Instalar y Descargar Directo
+                            btnInstall.onclick = async () => {
+                                btnInstall.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
                                 btnInstall.disabled = true;
                                 
-                                let añadidos = 0;
-                                parsedItems.forEach(pi => {
-                                    // Prevenir duplicados en el carrito
-                                    if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) {
-                                        window.modpackCart.push(pi);
-                                        añadidos++;
-                                    }
-                                });
-                                
-                                window.updateCartUI();
-                                sharedModal.classList.add('hidden');
-                                alert(`✅ ¡Listo! Se añadieron ${añadidos} mods a tu ensamblador.`);
-                                
-                                // Resetear botón por si acaso
-                                btnInstall.innerHTML = '<i class="ph-bold ph-download-simple"></i> Instalar Modpack';
-                                btnInstall.disabled = false;
+                                try {
+                                    // 1. Limpiamos el carrito y metemos los mods compartidos
+                                    window.modpackCart = [];
+                                    parsedItems.forEach(pi => {
+                                        if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) {
+                                            window.modpackCart.push(pi);
+                                        }
+                                    });
+                                    window.updateCartUI();
+                                    
+                                    // 2. Activamos el Motor Turbo para descargar
+                                    await window.requestBuild('download_only');
+                                    
+                                    sharedModal.classList.add('hidden');
+                                    alert(`✅ ¡Felicidades! Tu Modpack compartido se ha descargado correctamente.`);
+                                } catch(e) {
+                                    alert(`❌ Hubo un error al empaquetar el ZIP: ${e.message}`);
+                                } finally {
+                                    btnInstall.innerHTML = '<i class="ph-bold ph-download-simple"></i> Instalar Modpack';
+                                    btnInstall.disabled = false;
+                                }
                             };
 
                             // Acción: Botón Cancelar
