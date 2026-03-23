@@ -1182,8 +1182,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const mobileBtn = document.createElement('button'); mobileBtn.id = 'mobile-cart-toggle-btn'; mobileBtn.className = 'mobile-cart-toggle hidden-desktop'; mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">0</span>`; document.body.appendChild(mobileBtn);
-    mobileBtn.addEventListener('click', () => { const cart = document.querySelector('.cart-panel'); cart.classList.toggle('active-mobile'); mobileBtn.innerHTML = cart.classList.contains('active-mobile') ? `<i class="ph-bold ph-x"></i>` : `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`; });
+// Creamos el botón flotante si no existe
+    let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
+    if (!mobileBtn) {
+        mobileBtn = document.createElement('button');
+        mobileBtn.id = 'mobile-cart-toggle-btn';
+        // Fíjate que aquí quitamos "hidden-desktop" para que se vea siempre
+        mobileBtn.className = 'mobile-cart-toggle'; 
+        mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+        document.body.appendChild(mobileBtn);
+    }
+
+    const cartPanel = document.querySelector('.cart-panel');
+
+    if (mobileBtn && cartPanel) {
+        mobileBtn.addEventListener('click', () => {
+            // Ahora usamos solo 'active' para que funcione igual en PC y celular
+            cartPanel.classList.toggle('active'); 
+            
+            if(cartPanel.classList.contains('active')) {
+                mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
+            } else {
+                mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+            }
+        });
+    }
 
     // ==========================================
     // 12. COMPARADOR DE SHADERS
