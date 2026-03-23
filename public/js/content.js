@@ -1077,38 +1077,41 @@ if(btnJustSave) btnJustSave.addEventListener('click', () => requestBuild('save_o
     sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
     let timeout = null; searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
 
-    // ============================================================
-    // MOTOR DE SCROLL INFINITO (Estilo Netflix/Instagram)
+   // ============================================================
+    // MOTOR DE SCROLL INFINITO (Corregido para Nuevo Diseño)
     // ============================================================
     
-    // Mantenemos el clic manual por si acaso falla el scroll
+    // Mantenemos el clic manual por si acaso
     if(btnLoadMore) {
         btnLoadMore.addEventListener('click', () => { 
             if(!isFetchingMods) { currentOffset += 50; fetchRealMods(true); }
         });
     }
 
-    // Detectar cuando el usuario llega al fondo de la pantalla
-    window.addEventListener('scroll', () => {
-        const modsView = document.getElementById('view-mods');
-        
-        // Solo activamos el scroll infinito si estamos viendo el catálogo
-        if (modsView && !modsView.classList.contains('hidden')) {
-            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    // AHORA DETECTAMOS EL SCROLL DEL PANEL CENTRAL, NO DE LA PÁGINA
+    const scrollContainer = document.getElementById('dynamic-center-area');
+    
+    if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', () => {
+            const modsView = document.getElementById('view-mods');
             
-            // Si el usuario está a 400px de llegar al fondo de la página...
-            if (scrollTop + clientHeight >= scrollHeight - 400) {
+            // Solo activamos el scroll infinito si estamos viendo el catálogo
+            if (modsView && !modsView.classList.contains('hidden')) {
+                // Tomamos las medidas exactas del contenedor que hace scroll
+                const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
                 
-                // Si hay más mods por cargar y no estamos ya cargando
-                if (btnLoadMore && btnLoadMore.style.display !== 'none' && !isFetchingMods) {
-                    currentOffset += 50; // Sumamos los 50 que acabamos de pedir
-                    fetchRealMods(true); // Pedimos los siguientes 50
+                // Si el usuario está a 600px de llegar al fondo del panel...
+                if (scrollTop + clientHeight >= scrollHeight - 600) {
+                    
+                    // Si hay más mods por cargar y no estamos ya cargando
+                    if (btnLoadMore && btnLoadMore.style.display !== 'none' && !isFetchingMods) {
+                        currentOffset += 50; 
+                        fetchRealMods(true); 
+                    }
                 }
             }
-        }
-    });
-    updateSearch();
-
+        });
+    }
     const mobileBtn = document.createElement('button');
     mobileBtn.id = 'mobile-cart-toggle-btn';
     mobileBtn.className = 'mobile-cart-toggle hidden-desktop';
