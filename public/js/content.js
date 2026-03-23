@@ -448,6 +448,43 @@ if (sharedPack) {
                 document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
                 document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información...</p></div>`;
                 document.getElementById('detail-gallery').innerHTML = '';
+                // --- NUEVO: BOTONES FIJOS EN LA PARTE SUPERIOR (AL LADO DEL TÍTULO) ---
+                const topActions = document.getElementById('detail-top-actions');
+                const isAlreadyInCart = window.modpackCart.some(item => item.id === mod.project_id);
+                
+                if (topActions) {
+                    topActions.innerHTML = `
+                        <button class="btn btn-primary btn-add-top" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAlreadyInCart ? 'disabled' : ''} style="padding: 10px 20px; font-size: 0.9rem; ${isAlreadyInCart ? 'background: var(--success); color: white;' : ''}">
+                            <i class="ph-bold ${isAlreadyInCart ? 'ph-check' : 'ph-plus'}"></i> ${isAlreadyInCart ? 'Añadido' : 'Añadir'}
+                        </button>
+                        <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="border-color: #8b5cf6; color: #8b5cf6; padding: 10px;">
+                            <i class="ph-bold ph-download-simple" style="font-size: 20px;"></i>
+                        </button>
+                    `;
+
+                    // Darle vida al botón de añadir de la parte superior
+                    const btnAddTop = topActions.querySelector('.btn-add-top');
+                    btnAddTop.addEventListener('click', () => {
+                        if (!window.modpackCart.some(item => item.id === mod.project_id)) {
+                            window.modpackCart.push({ id: mod.project_id, title: mod.title, type: mod.project_type || 'mod' });
+                            window.updateCartUI();
+                            btnAddTop.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
+                            btnAddTop.style.background = 'var(--success)';
+                            btnAddTop.style.color = 'white';
+                            btnAddTop.disabled = true;
+                            
+                            // También deshabilitar el botón de la tarjeta por fuera para que coincidan
+                            const outerBtn = card.querySelector('.btn-add-mod');
+                            if(outerBtn) {
+                                outerBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
+                                outerBtn.style.background = 'var(--success)';
+                                outerBtn.style.color = 'white';
+                                outerBtn.disabled = true;
+                            }
+                        }
+                    });
+                }
+                // --- FIN DE BOTONES FIJOS ---
                 
                 const depsContainer = document.getElementById('detail-dependencies');
                 depsContainer.innerHTML = '';
