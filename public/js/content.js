@@ -922,8 +922,8 @@ window.modpackCart.push({
         
         // 7. Llamar a las recomendaciones
         window.updateRecommendations();
-    };
-
+    )
+};
 
     // ============================================================
     // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
