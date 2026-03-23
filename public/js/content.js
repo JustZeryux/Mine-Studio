@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cartList = document.getElementById('cart-list');
     const btnOpenSaveModal = document.getElementById('btn-open-save-modal');
     const authModal = document.getElementById('auth-modal');
+    const btnTemplateRpg = document.getElementById('btn-template-rpg');
+    const btnTemplateTech = document.getElementById('btn-template-tech');
+    const btnFpsBoost = document.getElementById('btn-fps-boost');
+    const btnRandomizer = document.getElementById('btn-randomizer'); // Botón de la Ruleta
 
     // ==========================================
     // 2. SISTEMA DE SESIONES (AUTENTICACIÓN)
@@ -859,10 +863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
     // ============================================================
-    const btnTemplateRpg = document.getElementById('btn-template-rpg');
-    const btnTemplateTech = document.getElementById('btn-template-tech');
-    const btnFpsBoost = document.getElementById('btn-fps-boost');
-    const btnRandomizer = document.getElementById('btn-randomizer'); // Botón de la Ruleta
+
 
     // Motor Unificado para llenar el carrito de plantillas
     async function applyTemplate(btnElement, templateName, slugsArray) {
