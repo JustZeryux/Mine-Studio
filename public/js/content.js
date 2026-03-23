@@ -90,6 +90,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     }));
 
     // ==========================================
+    // FUNCIÓN: ABRIR DETALLES SOBREPUESTOS
+    // ==========================================
+    window.openModDetailsById = async function(modId) {
+        const modal = document.getElementById('mod-details-modal');
+        modal.classList.remove('hidden');
+
+        document.getElementById('detail-title').textContent = "Cargando...";
+        document.getElementById('detail-author').innerHTML = "";
+        document.getElementById('detail-icon').src = "https://placehold.co/80x80/18181b/ffffff?text=M";
+        document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ...`;
+        document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información del mod...</p></div>`;
+        document.getElementById('detail-gallery').innerHTML = '';
+        
+        const topActions = document.getElementById('detail-top-actions');
+        if (topActions) topActions.innerHTML = '';
+
+        try {
+            const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
+            if(!res.ok) throw new Error("No se encontró el mod");
+            const mod = await res.json();
+
+            document.getElementById('detail-title').textContent = mod.title;
+            const author = mod.team || mod.client_side || 'Desarrollador';
+            document.getElementById('detail-author').innerHTML = `por ${author}`;
+            const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
+            document.getElementById('detail-icon').src = iconUrl;
+            document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
+
+            document.getElementById('detail-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
+
+            const gallery = document.getElementById('detail-gallery');
+            if(mod.gallery && mod.gallery.length > 0) {
+                mod.gallery.forEach(img => {
+                    const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.style.cursor = 'zoom-in';
+                    imgEl.onclick = () => {
+                        const lightbox = document.getElementById('image-lightbox');
+                        document.getElementById('lightbox-img').src = img.url;
+                        lightbox.classList.remove('hidden');
+                        lightbox.style.zIndex = "10030"; 
+                    };
+                    gallery.appendChild(imgEl);
+                });
+            }
+
+            const isAlreadyInCart = window.modpackCart.some(item => item.id === mod.id);
+            if (topActions) {
+                topActions.innerHTML = `
+                    <button class="btn btn-primary btn-add-top" ${isAlreadyInCart ? 'disabled' : ''} style="padding: 10px 20px; font-size: 0.9rem; ${isAlreadyInCart ? 'background: var(--success); color: white;' : ''}">
+                        <i class="ph-bold ${isAlreadyInCart ? 'ph-check' : 'ph-plus'}"></i> ${isAlreadyInCart ? 'Añadido' : 'Añadir'}
+                    </button>
+                `;
+                topActions.querySelector('.btn-add-top').addEventListener('click', function() {
+                    if (!window.modpackCart.some(item => item.id === mod.id)) {
+                        let fType = mod.project_type || 'mod';
+                        if(mod.categories && mod.categories.includes('library')) fType = 'library';
+                        window.modpackCart.push({ id: mod.id, title: mod.title, type: fType, icon: iconUrl, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0].url : iconUrl, categories: mod.categories });
+                        window.updateCartUI();
+                        this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
+                        this.style.background = 'var(--success)';
+                        this.disabled = true;
+                    }
+                });
+            }
+        } catch (e) {
+            document.getElementById('detail-description').innerHTML = `<p style="color:var(--danger); text-align:center;">Error al cargar información del mod de la API.</p>`;
+        }
+    };
+
+    // ==========================================
     // 4. INSTALADOR DE MODPACKS COMPARTIDOS
     // ==========================================
     if (sharedPack) {
@@ -134,9 +203,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
                                     else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
 
+                                    // REEMPLAZA DESDE sharedList.innerHTML += ` HASTA EL CIERRE DEL STRING `; EN LA SECCIÓN 4
                                     sharedList.innerHTML += `
-                                        <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                                            <img src="${icon}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                                        <div class="shared-mod-item" onclick="window.openModDetailsById('${proj.id}')" style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;">
+                                            <img src="${icon}" onerror="this.src='https://placehold.co/50x50/18181b/ffffff?text=M'" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #27272a;">
                                             <div style="flex: 1; text-align: left;">
                                                 <div style="display: flex; align-items: center; gap: 8px;">
                                                     <h4 style="margin: 0; font-size: 1rem; color: #fff;">${proj.title}</h4>
@@ -939,6 +1009,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cartPanel = document.querySelector('.cart-panel');
     if (mobileBtn && cartPanel) {
         mobileBtn.addEventListener('click', () => {
+            // Logica para el nuevo botón "X" de cerrar dentro del carrito
+    const btnCloseCartMobile = document.getElementById('btn-close-cart-mobile');
+    if (btnCloseCartMobile && cartPanel) {
+        btnCloseCartMobile.addEventListener('click', () => {
+            cartPanel.classList.remove('active');
+            cartPanel.style.right = ''; 
+            if (mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+        });
+    }
             if (cartPanel.classList.contains('active')) {
                 cartPanel.classList.remove('active');
                 cartPanel.style.right = ''; 
@@ -1100,12 +1179,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sharedModal.querySelector('h2').textContent = `Contenido: ${p.name}`;
                     sharedModal.querySelector('p').textContent = `Vista previa de los ${p.modsData.length} mods instalados.`;
                     
-                    sharedList.innerHTML = '';
+                    // REEMPLAZA DESDE sharedList.innerHTML += ` HASTA EL CIERRE DEL STRING `; EN LA SECCIÓN 13
                     p.modsData.forEach(item => {
-                        const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=M';
+                        // Respaldo de icono seguro
+                        const icon = item.icon && item.icon.startsWith('http') ? item.icon : 'https://placehold.co/40x40/18181b/ffffff?text=M';
                         sharedList.innerHTML += `
-                            <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                                <img src="${icon}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #27272a;">
+                            <div class="shared-mod-item" onclick="window.openModDetailsById('${item.id}')" style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;">
+                                <img src="${icon}" onerror="this.src='https://placehold.co/40x40/18181b/ffffff?text=M'" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #27272a;">
                                 <div style="flex: 1; text-align: left;">
                                     <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">${item.title}</h4>
                                     <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${item.type}</span>
