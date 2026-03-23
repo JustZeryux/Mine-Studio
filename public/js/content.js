@@ -1492,6 +1492,72 @@ async function runAutoScanJEI(modId, mcVers, loader) {
     }
 
 // ============================================================
+    // 1. MOTOR DEL BUSCADOR DE SKINS (Perfil Premium)
+    // ============================================================
+    const btnLoadSkin = document.getElementById('btn-load-skin');
+    const skinInput = document.getElementById('mc-skin-input');
+    const skinPreview = document.getElementById('mc-skin-preview');
+    const advancedInfo = document.getElementById('mc-advanced-info');
+    const uuidBadge = document.getElementById('mc-uuid-badge');
+    const capeBadge = document.getElementById('mc-cape-badge');
+
+    if (btnLoadSkin && skinInput) {
+        btnLoadSkin.addEventListener('click', async () => {
+            const username = skinInput.value.trim();
+            if (!username) return;
+
+            // Animación de carga
+            btnLoadSkin.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
+            btnLoadSkin.disabled = true;
+            skinPreview.style.opacity = '0.5';
+
+            try {
+                // Consultamos la API pública para obtener UUID
+                const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
+                if (!res.ok) throw new Error("Usuario no encontrado");
+                
+                const data = await res.json();
+
+                // Actualizamos la imagen 3D con el UUID oficial
+                skinPreview.src = `https://crafatar.com/renders/body/${data.uuid}?overlay=true`;
+                skinPreview.onload = () => skinPreview.style.opacity = '1';
+                
+                // Actualizamos las insignias de información
+                uuidBadge.textContent = `UUID: ${data.uuid.substring(0, 8)}...`;
+                
+                // Verificamos si tiene capa
+                if(data.textures && data.textures.cape) {
+                    capeBadge.textContent = 'Capa: Sí';
+                    capeBadge.style.color = '#f59e0b';
+                    capeBadge.style.borderColor = '#b45309';
+                    capeBadge.style.background = 'rgba(245, 158, 11, 0.1)';
+                } else {
+                    capeBadge.textContent = 'Capa: No';
+                    capeBadge.style.color = '#93c5fd';
+                    capeBadge.style.borderColor = '#2563eb';
+                    capeBadge.style.background = 'rgba(37, 99, 235, 0.1)';
+                }
+
+                advancedInfo.style.display = 'block';
+
+            } catch (error) {
+                alert("❌ No se encontró un usuario premium con ese nombre en los servidores de Mojang.");
+                skinPreview.src = "https://crafatar.com/renders/body/Steve?overlay=true";
+                skinPreview.style.opacity = '1';
+                advancedInfo.style.display = 'none';
+            } finally {
+                btnLoadSkin.innerHTML = '<i class="ph-bold ph-magnifying-glass"></i>';
+                btnLoadSkin.disabled = false;
+            }
+        });
+
+        // Permitir buscar presionando la tecla 'Enter'
+        skinInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') btnLoadSkin.click();
+        });
+    }
+
+// ============================================================
     // IA MODPACK BUILDER PRO (Multilingüe + Descarga Directa)
     // ============================================================
     const btnAiBuilder = document.getElementById('btn-ai-builder');
@@ -1710,6 +1776,6 @@ async function runAutoScanJEI(modId, mcVers, loader) {
             }
 
             
-fetchRealMods();
         });
+        fetchRealMods();
     }
