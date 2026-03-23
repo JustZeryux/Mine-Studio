@@ -754,45 +754,90 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) { recBox.style.display = 'none'; }
     };
 
-    window.updateCartUI = function() {
-        cartList.innerHTML = '';
-        if (window.modpackCart.length === 0) {
-            document.getElementById('empty-cart-msg').style.display = 'block';
-            if(btnOpenSaveModal) btnOpenSaveModal.disabled = true; 
-        } else {
-            document.getElementById('empty-cart-msg').style.display = 'none';
-            if(btnOpenSaveModal) btnOpenSaveModal.disabled = false;
+// ============================================================
+    // 10. REFORMA TOTAL DEL CARRITO (Lógica Categorizada y Premium)
+    // ============================================================
 
+    // Referencias a los nuevos contenedores dinámicos del HTML
+    const cartContainers = {
+        'mod': { main: document.getElementById('cart-cat-mods'), list: document.getElementById('cart-list-mods') },
+        'resourcepack': { main: document.getElementById('cart-cat-resourcepacks'), list: document.getElementById('cart-list-resourcepacks') },
+        'shader': { main: document.getElementById('cart-cat-shaders'), list: document.getElementById('cart-list-shaders') },
+        'library': { main: document.getElementById('cart-cat-libraries'), list: document.getElementById('cart-list-libraries') }
+    };
+
+    window.updateCartUI = function() {
+        // 1. Limpiar todas las listas físicas
+        Object.values(cartContainers).forEach(c => {
+            if(c.list) c.list.innerHTML = '';
+            if(c.main) c.main.style.display = 'none'; // Ocultar categoría por defecto
+        });
+
+        const emptyMsg = document.getElementById('empty-cart-msg');
+        const btnFinalizar = document.getElementById('btn-open-save-modal');
+
+        if (window.modpackCart.length === 0) {
+            if(emptyMsg) emptyMsg.style.display = 'block';
+            if(btnFinalizar) btnFinalizar.disabled = true;
+        } else {
+            if(emptyMsg) emptyMsg.style.display = 'none';
+            if(btnFinalizar) btnFinalizar.disabled = false;
+
+            // 2. Iterar por el carrito y renderizar el HTML Premium (con Banner y Avatar)
             window.modpackCart.forEach((item, index) => {
-                const li = document.createElement('li'); li.className = `cart-item`; 
-                let iconClass = 'ph-puzzle-piece', typeColor = 'var(--accent)', typeText = 'Mod';
-                if(item.type === 'resourcepack') { iconClass = 'ph-paint-brush'; typeColor = '#10b981'; typeText = 'Textura'; }
-                else if(item.type === 'shader') { iconClass = 'ph-aperture'; typeColor = '#f59e0b'; typeText = 'Shader'; }
                 
+                // Determinar la categoría real (separando librerías de mods comunes)
+                let renderCat = item.type;
+                if(item.type === 'mod' && item.categories && item.categories.includes('library')) renderCat = 'library';
+                
+                const target = cartContainers[renderCat];
+                if(!target) return; // Por si acaso llega un tipo desconocido
+
+                // Encender el encabezado de la categoría
+                target.main.style.display = 'block';
+
+                // Definir Iconos y Banners predeterminados si no existen
+                const icon = item.icon || 'https://via.placeholder.com/48/18181b/ffffff?text=?';
+                const banner = item.banner || 'https://via.placeholder.com/300x60/18181b/27272a';
+
+                const li = document.createElement('li');
+                li.className = 'cart-item';
                 li.innerHTML = `
-                    <div class="cart-item-info" style="display:flex; align-items:center; gap:12px; overflow:hidden;">
-                        <div class="cart-item-icon" style="width:32px; height:32px; border-radius:6px; display:flex; justify-content:center; align-items:center; color: ${typeColor}; background: ${typeColor}20;">
-                            <i class="ph-fill ${iconClass}" style="font-size: 1.2rem;"></i>
-                        </div>
-                        <div class="cart-item-text" style="display:flex; flex-direction:column;">
-                            <span class="cart-item-title" style="font-weight:600; font-size:0.85rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${item.title}</span>
-                            <span class="cart-item-type" style="font-size:0.65rem; color:${typeColor}; text-transform:uppercase; font-weight:700;">${typeText}</span>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap: 5px;">
-                        <button class="btn-config" data-id="${item.id}" data-title="${item.title}" style="background:transparent; border:none; color:var(--text-main); cursor:pointer; padding:5px;"><i class="ph-bold ph-gear"></i></button>
-                        <button class="btn-remove" data-index="${index}" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:5px;"><i class="ph-bold ph-trash"></i></button>
+                    <button class="btn-config-cart" data-id="${item.id}" data-title="${item.title}" title="Configurar .json/.toml">
+                        <i class="ph-bold ph-gear"></i>
+                    </button>
+                    <button class="btn-remove-cart" data-index="${index}" title="Eliminar de mi Pack">
+                        <i class="ph-bold ph-trash"></i>
+                    </button>
+                
+                    <div class="cart-item-banner" style="background-image: url('${banner}');"></div>
+                    <img src="${icon}" class="cart-item-avatar">
+                
+                    <div class="cart-item-info">
+                        <span class="cart-item-title">${item.title}</span>
                     </div>
                 `;
-                cartList.appendChild(li);
+                target.list.appendChild(li);
             });
 
-            document.querySelectorAll('.btn-remove').forEach(btn => { btn.addEventListener('click', function() { window.modpackCart.splice(this.dataset.index, 1); window.updateCartUI(); fetchRealMods(false); }); });
-            document.querySelectorAll('.btn-config').forEach(btn => { 
-                btn.addEventListener('click', function() { 
+            // 3. Re-asignar listeners a los nuevos botones flotantes del carrito
+            document.querySelectorAll('.btn-remove-cart').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    window.modpackCart.splice(this.dataset.index, 1);
+                    window.updateCartUI();
+                    fetchRealMods(false); // Actualizar los botones de "Añadir" en la rejilla principal
+                });
+            });
+
+            document.querySelectorAll('.btn-config-cart').forEach(btn => {
+                btn.addEventListener('click', function() {
                     const modId = this.dataset.id;
+                    const editor = document.getElementById('config-editor-modal');
+                    if(!editor) return;
+                    
                     document.getElementById('config-mod-title').innerHTML = `<i class="ph-bold ph-gear"></i> Config: ${this.dataset.title}`;
                     document.getElementById('config-mod-id').value = modId;
+                    
                     if(window.modConfigs[modId]) {
                         document.getElementById('config-filename').value = window.modConfigs[modId].filename;
                         document.getElementById('config-content').value = window.modConfigs[modId].content;
@@ -800,15 +845,177 @@ document.addEventListener('DOMContentLoaded', async () => {
                         document.getElementById('config-filename').value = `${this.dataset.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-common.toml`;
                         document.getElementById('config-content').value = ``;
                     }
-                    document.getElementById('config-editor-modal').classList.remove('hidden');
-                }); 
+                    editor.classList.remove('hidden');
+                });
             });
         }
-        const mobileBtn = document.getElementById('mobile-cart-toggle-btn'); if(mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+
+        // 4. Actualizar el contador del botón flotante circular
+        const mobileBadge = document.querySelector('#mobile-cart-toggle-btn .badge');
+        if(mobileBadge) mobileBadge.textContent = window.modpackCart.length;
         
-        // Llamar a las recomendaciones
+        // 5. Llamar a las recomendaciones inteligentes
         window.updateRecommendations();
     };
+
+
+    // ============================================================
+    // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
+    // ============================================================
+    const btnTemplateRpg = document.getElementById('btn-template-rpg');
+    const btnTemplateTech = document.getElementById('btn-template-tech');
+    const btnFpsBoost = document.getElementById('btn-fps-boost');
+    const btnRandomizer = document.getElementById('btn-randomizer'); // Botón de la Ruleta
+
+    // Motor Unificado para llenar el carrito de plantillas
+    async function applyTemplate(btnElement, templateName, slugsArray) {
+        if(!confirm(`Esto añadirá aproximadamente ${slugsArray.length} mods temáticos a tu pack. ¿Continuar?`)) return;
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+        btnElement.disabled = true;
+
+        const mcVers = versionSelect.value;
+        const loader = loaderSelect.value;
+        window.modpackCart = []; // Vaciar carrito actual para la plantilla
+        window.updateCartUI();
+
+        let addedCount = 0;
+        const aiTerminal = document.getElementById('ai-terminal'); // Reutilizamos la terminal para feedback
+        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Iniciando plantilla ${templateName}...<br>`; }
+
+        // Procesar en lotes de 10 para no saturar Modrinth
+        const batchSize = 10;
+        for(let i=0; i<slugsArray.length; i+=batchSize) {
+            const batch = slugsArray.slice(i, i+batchSize);
+            const formatIds = batch.map(slug => `"${slug}"`).join(',');
+            
+            try {
+                // Pedir info detallada (Iconos, Banners)
+                const res = await fetch(`https://api.modrinth.com/v2/projects?ids=[${formatIds}]`);
+                const projects = await res.json();
+
+                projects.forEach(p => {
+                    // Verificación de compatibilidad básica
+                    if(!p.game_versions.includes(mcVers) || !p.categories.includes(loader)) return;
+
+                    // Lógica para separar librerías automáticamente
+                    let finalType = p.project_type || 'mod';
+                    if(p.categories.includes('library')) finalType = 'library';
+
+                    window.modpackCart.push({
+                        id: p.id,
+                        title: p.title,
+                        type: finalType,
+                        icon: p.icon_url,
+                        banner: (p.gallery && p.gallery.length > 0) ? p.gallery[0].url : null,
+                        categories: p.categories // Guardamos categorías para JEI/Visor
+                    });
+                    addedCount++;
+                });
+                window.updateCartUI();
+                if(aiTerminal) { aiTerminal.innerHTML += `> Lote ${i/batchSize + 1} listo. Mods en pack: ${addedCount}<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
+
+            } catch(e) {}
+        }
+
+        // Efecto visual de éxito
+        btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${addedCount} Mods Listos!`;
+        btnElement.style.background = 'var(--success)'; btnElement.style.color = 'white';
+        if(aiTerminal) aiTerminal.innerHTML += `> Plantilla ${templateName} completada con ${addedCount} mods chidos.`;
+        
+        setTimeout(() => { btnElement.innerHTML = originalHtml; btnElement.style = ''; btnElement.disabled = false; if(aiTerminal) aiTerminal.style.display='none'; }, 4000);
+    }
+
+    // LISTAS PRO (Expandibles hasta 100+) - Añade más slugs oficiales de Modrinth aquí
+    const listRpgPro = ["epic-fight", "irons-spells-n-spellbooks", "cataclysm", "ice-and-fire", "waystones", "better-combat", "jei", "appleskin", "alexsmobs", "aquaculture-2", "wawla", "xaeros-minimap", "mowzies-mobs", "byg", "the-twilight-forest", "blue-skies", "ars-nouveau", "reliquary", "valhelsia-structures", "the-undergarden", "when-dungeons-arise", "born-in-chaos", "dungeons-libraries", "goblins-and-dungeons", "naturalist", "friends-and-foes", "environmental", "upgrade-aquatic", "guard-villagers", "castle-in-the-sky", "bountiful", "comforts", "towers-of-the-wild-reworked", "graveyard", "eidolon", "simple-shops", "tombstone", "endrem"]; // Añade ~60 slugs más para llegar a 100
+
+    const listTechPro = ["create", "mekanism", "applied-energistics-2", "cc-tweaked", "immersive-engineering", "refined-storage", "jei", "thermal_expansion", "industrial-forethought", "pneumaticcraft", "rftools-base", "powah", "mouse-tweaks", "extremereactors", "computercraft", "ae2-things", "mekanism-generators", "create-confectionery", "create-steam-n-rails", "little-logistics", "building-gadgets", "tinkers-construct", "botania", "quark", "alexsmobs", "refined-storage-addons", "thermal_foundation", "immersive-petroleum", "cyclic", "industrial-revolution", "modern-industrialization", "tech-reborn"]; // Añade ~70 slugs más para llegar a 100
+
+    // Asignación de clics Plantillas PRO
+    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyTemplate(btnTemplateRpg, "RPG Épico", listRpgPro));
+    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyTemplate(btnTemplateTech, "Industrial Pro", listTechPro));
+    
+    // Boost FPS (Se mantiene igual pero ahora usa el UI premium)
+    if (btnFpsBoost) btnFpsBoost.addEventListener('click', () => {
+        let fpsMods = ['ferrite-core', 'entityculling', 'modernfix', 'clumps'];
+        if (loaderSelect.value === 'fabric') fpsMods.push('sodium', 'lithium', 'iris'); else fpsMods.push('embeddium', 'oculus', 'canary'); 
+        applyTemplate(btnFpsBoost, "Boost FPS", fpsMods);
+    });
+
+    // LA RULETA DE RETOS (Randomizer) - Código corregido y conectado
+    if (btnRandomizer) {
+        btnRandomizer.addEventListener('click', async () => {
+            if(!confirm("Esto vaciará tu carrito y generará un Modpack COMPLETAMENTE ALEATORIO para un survival sorpresa. ¿Continuar?")) return;
+            
+            btnRandomizer.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Girando Ruleta...';
+            btnRandomizer.disabled = true;
+            btnRandomizer.style.background = 'linear-gradient(45deg, #ec4899, #8b5cf6)'; // Efecto arcoiris
+
+            // Vaciar carrito
+            window.modpackCart = []; window.updateCartUI();
+
+            const mcVers = versionSelect.value;
+            const loader = loaderSelect.value;
+
+            // Decidir un número al azar entre 50 y 130 mods
+            const randomLimit = Math.floor(Math.random() * (130 - 50 + 1)) + 50; 
+            
+            try {
+                // Buscamos mods populares aleatorios (limitados por el número al azar)
+                const res = await fetch(`https://api.modrinth.com/v2/search?limit=${randomLimit}&index=downloads&facets=[["versions:${mcVers}"],["categories:${loader}"],["project_type:mod"]]`);
+                const data = await res.json();
+                
+                // Añadimos TODO al carrito sin preguntar
+                data.hits.forEach(mod => {
+                    window.modpackCart.push({
+                        id: mod.project_id,
+                        title: mod.title,
+                        type: 'mod',
+                        icon: mod.icon_url,
+                        // No tenemos banner en la búsqueda rápida, updateCartUI usará el placeholder
+                    });
+                });
+
+                window.updateCartUI();
+                
+                btnRandomizer.innerHTML = `<i class="ph-bold ph-check"></i> ${data.hits.length} Mods al Azar`;
+                btnRandomizer.style.background = 'var(--success)';
+
+                setTimeout(() => {
+                    btnRandomizer.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Ruleta de Retos';
+                    btnRandomizer.style = '';
+                    btnRandomizer.disabled = false;
+                }, 3000);
+
+            } catch(e) { 
+                alert("Error conectando con la Ruleta Cósmica."); 
+                btnRandomizer.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Ruleta de Retos';
+                btnRandomizer.style = '';
+                btnRandomizer.disabled = false;
+            }
+        });
+    }
+
+
+    // ============================================================
+    // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
+    // ============================================================
+    const mobileCartBtn = document.getElementById('mobile-cart-toggle-btn');
+    const cartPanel = document.querySelector('.cart-panel');
+
+    if (mobileCartBtn && cartPanel) {
+        // Esta lógica sirve para Celular y para ESCRITORIO
+        mobileCartBtn.addEventListener('click', () => {
+            cartPanel.classList.toggle('active'); // Enciende/Apaga la clase CSS que mueve el 'right'
+            
+            // Cambiar icono del botón circular
+            if(cartPanel.classList.contains('active')) {
+                mobileCartBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; // Icono Cerrar
+            } else {
+                mobileCartBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+            }
+        });
+    }
 
     document.getElementById('btn-save-config')?.addEventListener('click', () => {
         const modId = document.getElementById('config-mod-id').value;
