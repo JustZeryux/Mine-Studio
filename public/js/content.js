@@ -272,6 +272,7 @@ if (sharedPack) {
     let currentFilter = 'mod';
     let currentCategory = '';
     let currentOffset = 0; 
+    let isFetchingMods = false; // NUEVO CANDADO DE SEGURIDAD
 
     const updateSearch = () => {
         const cartLabel = document.getElementById('cart-version-label');
@@ -314,12 +315,18 @@ if (sharedPack) {
         });
     });
 
-    async function fetchRealMods(isAppend = false) {
+   async function fetchRealMods(isAppend = false) {
+        if (isFetchingMods) return; // Si ya está buscando, no hacemos nada
+        isFetchingMods = true;
+
         if (!isAppend) {
             currentOffset = 0;
-            modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Buscando...</p></div>`;
-            if(btnLoadMore) btnLoadMore.classList.add('hidden');
-        } else { if(btnLoadMore) btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; }
+            modsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Conectando con la base de datos global...</p></div>`;
+            if(btnLoadMore) btnLoadMore.style.display = 'none';
+        } else { 
+            // Mostramos un mini-spinner al fondo mientras hace el scroll infinito
+            if(btnLoadMore) { btnLoadMore.style.display = 'block'; btnLoadMore.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando base de datos...'; } 
+        }
 
         try {
             let queryType = currentFilter === 'library' ? 'mod' : currentFilter;
@@ -330,7 +337,8 @@ if (sharedPack) {
                 if (currentCategory !== "") facets.push([`categories:${currentCategory}`]);
             } else if (currentFilter === 'library') { facets.push(["categories:library"]); }
 
-            const res = await fetch(`https://api.modrinth.com/v2/search?query=${searchInput.value}&facets=${encodeURIComponent(JSON.stringify(facets))}&index=${sortSelect.value}&limit=16&offset=${currentOffset}`);
+            // 🔥 AUMENTAMOS DE 16 A 50 MODS POR CONSULTA 🔥
+            const res = await fetch(`https://api.modrinth.com/v2/search?query=${searchInput.value}&facets=${encodeURIComponent(JSON.stringify(facets))}&index=${sortSelect.value}&limit=50&offset=${currentOffset}`);
             const data = await res.json();
             
             if (!isAppend) modsGrid.innerHTML = '';
@@ -339,13 +347,19 @@ if (sharedPack) {
                 modsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;">No se encontraron resultados para estos filtros.</div>';
             } else {
                 renderRealMods(data.hits);
-                if(data.hits.length === 16) {
-                    if(btnLoadMore) { btnLoadMore.classList.remove('hidden'); btnLoadMore.innerHTML = '<i class="ph-bold ph-caret-down"></i> Cargar Más'; }
-                } else { if(btnLoadMore) btnLoadMore.classList.add('hidden'); }
+                // Si trajo 50, significa que hay más páginas disponibles
+                if(data.hits.length === 50) {
+                    if(btnLoadMore) btnLoadMore.style.display = 'block'; 
+                } else { 
+                    if(btnLoadMore) btnLoadMore.style.display = 'none'; 
+                }
             }
-        } catch (error) { if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; }
+        } catch (error) { 
+            if(!isAppend) modsGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de API.</div>'; 
+        } finally {
+            isFetchingMods = false; // Quitamos el candado para permitir más scroll
+        }
     }
-
     async function getRequiredDependencies(projectId, version, loader) {
         try {
             const versRes = await fetch(`https://api.modrinth.com/v2/project/${projectId}/version?game_versions=["${version}"]&loaders=["${loader}"]`);
@@ -997,8 +1011,37 @@ if(btnJustSave) btnJustSave.addEventListener('click', () => requestBuild('save_o
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => requestBuild('save_download'));
     sortSelect.addEventListener('change', updateSearch); versionSelect.addEventListener('change', updateSearch); loaderSelect.addEventListener('change', updateSearch);
     let timeout = null; searchInput.addEventListener('input', () => { clearTimeout(timeout); timeout = setTimeout(updateSearch, 600); });
-    if(btnLoadMore) btnLoadMore.addEventListener('click', () => { currentOffset += 16; fetchRealMods(true); });
 
+    // ============================================================
+    // MOTOR DE SCROLL INFINITO (Estilo Netflix/Instagram)
+    // ============================================================
+    
+    // Mantenemos el clic manual por si acaso falla el scroll
+    if(btnLoadMore) {
+        btnLoadMore.addEventListener('click', () => { 
+            if(!isFetchingMods) { currentOffset += 50; fetchRealMods(true); }
+        });
+    }
+
+    // Detectar cuando el usuario llega al fondo de la pantalla
+    window.addEventListener('scroll', () => {
+        const modsView = document.getElementById('view-mods');
+        
+        // Solo activamos el scroll infinito si estamos viendo el catálogo
+        if (modsView && !modsView.classList.contains('hidden')) {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            
+            // Si el usuario está a 400px de llegar al fondo de la página...
+            if (scrollTop + clientHeight >= scrollHeight - 400) {
+                
+                // Si hay más mods por cargar y no estamos ya cargando
+                if (btnLoadMore && btnLoadMore.style.display !== 'none' && !isFetchingMods) {
+                    currentOffset += 50; // Sumamos los 50 que acabamos de pedir
+                    fetchRealMods(true); // Pedimos los siguientes 50
+                }
+            }
+        }
+    });
     updateSearch();
 
     const mobileBtn = document.createElement('button');
