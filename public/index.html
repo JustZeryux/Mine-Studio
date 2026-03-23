@@ -220,20 +220,41 @@
                         <div id="empty-cart-msg" class="empty-state">
                             <i class="ph-duotone ph-ghost" style="color: var(--border-color); font-size: 60px;"></i>
                             <p style="margin-top: 15px; font-weight: 500;">Tu modpack está vacío.</p>
-                            <p class="text-sm muted-text mt-10">Añade mods desde el explorador para comenzar.</p>
+                            <p class="text-sm muted-text mt-10">Añade mods para comenzar.</p>
                         </div>
-                        <ul id="cart-list" class="cart-list"></ul>
-                        
-                        <div id="recommendations-box" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px; display: none;">
-                            <p class="muted-text text-sm mb-10"><i class="ph-fill ph-lightbulb" style="color: #fbbf24;"></i> Faltan Esenciales:</p>
-                            <div id="rec-item" style="display: flex; flex-direction: column; gap: 8px;"></div>
+
+                        <div id="cart-cat-mods" class="cart-category-container">
+                            <div class="cart-category-header" style="color: var(--accent);">
+                                <i class="ph-fill ph-puzzle-piece"></i> Mods de Juego
+                            </div>
+                            <ul id="cart-list-mods" class="cart-item-list"></ul>
                         </div>
-                    </div>
-                    
-                    <div class="cart-footer" style="background: var(--bg-panel); border-top: 1px solid var(--border-color);">
-                        <button id="btn-open-save-modal" class="btn btn-primary w-100" disabled style="padding: 15px; font-size: 1rem; border-radius: 12px;">
-                            <i class="ph-bold ph-download-simple"></i> Finalizar y Construir
-                        </button>
+
+                        <div id="cart-cat-resourcepacks" class="cart-category-container">
+                            <div class="cart-category-header" style="color: #10b981;">
+                                <i class="ph-fill ph-paint-brush"></i> Paquetes de Texturas
+                            </div>
+                            <ul id="cart-list-resourcepacks" class="cart-item-list"></ul>
+                        </div>
+
+                        <div id="cart-cat-shaders" class="cart-category-container">
+                            <div class="cart-category-header" style="color: #f59e0b;">
+                                <i class="ph-fill ph-aperture"></i> Shaders & Gráficos
+                            </div>
+                            <ul id="cart-list-shaders" class="cart-item-list"></ul>
+                        </div>
+
+                        <div id="cart-cat-libraries" class="cart-category-container">
+                            <div class="cart-category-header" style="color: #6366f1;">
+                                <i class="ph-fill ph-books"></i> Librerías Necesarias
+                            </div>
+                            <ul id="cart-list-libraries" class="cart-item-list"></ul>
+                        </div>
+
+                        <div id="recommendations-box" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; display: none; background: rgba(16,185,129,0.05); padding: 15px; border-radius: var(--radius-md);">
+                            <p class="muted-text text-sm mb-10"><i class="ph-fill ph-lightbulb" style="color: #fbbf24;"></i> <strong style="color:white;">Recomendación Coherente:</strong></p>
+                            <div id="rec-item"></div>
+                        </div>
                     </div>
                 </aside>
             </div>
