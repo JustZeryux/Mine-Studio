@@ -408,6 +408,31 @@
         <button class="btn btn-text w-100 mt-10" onclick="document.getElementById('ai-builder-modal').classList.add('hidden')">Cancelar</button>
     </div>
 </div>
+
+    <div class="modal-overlay hidden" id="shared-pack-modal" style="z-index: 10009; backdrop-filter: blur(10px);">
+    <div class="modal-content" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; background: rgba(24, 24, 27, 0.95); border: 1px solid var(--accent);">
+        
+        <div style="text-align: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+            <i class="ph-fill ph-package" style="font-size: 40px; color: var(--accent);"></i>
+            <h2 style="margin-top: 10px; color: white;">Modpack Compartido</h2>
+            <p class="muted-text text-sm">Alguien te ha invitado a probar este modpack. Revisa el contenido antes de instalarlo en tu ensamblador.</p>
+        </div>
+
+        <div id="shared-pack-list" class="custom-scrollbar" style="flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align:center; padding: 30px; color: var(--muted);">
+                <i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i>
+                <p style="margin-top: 10px;">Extrayendo información de la base de datos...</p>
+            </div>
+        </div>
+
+        <div style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="btn-install-shared" style="flex: 2; font-size: 1rem;"><i class="ph-bold ph-download-simple"></i> Instalar Modpack</button>
+            <button class="btn btn-secondary" id="btn-cancel-shared" style="flex: 1;">Rechazar</button>
+        </div>
+        
+    </div>
+</div>
+    
     <script src="js/content.js"></script>
 </body>
 </html>
