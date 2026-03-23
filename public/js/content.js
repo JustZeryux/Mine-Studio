@@ -114,8 +114,66 @@ if (sharedPack) {
     }
 
     // ==========================================
-    // 0. SISTEMA DE SESIÓN 100% FRONTEND (MÓDULOS)
+    // MOTOR TURBO: EXPORTACIÓN Y DESCARGA ZIP
     // ==========================================
+        await window.requestBuild('download_only');       
+        const isDownloading = (action === 'download_only' || action === 'save_download');
+
+        try {
+            const packNameInput = document.getElementById('pack-name-input');
+            const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack_IA';
+            const mcVersion = document.getElementById('mod-version-select').value;
+            const loader = document.getElementById('mod-loader-select').value;
+            const isServerPack = document.getElementById('export-server-pack')?.checked;
+            const isMrPack = document.getElementById('export-mrpack')?.checked;
+
+            if (isDownloading) {
+                if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
+                const zip = new JSZip();
+
+                const modsFolder = zip.folder("mods"); 
+                const shadersFolder = zip.folder("shaderpacks"); 
+                const resourceFolder = zip.folder("resourcepacks");
+                
+                let procesados = 0;
+                const totalMods = window.modpackCart.length;
+                const batchSize = 10;
+
+                for (let i = 0; i < totalMods; i += batchSize) {
+                    const batch = window.modpackCart.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async (item) => {
+                        try {
+                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                            if(!versRes.ok) return;
+                            const versData = await versRes.json();
+                            
+                            if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                                const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                                const fileRes = await fetch(fileObj.url);
+                                const fileBlob = await fileRes.blob();
+                                
+                                if (item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); 
+                                else if (item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); 
+                                else modsFolder.file(fileObj.filename, fileBlob);
+                            }
+                        } catch(err) {
+                            console.error("Error descargando:", item.title);
+                        } finally {
+                            procesados++;
+                        }
+                    }));
+                }
+
+                const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
+                const url = window.URL.createObjectURL(zipContent);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `${packName.replace(/\s+/g, '_')}_${mcVersion}.zip`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+            }
+        } catch (error) { 
+            throw new Error("Fallo crítico en empaquetado: " + error.message); 
+        }
+    };
 
     // ==========================================
     // IMPORTADOR MÁGICO DE .JAR (CurseForge/Local)
@@ -1522,24 +1580,41 @@ async function runAutoScanJEI(modId, mcVers, loader) {
                 detectedCats = detectedCats.filter(c => c !== 'optimization'); // Limpiamos para no volver a buscarlo
             }
 
-            // 5. BÚSQUEDA DISTRIBUIDA EN MODRINTH
-            // Repartimos el límite de mods entre las categorías detectadas
+            // 5. BÚSQUEDA DISTRIBUIDA EN MODRINTH (Corregida la sintaxis de la API)
             const modsPerCat = targetModCount > 5 ? Math.ceil((targetModCount - initialModsToFetch.length) / detectedCats.length) : 1;
             
             for (let cat of detectedCats) {
                 try {
-                    let searchUrl = `https://api.modrinth.com/v2/search?limit=${modsPerCat}&index=relevance&facets=[["versions:${mcVers}"],["categories:${loader}"],["project_type:mod"]]`;
+                    // Armamos el arreglo de filtros correctamente como Modrinth lo exige
+                    let facets = [
+                        [`versions:${mcVers}`],
+                        [`categories:${loader}`],
+                        ["project_type:mod"]
+                    ];
+                    
+                    let searchUrl = `https://api.modrinth.com/v2/search?limit=${modsPerCat}&index=relevance`;
+                    
                     if(cat.startsWith('q=')) {
-                        searchUrl += `&query=${cat.substring(2)}`;
+                        searchUrl += `&query=${encodeURIComponent(cat.substring(2))}`;
                     } else {
-                        searchUrl += `&facets=[["categories:${cat}"]]`;
+                        facets.push([`categories:${cat}`]); // Añadimos la categoría al arreglo
                     }
                     
+                    // Convertimos todo el arreglo a texto seguro para la URL
+                    searchUrl += `&facets=${encodeURIComponent(JSON.stringify(facets))}`;
+                    
                     const res = await fetch(searchUrl);
+                    if(!res.ok) throw new Error("La API rechazó la consulta");
                     const data = await res.json();
-                    data.hits.forEach(m => initialModsToFetch.push(m.project_id));
+                    
+                    if(data.hits && data.hits.length > 0) {
+                        data.hits.forEach(m => initialModsToFetch.push(m.project_id));
+                        aiLog(`✅ Se encontraron ${data.hits.length} mods de ${cat.replace('q=', '')}`);
+                    } else {
+                        aiLog(`⚠️ No hay mods populares de ${cat.replace('q=', '')} para esta versión.`, 'warn');
+                    }
                 } catch(e) {
-                    aiLog(`Error buscando la categoría ${cat}`, 'error');
+                    aiLog(`❌ Error buscando la categoría ${cat}`, 'error');
                 }
             }
 
