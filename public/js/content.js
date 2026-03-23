@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPack = urlParams.get('pack');
     window.modpackCart = [];
+    fetchRealMods();
+
 
 if (sharedPack) {
         try {
@@ -1777,5 +1779,4 @@ async function runAutoScanJEI(modId, mcVers, loader) {
 
             
         });
-        fetchRealMods();
     }
