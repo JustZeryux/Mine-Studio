@@ -1,22 +1,36 @@
+/* =========================================
+   1. PALETA PREMIUM (Estilo Modrinth)
+   ========================================= */
 :root {
-    --bg-main: #09090b;
-    --bg-panel: #18181b;
-    --bg-hover: #27272a;
-    --border-color: #27272a;
-    --accent: #6366f1; /* Indigo moderno */
-    --accent-hover: #4f46e5;
-    --danger: #ef4444;
-    --success: #10b981;
-    --text-main: #f4f4f5;
-    --text-muted: #a1a1aa;
-    --radius-sm: 6px;
+    --bg-main: #121212; /* Fondo ultra oscuro */
+    --bg-panel: #18181b; /* Paneles ligeramente más claros (Zinc 900) */
+    --bg-hover: #27272a; /* Hover suave (Zinc 800) */
+    --border-color: #333333; /* Bordes sutiles */
+    --accent: #10b981; /* Verde Modrinth Premium */
+    --accent-hover: #059669; /* Verde oscuro para hovers */
+    --danger: #ef4444; /* Rojo suave */
+    --success: #10b981; 
+    --text-main: #f9fafb; /* Blanco roto (más legible) */
+    --text-muted: #9ca3af; /* Texto secundario */
+    --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
+    --shadow-glow: 0 0 15px rgba(16, 185, 129, 0.15); /* Brillo verde */
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { 
+    background-color: var(--bg-main); 
+    color: var(--text-main); 
+    font-family: 'Inter', system-ui, sans-serif; 
+    letter-spacing: -0.02em; /* Hace que la fuente se vea más pro */
+}
 
-body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; }
+/* Scrollbars más finas y modernas */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 .app-container { display: flex; height: 100vh; }
 
