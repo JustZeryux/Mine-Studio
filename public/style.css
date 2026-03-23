@@ -378,8 +378,22 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
     .mod-desc, .mod-tags-container { display: none; } 
 
-    .cart-panel { position: fixed; top: 0; right: -100%; width: 85vw; height: calc(100vh - 65px) !important; z-index: 1000; border-left: 1px solid var(--border-color); transition: right 0.3s ease; box-shadow: -10px 0 30px rgba(0,0,0,0.8); margin: 0; background: var(--bg-panel); display: flex !important; flex-direction: column !important; }
-    .cart-panel.active-mobile { right: 0; }
+.cart-panel {
+    position: fixed;
+    top: 70px;
+    right: -400px; /* Un poco más de margen para esconderlo bien */
+    width: 340px;
+    height: calc(100vh - 70px) !important;
+    background-color: var(--bg-panel);
+    border-left: 1px solid var(--border-color);
+    display: flex; 
+    flex-direction: column;
+    z-index: 9999; /* Asegurar que esté por encima de los mods */
+    transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    padding: 0; 
+    overflow: hidden;
+}    .cart-panel.active-mobile { right: 0; }
     .cart-body { flex: 1; overflow-y: auto; padding-bottom: 90px; }
     .cart-footer { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); padding: 15px; border-top: 1px solid var(--border-color); z-index: 20; }
     
@@ -505,8 +519,10 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .cart-body { flex: 1; overflow-y: auto; padding: 20px; }
 
 /* 3. Estilos de Categorización Dinámica */
-.cart-category-container { margin-bottom: 25px; display: none; /* Se muestra vía JS */ }
-.cart-category-header {
+.cart-category-container { 
+    margin-bottom: 25px; 
+    display: block; 
+}.cart-category-header {
     font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
     display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
 }
@@ -552,4 +568,25 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     .cart-panel.active { right: 0; }
     /* El botón circular sube un poco para no tapar la navbar móvil inferior */
     .mobile-cart-toggle { bottom: 80px; }
+}
+
+.cart-item-banner { 
+    height: 60px; 
+    background-size: cover; 
+    background-position: center; 
+    position: relative; 
+    background-color: #27272a; /* Fondo por si falla la imagen */
+}
+
+.cart-item-avatar {
+    width: 40px; 
+    height: 40px; 
+    border-radius: 8px; 
+    border: 3px solid var(--bg-panel);
+    position: absolute; 
+    left: 12px; 
+    bottom: 15px; /* Ajustado para que flote sobre la info */
+    z-index: 2; 
+    object-fit: cover; 
+    background: var(--bg-main);
 }
