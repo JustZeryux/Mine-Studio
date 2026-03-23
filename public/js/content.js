@@ -1193,8 +1193,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.appendChild(mobileBtn);
     }
 
-    const cartPanel = document.querySelector('.cart-panel');
-
     if (mobileBtn && cartPanel) {
         mobileBtn.addEventListener('click', () => {
             // Ahora usamos solo 'active' para que funcione igual en PC y celular
