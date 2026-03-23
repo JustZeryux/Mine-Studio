@@ -10,36 +10,108 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 if (sharedPack) {
         try {
-            // Compatibilidad con tu formato anterior (por si alguien ya tiene un link viejo)
+            let parsedItems = [];
+            // Compatibilidad con el formato viejo
             if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
-                window.modpackCart = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
             } else {
-                // Leer el nuevo formato ultracompacto
+                // Leer el formato ultracompacto nuevo
                 const items = sharedPack.split('-');
-                window.modpackCart = items.map(item => {
+                parsedItems = items.map(item => {
                     const parts = item.split('_');
-                    return { id: parts[0], title: 'Cargando título...', type: parts[1] || 'mod' };
+                    return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
                 });
-                
-                // Pedirle a Modrinth los títulos reales para que no diga "Cargando título..."
-                const ids = window.modpackCart.map(m => `"${m.id}"`).join(',');
+            }
+
+            // Referencias al Modal
+            const sharedModal = document.getElementById('shared-pack-modal');
+            const sharedList = document.getElementById('shared-pack-list');
+            const btnInstall = document.getElementById('btn-install-shared');
+            const btnCancel = document.getElementById('btn-cancel-shared');
+
+            if(sharedModal) {
+                sharedModal.classList.remove('hidden'); // Mostrar el cuadro emergente
+                window.history.replaceState({}, document.title, window.location.pathname); // Limpiar URL para que no vuelva a salir al recargar
+
+                const ids = parsedItems.map(m => `"${m.id}"`).join(',');
                 if(ids) {
+                    // Pedir toda la info completa a Modrinth (Iconos, Descripciones, etc)
                     fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
                         .then(r => r.json())
                         .then(data => {
-                            data.forEach(proj => {
-                                const cartItem = window.modpackCart.find(i => i.id === proj.id);
-                                if(cartItem) cartItem.title = proj.title;
+                            sharedList.innerHTML = ''; // Limpiar el spinner
+                            
+                            // Crear un diccionario rápido
+                            const projectMap = {};
+                            data.forEach(p => projectMap[p.id] = p);
+
+                            parsedItems.forEach(item => {
+                                const proj = projectMap[item.id];
+                                if(proj) {
+                                    item.title = proj.title; // Actualizamos el título real
+                                    const icon = proj.icon_url || 'https://via.placeholder.com/48/18181b/ffffff?text=?';
+                                    const desc = proj.description ? proj.description.substring(0, 75) + '...' : 'Sin descripción disponible.';
+                                    
+                                    let typeColor = 'var(--accent)';
+                                    let typeText = 'MOD';
+                                    let iconType = 'ph-puzzle-piece';
+                                    
+                                    if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
+                                    else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
+
+                                    // Inyectar la tarjeta visual del mod
+                                    sharedList.innerHTML += `
+                                        <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                                            <img src="${icon}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                                            <div style="flex: 1; text-align: left;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <h4 style="margin: 0; font-size: 1rem; color: #fff;">${proj.title}</h4>
+                                                    <span style="font-size: 0.65rem; background: ${typeColor}20; color: ${typeColor}; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid ${typeColor}40;">
+                                                        <i class="ph-fill ${iconType}"></i> ${typeText}
+                                                    </span>
+                                                </div>
+                                                <p style="margin: 0; font-size: 0.8rem; color: var(--muted); margin-top: 5px; line-height: 1.2;">${desc}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
                             });
-                            window.updateCartUI();
+
+                            // Acción: Botón Instalar
+                            btnInstall.onclick = () => {
+                                btnInstall.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Instalando...';
+                                btnInstall.disabled = true;
+                                
+                                let añadidos = 0;
+                                parsedItems.forEach(pi => {
+                                    // Prevenir duplicados en el carrito
+                                    if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) {
+                                        window.modpackCart.push(pi);
+                                        añadidos++;
+                                    }
+                                });
+                                
+                                window.updateCartUI();
+                                sharedModal.classList.add('hidden');
+                                alert(`✅ ¡Listo! Se añadieron ${añadidos} mods a tu ensamblador.`);
+                                
+                                // Resetear botón por si acaso
+                                btnInstall.innerHTML = '<i class="ph-bold ph-download-simple"></i> Instalar Modpack';
+                                btnInstall.disabled = false;
+                            };
+
+                            // Acción: Botón Cancelar
+                            btnCancel.onclick = () => {
+                                sharedModal.classList.add('hidden');
+                            };
                         });
                 }
             }
-            alert("✨ ¡Modpack compartido cargado con éxito en tu ensamblador!");
-            window.history.replaceState({}, document.title, window.location.pathname);
         } catch(e) {
             console.error("Error cargando pack compartido", e);
+            alert("El enlace del modpack está corrupto o es inválido.");
         }
+    }
     }
 
     // ==========================================
