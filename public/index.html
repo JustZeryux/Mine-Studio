@@ -388,24 +388,29 @@
         </div>
     </div>
 
-    <div class="modal-overlay hidden" id="ai-builder-modal" style="z-index: 10008; backdrop-filter: blur(10px);">
-    <div class="modal-content" style="max-width: 500px; background: rgba(24, 24, 27, 0.95); border: 1px solid #8b5cf6;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <i class="ph-fill ph-magic-wand" style="font-size: 40px; color: #a78bfa;"></i>
-            <h2 style="color: white; margin-top: 10px;">Ensamblador IA</h2>
-            <p class="muted-text text-sm">Dime qué tipo de experiencia buscas y armaré el modpack perfecto para ti.</p>
+<div class="modal-overlay hidden" id="ai-builder-modal" style="z-index: 10008; backdrop-filter: blur(15px);">
+    <div class="modal-content" style="max-width: 550px; background: rgba(15, 15, 18, 0.98); border: 2px solid #8b5cf6; box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); padding: 25px;">
+        
+        <div style="text-align: center; margin-bottom: 25px; position: relative;">
+            <div style="position: absolute; top: -10px; right: 0; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <i class="ph ph-translate" style="color: #a78bfa;"></i>
+                <span style="font-size: 10px; color: #a78bfa; font-weight: bold;">AUTO-DETECT</span>
+            </div>
+            <i class="ph-fill ph-brain-cell" style="font-size: 45px; color: #a78bfa;"></i>
+            <h2 style="color: white; margin-top: 10px; font-size: 1.8rem;">Ensamblador IA <span style="font-size: 0.8rem; color: #f59e0b;">PRO</span></h2>
+            <p class="muted-text text-sm" style="max-width: 350px; margin: 0 auto; margin-top: 5px;">Háblame en cualquier idioma. Entiendo temas, mecánicas, estilos visuales y límites de rendimiento.</p>
         </div>
         
-        <textarea id="ai-prompt-input" class="search-bar" style="width: 100%; height: 100px; resize: none; margin-bottom: 15px; border-color: #8b5cf6;" placeholder="Ej: Quiero un modpack muy difícil con dragones, magia oscura, y que esté muy optimizado para que no me de lag..."></textarea>
+        <textarea id="ai-prompt-input" class="search-bar" style="width: 100%; height: 120px; resize: none; margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.5); font-size: 0.9rem; padding: 15px;" placeholder="Ej: 'Make an adventure modpack with dragons and dynamic animations. Around 25 mods, very optimized for FPS please.'"></textarea>
         
-        <div id="ai-terminal" style="display: none; background: #000; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #4ade80; margin-bottom: 15px; height: 120px; overflow-y: auto;">
-            > IA Iniciada...<br>
+        <div id="ai-terminal" style="display: none; background: #000; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 11px; color: #4ade80; margin-bottom: 15px; height: 150px; overflow-y: auto; border: 1px solid #333; box-shadow: inset 0 0 10px #000;">
+            > IA Esperando órdenes...<br>
         </div>
 
-        <button class="btn btn-primary w-100" id="btn-generate-ai" style="background: linear-gradient(45deg, #ec4899, #8b5cf6); border: none;">
-            <i class="ph-bold ph-brain"></i> Crear mi Modpack
+        <button class="btn btn-primary w-100" id="btn-generate-ai-download" style="background: linear-gradient(45deg, #ec4899, #8b5cf6); border: none; padding: 15px; font-size: 1rem;">
+            <i class="ph-bold ph-lightning"></i> Generar y Descargar Modpack Directo
         </button>
-        <button class="btn btn-text w-100 mt-10" onclick="document.getElementById('ai-builder-modal').classList.add('hidden')">Cancelar</button>
+        <button class="btn btn-text w-100 mt-10" id="btn-ai-cancel">Cancelar</button>
     </div>
 </div>
 
