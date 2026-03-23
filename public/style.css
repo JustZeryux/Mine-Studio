@@ -1,5 +1,5 @@
 /* =========================================
-   1. PALETA PREMIUM (Estilo Modrinth)
+   1. PALETA PREMIUM (Estilo Modrinth/Zinc)
    ========================================= */
 :root {
     --bg-main: #121212; /* Fondo ultra oscuro */
@@ -19,20 +19,21 @@
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
-body { 
-    background-color: var(--bg-main); 
-    color: var(--text-main); 
-    font-family: 'Inter', system-ui, sans-serif; 
-    letter-spacing: -0.02em; /* Hace que la fuente se vea más pro */
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.02em; }
+
+body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+.app-container { display: flex; height: 100vh; }
 
 /* Scrollbars más finas y modernas */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-main); }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-.app-container { display: flex; height: 100vh; }
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* Sidebar */
 .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
@@ -41,7 +42,7 @@ body {
 .nav-menu { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .nav-btn { background: transparent; border: none; color: var(--text-muted); padding: 12px 16px; border-radius: var(--radius-sm); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; }
 .nav-btn:hover { background-color: var(--bg-hover); color: var(--text-main); }
-.nav-btn.active { background-color: rgba(99, 102, 241, 0.1); color: var(--accent); }
+.nav-btn.active { background-color: rgba(16, 185, 129, 0.1); color: var(--accent); }
 
 /* Main Content */
 .content { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-main); }
@@ -50,24 +51,54 @@ body {
 .avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border-color); }
 
 /* Layout & Panels */
-.main-layout { display: flex; gap: 24px; flex: 1; padding: 24px; overflow: hidden; }
-.center-area { flex: 1; overflow-y: auto; padding-right: 10px; }
+.main-layout { display: flex; gap: 24px; flex: 1; padding: 24px; overflow: hidden; height: calc(100vh - 70px); box-sizing: border-box; }
+.center-area { flex: 1; height: 100%; overflow-y: auto; padding-right: 10px; }
 .panel { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; }
 
-/* Forms & Inputs */
+/* =========================================
+   2. BOTONES Y BUSCADORES (UI Limpia y Píldoras)
+   ========================================= */
 .search-panel { display: flex; gap: 16px; margin-bottom: 24px; padding: 16px; }
 .input-wrapper { position: relative; display: flex; align-items: center; }
 .input-wrapper i { position: absolute; left: 14px; color: var(--text-muted); font-size: 18px; }
 .input-wrapper input { padding-left: 40px !important; }
-.form-input, .form-select { width: 100%; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 16px; border-radius: var(--radius-sm); font-size: 0.95rem; outline: none; transition: border 0.2s; }
-.form-input:focus, .form-select:focus { border-color: var(--accent); }
 
-/* Botones y Filtros */
-.btn { border: none; padding: 12px 20px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; justify-content: center; transition: 0.2s; font-size: 0.95rem; }
-.btn-primary { background-color: var(--accent); color: white; }
-.btn-primary:hover:not(:disabled) { background-color: var(--accent-hover); }
-.btn-secondary { background-color: var(--bg-hover); color: var(--text-main); }
-.btn-secondary:hover { background-color: #3f3f46; }
+.search-bar, input[type="text"], select, .form-input, .form-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 20px; /* Diseño en forma de píldora */
+    padding: 12px 20px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.search-bar:focus, input[type="text"]:focus, select:focus, .form-input:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); /* Anillo de enfoque verde */
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn {
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid transparent;
+}
+
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-secondary { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); }
+.btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
 .btn-text { background: transparent; color: var(--text-muted); }
 .btn-text:hover { color: var(--text-main); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -77,24 +108,100 @@ body {
 .filter-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
 .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-/* Mod Cards */
-.mods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 20px; }
-.mod-card { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; cursor: pointer; }
-.mod-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-.mod-banner { height: 120px; background-size: cover; background-position: center; border-bottom: 1px solid var(--border-color); }
-.mod-info { padding: 20px; flex: 1; display: flex; flex-direction: column; position: relative; }
-.mod-avatar { width: 56px; height: 56px; border-radius: 12px; border: 4px solid var(--bg-panel); background: var(--bg-main); margin-top: -48px; margin-bottom: 12px; }
-.mod-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
-.mod-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; flex: 1; }
+/* =========================================
+   3. TARJETAS DE MODS (El alma visual)
+   ========================================= */
+.mods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
 
-/* Cart */
-.cart-panel { width: 320px; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.mod-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    cursor: pointer;
+}
+
+.mod-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+}
+
+/* El Banner de fondo */
+.mod-banner {
+    height: 110px;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+}
+
+/* Efecto oscuro encima del banner para que destaque el logo */
+.mod-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent, rgba(24, 24, 27, 0.8));
+}
+
+.mod-info {
+    padding: 0 15px 15px 15px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    position: relative;
+}
+
+/* El logo flotante a la mitad del banner */
+.mod-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    border: 4px solid var(--bg-panel);
+    background: var(--bg-main);
+    object-fit: cover;
+    margin-top: -32px; /* Esto lo empuja hacia arriba al banner */
+    z-index: 2;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.mod-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 10px 0 4px 0;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mod-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-bottom: 15px;
+    flex: 1;
+}
+
+/* Cart Panel */
+.cart-panel { width: 320px; display: flex; flex-direction: column; padding: 0; overflow: hidden; height: 100%; max-height: 100%; }
 .cart-header, .cart-footer { padding: 20px; background-color: rgba(0,0,0,0.2); }
 .cart-body { flex: 1; overflow-y: auto; padding: 20px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; }
 .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
 .cart-list { list-style: none; }
-.cart-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-hover); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: 0.9rem; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-hover); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: 0.9rem; border: 1px solid transparent; transition: 0.2s; }
+.cart-item:hover { border-color: var(--border-color); }
 .btn-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; }
 .btn-remove:hover { background: rgba(239, 68, 68, 0.1); }
 
@@ -102,7 +209,6 @@ body {
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 1; transition: opacity 0.2s; }
 .modal-overlay.hidden { display: none !important; opacity: 0; pointer-events: none; }
 
-/* ---- ARREGLO DEL MODAL STICKY ---- */
 .modal-content { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 90%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); padding: 32px; }
 .modal-lg { max-width: 800px; padding: 0; display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
 
@@ -110,9 +216,9 @@ body {
 .modal-body-scroll { padding: 32px; overflow-y: auto; flex: 1; }
 
 .mod-header-info { display: flex; gap: 20px; align-items: center; }
-.mod-detail-icon { width: 80px; height: 80px; border-radius: 16px; background: var(--bg-main); padding: 8px; }
-.mod-stats-bar { display: flex; gap: 16px; margin-bottom: 24px; padding: 12px 16px; background: var(--bg-main); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.9rem; }
-.mod-description-body { line-height: 1.7; color: #d4d4d8; background: var(--bg-main); padding: 24px; border-radius: var(--radius-md); font-size: 0.95rem; }
+.mod-detail-icon { width: 80px; height: 80px; border-radius: 16px; background: var(--bg-main); padding: 8px; border: 1px solid var(--border-color); }
+.mod-stats-bar { display: flex; gap: 16px; margin-bottom: 24px; padding: 12px 16px; background: var(--bg-main); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.9rem; border: 1px solid var(--border-color); }
+.mod-description-body { line-height: 1.7; color: #d4d4d8; background: var(--bg-main); padding: 24px; border-radius: var(--radius-md); font-size: 0.95rem; border: 1px solid var(--border-color); }
 
 /* Estilizar el Markdown inyectado */
 .mod-description-body h1, .mod-description-body h2, .mod-description-body h3 { color: var(--text-main); margin: 1.5em 0 0.5em 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
@@ -132,12 +238,6 @@ body {
 .muted-text { color: var(--text-muted); } .text-sm { font-size: 0.85rem; } .title { font-size: 1.5rem; font-weight: 600; } .subtitle { font-size: 1.2rem; font-weight: 600; }
 .hidden { display: none !important; }
 
-/* Scrollbar moderno */
-.custom-scrollbar::-webkit-scrollbar { width: 8px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
 /* ---- LIGHTBOX (Visor de Imágenes) ---- */
 .lightbox-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -152,23 +252,17 @@ body {
     object-fit: contain;
 }
 
-/* ---- DEPENDENCIAS ---- */
-.dependency-tag {
-    background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger);
-    color: #fca5a5; padding: 4px 10px; border-radius: 6px;
-    font-size: 0.85rem; font-weight: 500;
-}
+/* ---- DEPENDENCIAS Y CHIPS ---- */
+.dependency-tag { background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: #fca5a5; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 500; }
 
-/* ---- CHIPS Y FILTROS ---- */
 .category-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; white-space: nowrap; margin-bottom: 10px; }
 .chip { background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
 .chip:hover { background: #3f3f46; color: var(--text-main); }
-.chip.active { background: rgba(99, 102, 241, 0.15); color: var(--accent); border-color: var(--accent); }
+.chip.active { background: rgba(16, 185, 129, 0.15); color: var(--accent); border-color: var(--accent); }
 
-/* ---- MINI TAGS EN TARJETAS ---- */
 .mod-tags-container { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .mini-tag { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px; }
-.downloads-badge { background: rgba(99, 102, 241, 0.2); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(99, 102, 241, 0.3); }
+.downloads-badge { background: rgba(16, 185, 129, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.3); }
 
 /* ---- DEPENDENCIAS 3D ANIMADAS ---- */
 .dependencies-container { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; perspective: 1000px; }
@@ -179,26 +273,15 @@ body {
     transform-style: preserve-3d; transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
     cursor: pointer; opacity: 0;
 }
-.tilt-card img { width: 40px; height: 40px; border-radius: 8px; transform: translateZ(20px); }
+.tilt-card img { width: 40px; height: 40px; border-radius: 8px; transform: translateZ(20px); border: 1px solid var(--border-color); }
 .tilt-card .dep-info { flex: 1; transform: translateZ(30px); }
 .tilt-card h4 { font-size: 0.95rem; margin-bottom: 2px; color: var(--text-main); }
 .tilt-card span { font-size: 0.75rem; color: #fca5a5; font-weight: 500; }
-.tilt-card .btn-install { transform: translateZ(40px); background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 
-@keyframes slideRight3D {
-    0% { transform: translateX(-50px) scale(0.8); opacity: 0; }
-    100% { transform: translateX(0) scale(1); opacity: 1; }
-}
-@keyframes slideLeft3D {
-    0% { transform: translateX(50px) scale(0.8); opacity: 0; }
-    100% { transform: translateX(0) scale(1); opacity: 1; }
-}
+@keyframes slideRight3D { 0% { transform: translateX(-50px) scale(0.8); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+@keyframes slideLeft3D { 0% { transform: translateX(50px) scale(0.8); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
 .anim-right { animation: slideRight3D 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 .anim-left { animation: slideLeft3D 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-.main-layout { height: calc(100vh - 70px); padding: 20px; box-sizing: border-box; overflow: hidden; }
-.center-area { height: 100%; overflow-y: auto; padding-right: 10px; }
-.cart-panel { height: 100%; max-height: 100%; display: flex; flex-direction: column; }
 
 /* ---- PERFILES GUARDADOS Y TARJETAS ---- */
 .profile-card {
@@ -206,11 +289,13 @@ body {
     border: 1px solid var(--border-color);
     padding: 15px; border-radius: 12px; margin-bottom: 15px;
     display: flex; flex-direction: column; gap: 15px;
+    transition: 0.2s;
 }
+.profile-card:hover { border-color: var(--accent); box-shadow: var(--shadow-glow); }
 .profile-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 .profile-card-title { font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
 .profile-card-stats { display: flex; gap: 15px; flex-wrap: wrap; }
-.profile-card-stats span { background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
+.profile-card-stats span { background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.05); }
 
 /* ---- RESPONSIVIDAD MÓVIL ---- */
 .hidden-desktop { display: none; }
@@ -226,7 +311,7 @@ body {
     .nav-btn i { font-size: 1.4rem; }
 
     .content { height: 100vh; display: flex; flex-direction: column; padding-bottom: 65px; }
-    .main-layout { flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; }
+    .main-layout { flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; height: auto; }
     .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px; }
 
     .search-panel { display: flex; flex-direction: column; padding: 10px; }
@@ -234,256 +319,78 @@ body {
     .input-wrapper, .form-select { width: 100% !important; max-width: 100% !important; }
     .category-chips, .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin-bottom: 10px; }
 
-    .mods-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mods-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 0; }
     .mod-card { padding: 0; display: flex; flex-direction: column; }
     .mod-banner { height: 65px; }
     .mod-avatar { width: 40px; height: 40px; margin-top: -25px; margin-bottom: 5px; border-width: 2px; align-self: center; }
     .mod-info { padding: 10px; text-align: center; }
     .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
     .mod-desc, .mod-tags-container { display: none; } 
-    .btn-add-mod { font-size: 0.8rem; padding: 8px; margin-top: auto; }
 
     .cart-panel { position: fixed; top: 0; right: -100%; width: 85vw; height: calc(100vh - 65px) !important; z-index: 1000; border-left: 1px solid var(--border-color); transition: right 0.3s ease; box-shadow: -10px 0 30px rgba(0,0,0,0.8); margin: 0; background: var(--bg-panel); display: flex !important; flex-direction: column !important; }
     .cart-panel.active-mobile { right: 0; }
     .cart-body { flex: 1; overflow-y: auto; padding-bottom: 90px; }
     .cart-footer { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); padding: 15px; border-top: 1px solid var(--border-color); z-index: 20; }
     
-    .mobile-cart-toggle { position: fixed; bottom: 80px; right: 15px; z-index: 1001; background: var(--accent); color: white; border: none; width: 55px; height: 55px; border-radius: 50%; box-shadow: 0 5px 15px rgba(99,102,241,0.5); display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; }
+    .mobile-cart-toggle { position: fixed; bottom: 80px; right: 15px; z-index: 1001; background: var(--accent); color: white; border: none; width: 55px; height: 55px; border-radius: 50%; box-shadow: 0 5px 15px rgba(16,185,129,0.5); display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; }
     .mobile-cart-toggle .badge { position: absolute; top: -2px; right: -2px; background: var(--danger); font-size: 11px; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
 }
 
 /* ---- COMPARADOR DE SHADERS ---- */
-.shader-compare-container {
-    position: relative;
-    width: 100%;
-    height: 300px;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 2px solid var(--border-color);
-}
-.shader-img-vanilla, .shader-img-shader {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    object-fit: cover;
-}
-/* Recortamos la imagen de arriba a la mitad por defecto */
-.shader-img-shader {
-    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
-}
-.shader-slider-input {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0; cursor: ew-resize; z-index: 10;
-}
-.shader-slider-line {
-    position: absolute;
-    top: 0; left: 50%; width: 4px; height: 100%;
-    background: white; z-index: 5;
-    transform: translateX(-50%);
-    pointer-events: none;
-}
-.shader-slider-button {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 36px; height: 36px;
-    background: var(--accent); color: white;
-    border-radius: 50%; display: flex; justify-content: center; align-items: center;
-    border: 3px solid white; font-size: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
+.shader-compare-container { position: relative; width: 100%; height: 300px; border-radius: 12px; overflow: hidden; border: 2px solid var(--border-color); }
+.shader-img-vanilla, .shader-img-shader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.shader-img-shader { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
+.shader-slider-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 10; }
+.shader-slider-line { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: white; z-index: 5; transform: translateX(-50%); pointer-events: none; }
+.shader-slider-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 36px; background: var(--accent); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 3px solid white; font-size: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 
 /* ---- SCANNER GALLERY Y VISUALIZADOR 3D ---- */
-.scanner-grid {
-    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;
-}
-.scanner-item {
-    background: var(--bg-main); border: 1px solid var(--border-color);
-    border-radius: 8px; padding: 8px; min-width: 80px; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 5px;
-    flex-shrink: 0;
-}
-.scanner-item img {
-    width: 40px; height: 40px; object-fit: contain;
-    image-rendering: pixelated; /* Mantiene los pixeles de Minecraft definidos */
-}
-.scanner-item span {
-    font-size: 0.65rem; color: var(--text-muted); font-weight: 600;
-    text-transform: capitalize; max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.scanner-mob-btn {
-    cursor: pointer; transition: 0.2s; border-color: #f59e0b;
-}
+.scanner-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+.scanner-item { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; min-width: 80px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+.scanner-item img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.scanner-item span { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: capitalize; max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scanner-mob-btn { cursor: pointer; transition: 0.2s; border-color: #f59e0b; }
 .scanner-mob-btn:hover { background: rgba(245, 158, 11, 0.1); transform: translateY(-3px); }
 
 /* ---- MOTOR 3D HOLOGRÁFICO ---- */
-.hologram-container {
-    width: 100%; height: 250px; display: flex; justify-content: center; align-items: center;
-    perspective: 800px;
-}
-.hologram-cube {
-    width: 100px; height: 100px; position: relative;
-    transform-style: preserve-3d;
-    animation: rotateHologram 8s infinite linear;
-}
-.hologram-face {
-    position: absolute; width: 100px; height: 100px;
-    background-size: cover; background-position: center;
-    image-rendering: pixelated; border: 1px solid rgba(99, 102, 241, 0.3);
-    box-shadow: inset 0 0 15px rgba(99, 102, 241, 0.4);
-    opacity: 0.95;
-}
+.hologram-container { width: 100%; height: 250px; display: flex; justify-content: center; align-items: center; perspective: 800px; }
+.hologram-cube { width: 100px; height: 100px; position: relative; transform-style: preserve-3d; animation: rotateHologram 8s infinite linear; }
+.hologram-face { position: absolute; width: 100px; height: 100px; background-size: cover; background-position: center; image-rendering: pixelated; border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.4); opacity: 0.95; }
 .hologram-face.front  { transform: translateZ(50px); }
 .hologram-face.back   { transform: rotateY(180deg) translateZ(50px); }
 .hologram-face.right  { transform: rotateY(90deg) translateZ(50px); }
 .hologram-face.left   { transform: rotateY(-90deg) translateZ(50px); }
 .hologram-face.top    { transform: rotateX(90deg) translateZ(50px); }
 .hologram-face.bottom { transform: rotateX(-90deg) translateZ(50px); }
-
-@keyframes rotateHologram {
-    0% { transform: rotateX(-15deg) rotateY(0deg); }
-    100% { transform: rotateX(-15deg) rotateY(360deg); }
-}
-/* ---- REDISEÑO EXTREMO MODAL ESTILO JEI ---- */
-.modal-jei {
-    max-width: 95vw !important;
-    width: 1400px;
-    height: 90vh;
-    padding: 0 !important;
-    display: flex !important;
-    flex-direction: row;
-    background: var(--bg-main) !important;
-    overflow: hidden;
-}
-
-.jei-sidebar-left {
-    width: 280px;
-    background: var(--bg-panel);
-    border-right: 1px solid var(--border-color);
-    padding: 20px;
-    overflow-y: auto;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.jei-center-content {
-    flex: 1;
-    padding: 30px;
-    overflow-y: auto;
-    background: var(--bg-main);
-}
-
-.jei-sidebar-right {
-    width: 350px;
-    background: var(--bg-panel);
-    border-left: 1px solid var(--border-color);
-    overflow-y: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.jei-header {
-    padding: 15px;
-    background: rgba(0,0,0,0.3);
-    border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
-    color: var(--accent);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-/* Cuadrícula estilo inventario de Minecraft */
-.jei-items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    gap: 6px;
-}
-
-.jei-item-slot {
-    width: 40px;
-    height: 40px;
-    background: #8b8b8b;
-    border: 2px solid;
-    border-color: #373737 #ffffff #ffffff #373737;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.1s;
-}
-.jei-item-slot:hover {
-    background: #a0a0a0;
-    transform: scale(1.1);
-    box-shadow: 0 0 5px var(--accent);
-}
-.jei-item-slot img {
-    width: 32px;
-    height: 32px;
-    image-rendering: pixelated;
-    object-fit: contain;
-}
-
-/* ---- VISUALIZADOR DE CRAFTEOS (MESA 3x3) ---- */
-.recipe-visualizer {
-    display: flex; align-items: center; justify-content: center; gap: 20px;
-    padding: 20px; background: rgba(0,0,0,0.3); border-radius: 12px;
-    border: 1px solid var(--border-color); margin-top: 10px;
-}
-.crafting-grid-3x3 {
-    display: grid; grid-template-columns: repeat(3, 40px); gap: 2px;
-    background: #c6c6c6; padding: 6px; border: 2px solid #373737;
-    border-top-color: #fff; border-left-color: #fff; border-radius: 4px;
-}
-.crafting-slot {
-    width: 40px; height: 40px; background: #8b8b8b;
-    border: 2px solid; border-color: #373737 #ffffff #ffffff #373737;
-    display: flex; justify-content: center; align-items: center; position: relative;
-    overflow: hidden;
-}
-.crafting-slot img { width: 28px; height: 28px; image-rendering: pixelated; object-fit: contain; }
-.crafting-slot-text {
-    font-size: 8px; line-height: 1; word-break: break-all; text-align: center;
-    color: white; text-shadow: 1px 1px 0 #000; padding: 2px;
-}
-.crafting-result-slot {
-    width: 56px; height: 56px; background: #8b8b8b;
-    border: 3px solid; border-color: #373737 #ffffff #ffffff #373737;
-    display: flex; justify-content: center; align-items: center; position: relative;
-}
-.crafting-result-slot img { width: 40px; height: 40px; image-rendering: pixelated; }
-.crafting-count {
-    position: absolute; bottom: 2px; right: 4px; font-weight: bold;
-    font-size: 16px; color: white; text-shadow: 2px 2px 0 #373737;
-}
+@keyframes rotateHologram { 0% { transform: rotateX(-15deg) rotateY(0deg); } 100% { transform: rotateX(-15deg) rotateY(360deg); } }
 
 /* ---- REDISEÑO MODAL ESTILO JEI 3 COLUMNAS ---- */
-.modal-jei {
-    max-width: 98vw !important; width: 1600px; height: 95vh;
-    padding: 0 !important; display: flex !important; flex-direction: row;
-    background: var(--bg-main) !important; overflow: hidden; border-radius: 16px;
-}
+.modal-jei { max-width: 98vw !important; width: 1600px; height: 95vh; padding: 0 !important; display: flex !important; flex-direction: row; background: var(--bg-main) !important; overflow: hidden; border-radius: 16px; border: 1px solid var(--border-color); }
 .jei-sidebar-left { width: 300px; background: var(--bg-panel); border-right: 1px solid var(--border-color); overflow-y: auto; flex-shrink: 0; }
 .jei-center-content { flex: 1; overflow-y: auto; background: var(--bg-main); position: relative; }
 .jei-sidebar-right { width: 360px; background: var(--bg-panel); border-left: 1px solid var(--border-color); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
 .jei-header { padding: 15px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--accent); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(5px); }
 
 /* Cuadrícula de inventario */
-.jei-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 4px; }
-.jei-item-slot {
-    width: 42px; height: 42px; background: #8b8b8b; border: 2px solid;
-    border-color: #373737 #ffffff #ffffff #373737; display: flex; justify-content: center; align-items: center;
-    cursor: pointer; transition: transform 0.1s; position: relative;
-}
+.jei-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 4px; padding: 15px; }
+.jei-item-slot { width: 42px; height: 42px; background: #8b8b8b; border: 2px solid; border-color: #373737 #ffffff #ffffff #373737; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.1s; position: relative; }
 .jei-item-slot:hover { background: #a0a0a0; transform: scale(1.15); box-shadow: 0 0 10px var(--accent); z-index: 10; }
 .jei-item-slot img { width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain; }
+
+/* ---- VISUALIZADOR DE CRAFTEOS (MESA 3x3) ---- */
+.recipe-visualizer { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px; }
+.crafting-grid-3x3 { display: grid; grid-template-columns: repeat(3, 40px); gap: 2px; background: #c6c6c6; padding: 6px; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; border-radius: 4px; }
+.crafting-slot { width: 40px; height: 40px; background: #8b8b8b; border: 2px solid; border-color: #373737 #ffffff #ffffff #373737; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+.crafting-slot img { width: 28px; height: 28px; image-rendering: pixelated; object-fit: contain; }
+.crafting-slot-text { font-size: 8px; line-height: 1; word-break: break-all; text-align: center; color: white; text-shadow: 1px 1px 0 #000; padding: 2px; }
+.crafting-result-slot { width: 56px; height: 56px; background: #8b8b8b; border: 3px solid; border-color: #373737 #ffffff #ffffff #373737; display: flex; justify-content: center; align-items: center; position: relative; }
+.crafting-result-slot img { width: 40px; height: 40px; image-rendering: pixelated; }
+.crafting-count { position: absolute; bottom: 2px; right: 4px; font-weight: bold; font-size: 16px; color: white; text-shadow: 2px 2px 0 #373737; }
 
 /* ---- MOTOR 3D HUMANOIDE DE MINECRAFT (BIPED) ---- */
 .mc-biped-container { width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; perspective: 800px; }
 .mc-biped { position: relative; transform-style: preserve-3d; animation: spinBiped 8s infinite linear; }
-.mc-part { position: absolute; transform-style: preserve-3d; background-size: cover; image-rendering: pixelated; }
-
-/* Dimensiones base del cuerpo de Minecraft */
+.mc-part { position: absolute; transform-style: preserve-3d; background-size: cover; image-rendering: pixelated; border: 1px solid rgba(0,0,0,0.5); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
 .mc-part.head { width: 32px; height: 32px; transform: translate(-16px, -48px) translateZ(16px); }
 .mc-part.body { width: 32px; height: 48px; transform: translate(-16px, -16px); }
 .mc-part.arm-left { width: 16px; height: 48px; transform: translate(-32px, -16px); }
@@ -491,15 +398,8 @@ body {
 .mc-part.leg-left { width: 16px; height: 48px; transform: translate(-16px, 32px); }
 .mc-part.leg-right { width: 16px; height: 48px; transform: translate(0px, 32px); }
 
-/* Para dar volumen visual, añadimos bordes y sombras para simular las caras 3D */
-.mc-part { border: 1px solid rgba(0,0,0,0.5); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+@keyframes spinBiped { 0% { transform: rotateY(0deg) rotateX(-10deg) scale(2); } 100% { transform: rotateY(360deg) rotateX(-10deg) scale(2); } }
 
-@keyframes spinBiped {
-    0% { transform: rotateY(0deg) rotateX(-10deg) scale(2); }
-    100% { transform: rotateY(360deg) rotateX(-10deg) scale(2); }
-}
-
-/* ANIMACIÓN DE CAMINAR PARA EL HOLOGRAMA 3D */
 .mc-biped.walking .arm-left { animation: swingArm 1s infinite alternate ease-in-out; }
 .mc-biped.walking .arm-right { animation: swingArm 1s infinite alternate-reverse ease-in-out; }
 .mc-biped.walking .leg-left { animation: swingLeg 1s infinite alternate-reverse ease-in-out; }
