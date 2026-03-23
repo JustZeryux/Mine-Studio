@@ -461,6 +461,11 @@ if (sharedPack) {
                             });
                             depsHtml += `</div><button class="btn btn-secondary w-100" id="btn-detail-add-all" style="margin-bottom: 20px;"><i class="ph-bold ph-stack"></i> Añadir Mod y Librerías al Carrito</button>`;
                             depsContainer.innerHTML = depsHtml;
+                            depsContainer.innerHTML += `
+                                <button class="btn btn-secondary w-100 btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" style="margin-bottom: 20px; border-color: #8b5cf6; color: #8b5cf6;">
+                                    <i class="ph-bold ph-download-simple"></i> Descargar .jar (Mod + Librerías)
+                                </button>
+                            `;
                             
                             document.getElementById('btn-detail-add-all').onclick = () => {
                                 if (!window.modpackCart.some(item => item.id === mod.project_id)) window.modpackCart.push({ id: mod.project_id, title: mod.title, type: mod.project_type });
