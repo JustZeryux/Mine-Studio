@@ -113,10 +113,11 @@ if (sharedPack) {
         }
     }
 
-    // ==========================================
+ // ==========================================
     // MOTOR TURBO: EXPORTACIÓN Y DESCARGA ZIP
     // ==========================================
-        await window.requestBuild('download_only');       
+    window.requestBuild = async function(action = 'download_only') {
+        const isSaving = (action === 'save_only' || action === 'save_download');
         const isDownloading = (action === 'download_only' || action === 'save_download');
 
         try {
@@ -124,8 +125,6 @@ if (sharedPack) {
             const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack_IA';
             const mcVersion = document.getElementById('mod-version-select').value;
             const loader = document.getElementById('mod-loader-select').value;
-            const isServerPack = document.getElementById('export-server-pack')?.checked;
-            const isMrPack = document.getElementById('export-mrpack')?.checked;
 
             if (isDownloading) {
                 if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
@@ -143,7 +142,10 @@ if (sharedPack) {
                     const batch = window.modpackCart.slice(i, i + batchSize);
                     await Promise.all(batch.map(async (item) => {
                         try {
-                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                            // Usamos texto normal y suma para evitar errores de comillas
+                            const apiUrl = "https://api.modrinth.com/v2/project/" + item.id + "/version?game_versions=[\"" + mcVersion + "\"]";
+                            const versRes = await fetch(apiUrl);
+                            
                             if(!versRes.ok) return;
                             const versData = await versRes.json();
                             
@@ -167,13 +169,17 @@ if (sharedPack) {
                 const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
                 const url = window.URL.createObjectURL(zipContent);
                 const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                a.download = `${packName.replace(/\s+/g, '_')}_${mcVersion}.zip`;
+                
+                // ARREGLADO: Concatenación clásica súper segura
+                const cleanName = packName.replace(/\s+/g, '_');
+                a.download = cleanName + "_" + mcVersion + ".zip";
+                
                 document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
             }
         } catch (error) { 
             throw new Error("Fallo crítico en empaquetado: " + error.message); 
         }
-});
+    };
 
     // ==========================================
     // IMPORTADOR MÁGICO DE .JAR (CurseForge/Local)
