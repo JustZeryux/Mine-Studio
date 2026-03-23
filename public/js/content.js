@@ -173,7 +173,7 @@ if (sharedPack) {
         } catch (error) { 
             throw new Error("Fallo crítico en empaquetado: " + error.message); 
         }
-    )};
+});
 
     // ==========================================
     // IMPORTADOR MÁGICO DE .JAR (CurseForge/Local)
