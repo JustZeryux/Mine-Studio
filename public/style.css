@@ -67,7 +67,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
-    border-radius: 20px; /* Diseño en forma de píldora */
+    border-radius: 20px;
     padding: 12px 20px;
     color: var(--text-main);
     font-size: 0.95rem;
@@ -77,7 +77,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 
 .search-bar:focus, input[type="text"]:focus, select:focus, .form-input:focus, .form-select:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); /* Anillo de enfoque verde */
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -137,17 +137,15 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     box-shadow: var(--shadow-glow);
 }
 
-/* El Banner de fondo */
 .mod-banner {
     height: 110px;
     background-size: cover;
     background-position: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     position: relative;
-    background-color: var(--bg-main); /* Fallback */
+    background-color: var(--bg-main);
 }
 
-/* Efecto oscuro encima del banner para que destaque el logo */
 .mod-banner::after {
     content: '';
     position: absolute;
@@ -163,7 +161,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     position: relative;
 }
 
-/* El logo flotante a la mitad del banner */
 .mod-avatar {
     width: 64px;
     height: 64px;
@@ -171,7 +168,7 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     border: 4px solid var(--bg-panel);
     background: var(--bg-main);
     object-fit: cover;
-    margin-top: -32px; /* Esto lo empuja hacia arriba al banner */
+    margin-top: -32px;
     z-index: 2;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
@@ -209,7 +206,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .mod-stats-bar { display: flex; gap: 16px; margin-bottom: 24px; padding: 12px 16px; background: var(--bg-main); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.9rem; border: 1px solid var(--border-color); }
 .mod-description-body { line-height: 1.7; color: #d4d4d8; background: var(--bg-main); padding: 24px; border-radius: var(--radius-md); font-size: 0.95rem; border: 1px solid var(--border-color); }
 
-/* Estilizar el Markdown inyectado */
 .mod-description-body h1, .mod-description-body h2, .mod-description-body h3 { color: var(--text-main); margin: 1.5em 0 0.5em 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
 .mod-description-body img { max-width: 100%; border-radius: 8px; margin: 16px 0; }
 .mod-description-body a { color: var(--accent); text-decoration: none; }
@@ -341,42 +337,6 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
     font-size: 0.75rem; font-weight: bold; margin-left: -12px; z-index: 1; color: var(--text-muted);
 }
 .profile-actions { display: flex; gap: 10px; margin-top: auto; }
-/* ---- RESPONSIVIDAD MÓVIL ---- */
-.hidden-desktop { display: none; }
-
-@media (max-width: 992px) {
-    .hidden-desktop { display: flex; }
-    body, html { overflow: hidden; height: 100vh; margin: 0; position: fixed; width: 100%; }
-    .app-container { flex-direction: column; height: 100vh; overflow: hidden; }
-    .sidebar { width: 100%; position: fixed !important; bottom: 0 !important; left: 0; z-index: 9999; background: var(--bg-panel); border-right: none; border-top: 1px solid var(--border-color); flex-direction: row; height: 65px; display: flex; padding:0; }
-    .logo { display: none; }
-    .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 0; gap: 0; }
-    .nav-btn { flex-direction: column; gap: 4px; font-size: 0.75rem; padding: 10px 0; flex: 1; text-align: center; justify-content: center; align-items: center; }
-    .nav-btn i { font-size: 1.4rem; }
-
-    .content { height: 100vh; display: flex; flex-direction: column; padding-bottom: 65px; }
-    .main-layout { flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; height: auto; }
-    .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px; }
-
-    .search-panel { display: flex; flex-direction: column; padding: 10px; }
-    .search-panel > div { display: flex; flex-direction: column !important; gap: 10px !important; align-items: stretch !important; }
-    .input-wrapper, .form-select { width: 100% !important; max-width: 100% !important; }
-    .category-chips, .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin-bottom: 10px; }
-
-    .mods-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 0; }
-    .mod-card { padding: 0; display: flex; flex-direction: column; }
-    .mod-banner { height: 65px; }
-    .mod-avatar { width: 40px; height: 40px; margin-top: -25px; margin-bottom: 5px; border-width: 2px; align-self: center; }
-    .mod-info { padding: 10px; text-align: center; }
-    .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
-    .mod-desc, .mod-tags-container { display: none; } 
-
-    /* El carrito móvil ocupa casi toda la pantalla */
-    .cart-panel { top: 0; height: 100vh !important; width: 85vw !important; right: -90vw; }
-    .cart-panel.active-mobile, .cart-panel.active { right: 0; }
-    /* El botón circular sube un poco para no tapar la navbar móvil inferior */
-    .mobile-cart-toggle { bottom: 80px; }
-}
 
 /* ---- COMPARADOR DE SHADERS ---- */
 .shader-compare-container { position: relative; width: 100%; height: 300px; border-radius: 12px; overflow: hidden; border: 2px solid var(--border-color); }
@@ -454,12 +414,12 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
    REFORMA TOTAL DEL CARRITO (Estilo "App" y Categorizado)
    ============================================================ */
 
-/* 1. Botón Flotante de Paquete (Visible en Celular y ESCRITORIO) */
+/* 1. Botón Flotante de Paquete */
 .mobile-cart-toggle {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 1001; /* Encima de todo */
+    z-index: 1001;
     background: var(--accent);
     color: white;
     border: none;
@@ -473,36 +433,32 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .mobile-cart-toggle:hover { transform: scale(1.1) translateY(-5px); background: var(--accent-hover); }
 .mobile-cart-toggle .badge { position: absolute; top: -3px; right: -3px; background: var(--danger); font-size: 11px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid var(--bg-panel); }
 
-/* 2. Panel del Carrito (FIX: Flexbox y Sticky Footer) */
+/* 2. Panel del Carrito */
 .cart-panel {
     position: fixed;
     top: 70px;
     right: -400px; /* Oculto por defecto */
-    width: 380px; /* Un poco más ancho */
+    width: 380px;
     height: calc(100vh - 70px) !important;
     background-color: var(--bg-panel);
     border-left: 1px solid var(--border-color);
-    display: flex !important; /* Estrictamente flex */
-    flex-direction: column !important; /* Estrictamente columna */
+    display: flex !important;
+    flex-direction: column !important;
     z-index: 1000;
     transition: right 0.3s ease-in-out;
     box-shadow: -10px 0 30px rgba(0,0,0,0.5);
     padding: 0; 
-    overflow: hidden; /* Que el panel principal NO haga scroll */
+    overflow: hidden;
 }
 
-/* Estado Activo */
 .cart-panel.active { right: 0; }
 
 .cart-header { padding: 20px; background-color: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-color); flex-shrink: 0 !important; }
-
-/* El BODY es el único que scrollea */
 .cart-body { flex: 1 1 auto !important; overflow-y: auto !important; padding: 20px; padding-bottom: 30px; }
 
-/* Footer estrictamente pegado abajo */
 .cart-footer { 
     padding: 20px; 
-    background-color: var(--bg-panel); /* Fondo sólido */
+    background-color: var(--bg-panel);
     border-top: 1px solid var(--border-color); 
     flex-shrink: 0 !important; 
     position: sticky; 
@@ -532,31 +488,99 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 }
 .cart-item:hover { border-color: var(--accent); transform: translateX(-3px); }
 
-/* Banner pequeño de fondo en el carrito (HACEMOS MÁS ALTO EL BANNER) */
 .cart-item-banner { 
-    height: 75px; /* Más grande para que SÍ se vea */
+    height: 75px;
     background-size: cover; 
     background-position: center; 
     background-repeat: no-repeat;
     position: relative; 
-    background-color: #27272a; /* Fondo gris en caso de error */
+    background-color: #27272a;
 }
 .cart-item-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(18,18,18,0.9)); }
 
-/* Avatar flotante sobre el banner en el carrito */
 .cart-item-avatar {
     width: 36px; height: 36px; border-radius: 8px; border: 3px solid var(--bg-main);
     position: absolute; left: 10px; bottom: -12px; z-index: 2; object-fit: cover; background: var(--bg-panel);
 }
 
-/* Info y Botones del Item */
 .cart-item-info { padding: 18px 10px 10px 10px; display: flex; flex-direction: column; }
 .cart-item-title { font-weight: 700; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Botón Gear (Config) flotante a la derecha */
 .btn-config-cart { position: absolute; top: 5px; right: 35px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; opacity: 0.7; z-index: 3; }
 .btn-config-cart:hover { opacity: 1; background: var(--bg-hover); }
-
-/* Botón Trash (Eliminar) flotante a la derecha */
 .btn-remove-cart { position: absolute; top: 5px; right: 5px; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; z-index: 3; }
 .btn-remove-cart:hover { background: var(--danger); color: white; }
+
+/* ---- RESPONSIVIDAD MÓVIL ---- */
+.hidden-desktop { display: none; }
+
+/* Botón IA Móvil (se añade a la topbar) */
+.mobile-ai-btn { display: none; }
+
+@media (max-width: 992px) {
+    .hidden-desktop { display: flex; }
+    body, html { overflow: hidden; height: 100vh; margin: 0; position: fixed; width: 100%; }
+    .app-container { flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    /* Barra de Navegación Inferior Móvil */
+    .sidebar { width: 100%; position: fixed !important; bottom: 0 !important; left: 0; z-index: 9999; background: var(--bg-panel); border-right: none; border-top: 1px solid var(--border-color); flex-direction: row; height: 65px; display: flex; padding:0; }
+    .logo { display: none; }
+    
+    /* Ocultar el botón IA original de la sidebar en móvil */
+    .sidebar > div:last-child { display: none; }
+    
+    .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; padding: 0; gap: 0; }
+    .nav-btn { flex-direction: column; gap: 4px; font-size: 0.75rem; padding: 10px 0; flex: 1; text-align: center; justify-content: center; align-items: center; }
+    .nav-btn i { font-size: 1.4rem; }
+
+    /* Ajustar la Topbar para el botón IA */
+    .topbar { padding: 0 15px; }
+    .top-nav-actions h1 { font-size: 1.1rem; }
+    .mobile-ai-btn { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; padding: 6px 10px; margin-right: 10px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2); }
+    
+    /* Contenido Principal */
+    .content { height: 100vh; display: flex; flex-direction: column; padding-bottom: 65px; }
+    .main-layout { flex: 1; padding: 10px; overflow: hidden; display: flex; flex-direction: column; height: auto; }
+    .center-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 80px; }
+
+    /* Ajustes de Paneles y Buscadores */
+    .search-panel { display: flex; flex-direction: column; padding: 10px; }
+    .search-panel > div { display: flex; flex-direction: column !important; gap: 10px !important; align-items: stretch !important; }
+    .input-wrapper, .form-select { width: 100% !important; max-width: 100% !important; }
+    .category-chips, .filter-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin-bottom: 10px; }
+
+    /* Ajustes Tarjetas de Mods */
+    .mods-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 0; }
+    .mod-card { padding: 0; display: flex; flex-direction: column; }
+    .mod-banner { height: 65px; }
+    .mod-avatar { width: 40px; height: 40px; margin-top: -25px; margin-bottom: 5px; border-width: 2px; align-self: center; }
+    .mod-info { padding: 10px; text-align: center; }
+    .mod-title { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+    .mod-desc, .mod-tags-container { display: none; } 
+
+    /* BUG 2: Botón Flotante Subido (Encima de la navegación y más a la vista) */
+    .mobile-cart-toggle { bottom: 85px; right: 15px; }
+
+    /* BUG 1: Panel del Carrito - Corregido ocultamiento y altura */
+    .cart-panel { 
+        top: 70px; 
+        height: calc(100vh - 70px) !important;
+        width: 100vw !important;
+        right: -100vw !important;
+        z-index: 10000;
+    }
+    .cart-panel.active { right: 0 !important; }
+
+    /* BUG 3: Botón de "Construir Pack" (Footer) elevado para no chocar con la navbar de iOS/Android */
+    .cart-footer { padding-bottom: 30px; }
+    .cart-body { padding-bottom: 120px !important; }
+    
+    /* BUG 4: Corrección de letras en vez de imágenes en Mis Perfiles */
+    .profile-mods-preview img {
+        width: 28px !important; 
+        height: 28px !important;
+        margin-left: -8px !important;
+        text-indent: -9999px; /* Oculta cualquier texto "alt" roto si la imagen no carga */
+    }
+    .profile-mods-extra { width: 28px !important; height: 28px !important; font-size: 0.65rem !important; margin-left: -8px !important; }
+}
