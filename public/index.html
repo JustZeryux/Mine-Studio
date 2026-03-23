@@ -205,17 +205,15 @@
                 </div>
 
                 <aside class="cart-panel panel" style="padding: 0; background: var(--bg-main);">
-                    <div class="cart-header" style="background: var(--bg-panel); border-bottom: 1px solid var(--border-color);">
+<aside class="cart-panel panel">
+                    <div class="cart-header">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="ph-fill ph-package" style="color: var(--accent);"></i> Ensamblado</h3>
-                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 20px;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
+                            <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
+                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
                         </div>
-                        <div style="margin-top: 15px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <i class="ph-fill ph-info"></i>
-                            <span id="cart-version-label" style="font-size: 0.8rem; font-weight: 600;">1.20.1 Forge</span>
-                        </div>
+                        <p class="muted-text text-sm mt-10">Target: <strong id="cart-version-label" style="color: var(--text-main);">1.20.1 Forge</strong></p>
                     </div>
-                    
+
                     <div class="cart-body custom-scrollbar">
                         <div id="empty-cart-msg" class="empty-state">
                             <i class="ph-duotone ph-ghost" style="color: var(--border-color); font-size: 60px;"></i>
@@ -255,6 +253,10 @@
                             <p class="muted-text text-sm mb-10"><i class="ph-fill ph-lightbulb" style="color: #fbbf24;"></i> <strong style="color:white;">Recomendación Coherente:</strong></p>
                             <div id="rec-item"></div>
                         </div>
+                    </div>
+                    
+                    <div class="cart-footer">
+                        <button id="btn-open-save-modal" class="btn btn-primary w-100" disabled><i class="ph-bold ph-download-simple"></i> Construir Pack</button>
                     </div>
                 </aside>
             </div>
