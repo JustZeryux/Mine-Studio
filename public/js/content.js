@@ -527,8 +527,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const btnAddTop = topActions.querySelector('.btn-add-top');
                     btnAddTop.addEventListener('click', () => {
                         if (!window.modpackCart.some(item => item.id === mod.project_id)) {
-                            window.modpackCart.push({ id: mod.project_id, title: mod.title, type: mod.project_type || 'mod' });
-                            window.updateCartUI();
+let fType = mod.project_type || 'mod';
+if(mod.display_categories && mod.display_categories.includes('library')) fType = 'library';
+
+// Ahora sí guardamos Icono, Banner y Categoría para que no salgan vacíos jamás
+window.modpackCart.push({ 
+    id: mod.project_id, 
+    title: mod.title, 
+    type: fType, 
+    icon: iconUrl, 
+    banner: bannerUrl, 
+    categories: mod.display_categories 
+});                            window.updateCartUI();
                             btnAddTop.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; btnAddTop.style.background = 'var(--success)'; btnAddTop.disabled = true;
                             const outerBtn = card.querySelector('.btn-add-mod');
                             if(outerBtn) { outerBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; outerBtn.style.background = 'var(--success)'; outerBtn.disabled = true; }
@@ -763,7 +773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartBody = document.querySelector('.cart-body');
         if(!cartBody) return;
 
-        // 1. Auto-Reparación: Si no existen los contenedores en el HTML, los creamos mágicamente
+        // Auto-inyecta las categorías si no existen
         if(!document.getElementById('cart-cat-mods')) {
             cartBody.innerHTML = `
                 <div id="empty-cart-msg" class="empty-state"><i class="ph-duotone ph-ghost" style="color: var(--border-color); font-size: 60px;"></i><p>Tu modpack está vacío.</p></div>
@@ -775,6 +785,66 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
 
+        const cartContainers = {
+            'mod': { main: document.getElementById('cart-cat-mods'), list: document.getElementById('cart-list-mods') },
+            'resourcepack': { main: document.getElementById('cart-cat-resourcepacks'), list: document.getElementById('cart-list-resourcepacks') },
+            'shader': { main: document.getElementById('cart-cat-shaders'), list: document.getElementById('cart-list-shaders') },
+            'library': { main: document.getElementById('cart-cat-libraries'), list: document.getElementById('cart-list-libraries') }
+        };
+
+        Object.values(cartContainers).forEach(c => {
+            if(c.list) c.list.innerHTML = '';
+            if(c.main) c.main.style.display = 'none'; 
+        });
+
+        const emptyMsg = document.getElementById('empty-cart-msg');
+        const btnFinalizar = document.getElementById('btn-open-save-modal');
+
+        if (window.modpackCart.length === 0) {
+            if(emptyMsg) emptyMsg.style.display = 'block';
+            if(btnFinalizar) btnFinalizar.disabled = true;
+        } else {
+            if(emptyMsg) emptyMsg.style.display = 'none';
+            if(btnFinalizar) btnFinalizar.disabled = false;
+
+            window.modpackCart.forEach((item, index) => {
+                let renderCat = item.type;
+                if(item.type === 'mod' && item.categories && item.categories.includes('library')) renderCat = 'library';
+                
+                const target = cartContainers[renderCat];
+                if(!target) return; 
+
+                target.main.style.display = 'block';
+
+                // Escudo anti-crasheo si no hay imagen (usa placeholders en lugar de romperse)
+                const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=M';
+                const banner = item.banner || 'https://placehold.co/300x60/18181b/27272a';
+
+                const li = document.createElement('li');
+                li.className = 'cart-item';
+                li.innerHTML = `
+                    <button class="btn-config-cart" data-id="${item.id}" data-title="${item.title}"><i class="ph-bold ph-gear"></i></button>
+                    <button class="btn-remove-cart" data-index="${index}"><i class="ph-bold ph-trash"></i></button>
+                    <div class="cart-item-banner" style="background-image: url('${banner}');"></div>
+                    <img src="${icon}" class="cart-item-avatar">
+                    <div class="cart-item-info"><span class="cart-item-title">${item.title}</span></div>
+                `;
+                target.list.appendChild(li);
+            });
+
+            document.querySelectorAll('.btn-remove-cart').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    window.modpackCart.splice(this.dataset.index, 1); window.updateCartUI(); fetchRealMods(false);
+                });
+            });
+            // (La lógica del config-cart sigue igual, ponla aquí si la usas)
+        }
+
+        const badgeBtn = document.getElementById('mobile-cart-toggle-btn');
+        if(badgeBtn && !badgeBtn.innerHTML.includes('ph-x')) badgeBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+        
+        if(typeof window.updateRecommendations === 'function') window.updateRecommendations();
+    };
         // 2. AHORA SÍ: Definimos las referencias DESPUÉS de que se crearon (Este era el bug)
         const cartContainers = {
             'mod': { main: document.getElementById('cart-cat-mods'), list: document.getElementById('cart-list-mods') },
@@ -1212,25 +1282,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 // Creamos el botón flotante si no existe
-    let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
+let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
     if (!mobileBtn) {
         mobileBtn = document.createElement('button');
         mobileBtn.id = 'mobile-cart-toggle-btn';
-        // Fíjate que aquí quitamos "hidden-desktop" para que se vea siempre
-        mobileBtn.className = 'mobile-cart-toggle'; 
-        mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+        mobileBtn.className = 'mobile-cart-toggle'; // Sin hidden-desktop
+        mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart ? window.modpackCart.length : 0}</span>`;
         document.body.appendChild(mobileBtn);
     }
 
+    const cartPanel = document.querySelector('.cart-panel');
     if (mobileBtn && cartPanel) {
+        cartPanel.style.position = 'fixed'; cartPanel.style.top = '70px'; cartPanel.style.height = 'calc(100vh - 70px)';
+        cartPanel.style.zIndex = '9999'; cartPanel.style.transition = 'right 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        cartPanel.style.right = '-400px'; // Oculto a la fuerza
+
         mobileBtn.addEventListener('click', () => {
-            // Ahora usamos solo 'active' para que funcione igual en PC y celular
-            cartPanel.classList.toggle('active'); 
-            
-            if(cartPanel.classList.contains('active')) {
-                mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
-            } else {
+            if (cartPanel.style.right === '0px') {
+                cartPanel.style.right = '-400px';
                 mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
+            } else {
+                cartPanel.style.right = '0px';
+                mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
             }
         });
     }
