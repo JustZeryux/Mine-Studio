@@ -112,7 +112,6 @@ if (sharedPack) {
             alert("El enlace del modpack está corrupto o es inválido.");
         }
     }
-    }
 
     // ==========================================
     // 0. SISTEMA DE SESIÓN 100% FRONTEND (MÓDULOS)
