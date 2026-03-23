@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoreMod</title>
+    <title>CoreMod Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -16,28 +16,36 @@
     
     <div class="app-container">
         <aside class="sidebar">
-            <div class="logo">
-                <i class="ph-fill ph-hexagon"></i>
-                <h2>CoreMod</h2>
+            <div class="logo" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 25px;">
+                <i class="ph-fill ph-hexagon" style="font-size: 32px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));"></i>
+                <h2 style="font-weight: 800; letter-spacing: -1px;">CoreMod</h2>
             </div>
-            <nav class="nav-menu">
-                <button class="nav-btn active" data-target="mods"><i class="ph-bold ph-compass"></i> Explorar</button>
-                <button class="nav-btn" data-target="worlds"><i class="ph-bold ph-globe-hemisphere-west"></i> Configuración</button>
-                <button class="nav-btn" data-target="profiles"><i class="ph-bold ph-folder-simple"></i> Mis Modpacks</button>
-                <button id="btn-ai-builder" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: linear-gradient(45deg, #ec4899, #8b5cf6); border:none; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);">
-    <i class="ph-bold ph-sparkle"></i> IA Modpacker
-</button>
+            
+            <nav class="nav-menu" style="flex: 1;">
+                <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin: 10px 15px; letter-spacing: 1px;">Navegación</p>
+                <button class="nav-btn active" data-target="mods"><i class="ph-bold ph-compass"></i> Explorar Mods</button>
+                <button class="nav-btn" data-target="worlds"><i class="ph-bold ph-sliders"></i> Configuración</button>
+                <button class="nav-btn" data-target="profiles"><i class="ph-bold ph-folder-open"></i> Mis Modpacks</button>
             </nav>
+
+            <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <button id="btn-ai-builder" class="btn w-100" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 15px; box-shadow: 0 5px 20px rgba(16, 185, 129, 0.2); font-size: 1rem;">
+                    <i class="ph-fill ph-sparkle" style="font-size: 20px;"></i> IA Modpacker
+                </button>
+            </div>
         </aside>
 
         <main class="content">
             <header class="topbar">
                 <div class="top-nav-actions">
-                    <span class="muted-text"><i class="ph-fill ph-sparkle"></i> Studio Creator</span>
+                    <h1 style="font-size: 1.2rem; font-weight: 600; color: var(--text-main);"><i class="ph-bold ph-layout"></i> Studio Creator</h1>
                 </div>
                 <div class="profile-section">
-                    <span id="header-username">Zeryux</span>
-                    <img src="https://crafatar.com/avatars/Zeryux?size=40" class="avatar">
+                    <div style="text-align: right; line-height: 1.2;">
+                        <span id="header-username" style="display: block; font-weight: 700;">Zeryux</span>
+                        <span style="font-size: 0.75rem; color: var(--accent);">Admin</span>
+                    </div>
+                    <img src="https://crafatar.com/avatars/Zeryux?size=40" class="avatar" style="border-color: var(--accent);">
                 </div>
             </header>
 
@@ -46,21 +54,54 @@
                     
                     <div id="view-mods" class="builder-view">
                         
-                        <div class="sticky-filters-container">
-                            <div class="search-panel panel" style="margin-bottom: 10px;">
-                                <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
-                                    <div class="input-wrapper" style="flex: 1; min-width: 250px;">
-                                        <i class="ph-bold ph-magnifying-glass"></i>
-                                        <input type="text" id="mod-search-input" placeholder="Buscar jefes, armas, optimización..." class="form-input">
-                                    </div>
-                                    
-                                    <select id="mod-sort-select" class="form-select" style="max-width: 170px;">
-                                        <option value="downloads">🔥 Populares (Supremos)</option>
-                                        <option value="relevance">⭐ Relevancia</option>
-                                        <option value="newest">✨ Más Recientes</option>
-                                    </select>
+                        <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(24,24,27,0) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg); padding: 40px; margin-bottom: 25px; position: relative; overflow: hidden;">
+                            <i class="ph-duotone ph-puzzle-piece" style="position: absolute; right: -20px; top: -20px; font-size: 200px; color: rgba(16,185,129,0.05); transform: rotate(15deg);"></i>
+                            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; position: relative; z-index: 2;">Descubre. Ensambla. Juega.</h2>
+                            <p class="muted-text mb-20" style="font-size: 1.1rem; max-width: 600px; position: relative; z-index: 2;">Encuentra los mejores mods, texturas y shaders de la comunidad para crear tu servidor perfecto.</p>
+                            
+                            <div class="input-wrapper" style="max-width: 700px; position: relative; z-index: 2;">
+                                <i class="ph-bold ph-magnifying-glass" style="font-size: 22px; left: 20px;"></i>
+                                <input type="text" id="mod-search-input" placeholder="Buscar Sodium, Create, Jefes, Armas..." class="search-bar" style="padding: 20px 20px 20px 55px; font-size: 1.1rem; border-color: rgba(16,185,129,0.4); background: rgba(0,0,0,0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                            </div>
+                        </div>
 
-                                    <select id="mod-version-select" class="form-select" style="max-width: 120px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                            <button id="btn-template-rpg" class="btn panel" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(255,255,255,0.05); background: var(--bg-hover);">
+                                <i class="ph-duotone ph-sword" style="font-size: 32px; color: #f59e0b;"></i>
+                                <span style="font-weight: 600;">Plantilla RPG</span>
+                            </button>
+                            <button id="btn-template-tech" class="btn panel" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(255,255,255,0.05); background: var(--bg-hover);">
+                                <i class="ph-duotone ph-gear" style="font-size: 32px; color: #3b82f6;"></i>
+                                <span style="font-weight: 600;">Plantilla Técnica</span>
+                            </button>
+                            <button id="btn-fps-boost" class="btn panel" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">
+                                <i class="ph-duotone ph-rocket" style="font-size: 32px; color: var(--accent);"></i>
+                                <span style="font-weight: 600; color: var(--accent);">Boost FPS (Auto)</span>
+                            </button>
+                            <button id="btn-import-jars" class="btn panel" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(255,255,255,0.05); background: var(--bg-hover);" onclick="document.getElementById('import-jars-input').click()">
+                                <i class="ph-duotone ph-upload-simple" style="font-size: 32px; color: #a855f7;"></i>
+                                <span style="font-weight: 600;">Importar .JARs</span>
+                            </button>
+                            <input type="file" id="import-jars-input" multiple accept=".jar" style="display: none;">
+                        </div>
+
+                        <div class="sticky-filters-container" style="position: sticky; top: 0; background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(10px); z-index: 100; padding: 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                                <div class="filter-group" style="margin: 0; display: flex; background: var(--bg-panel); border-radius: var(--radius-lg); padding: 5px; border: 1px solid var(--border-color);">
+                                    <button class="filter-btn active" data-filter="mod" style="border: none;"><i class="ph-fill ph-puzzle-piece"></i> Mods</button>
+                                    <button class="filter-btn" data-filter="resourcepack" style="border: none;"><i class="ph-fill ph-paint-brush"></i> Texturas</button>
+                                    <button class="filter-btn" data-filter="shader" style="border: none;"><i class="ph-fill ph-aperture"></i> Shaders</button>
+                                    <button class="filter-btn" data-filter="datapack" style="border: none;"><i class="ph-fill ph-file-code"></i> DataPacks</button>
+                                    <button class="filter-btn" data-filter="library" style="border: none;"><i class="ph-fill ph-books"></i> Librerías</button>
+                                </div>
+
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="mod-sort-select" class="form-select" style="min-width: 160px;">
+                                        <option value="downloads">🔥 Populares</option>
+                                        <option value="relevance">⭐ Relevancia</option>
+                                        <option value="newest">✨ Recientes</option>
+                                    </select>
+                                    <select id="mod-version-select" class="form-select" style="min-width: 120px;">
                                         <option value="1.20.4">1.20.4</option>
                                         <option value="1.20.1" selected>1.20.1</option>
                                         <option value="1.19.4">1.19.4</option>
@@ -68,203 +109,262 @@
                                         <option value="1.16.5">1.16.5</option>
                                         <option value="1.12.2">1.12.2</option>
                                     </select>
-                                    
-                                    <select id="mod-loader-select" class="form-select" style="max-width: 120px;">
+                                    <select id="mod-loader-select" class="form-select" style="min-width: 120px;">
                                         <option value="forge">Forge</option>
                                         <option value="fabric">Fabric</option>
                                         <option value="neoforge">NeoForge</option>
                                     </select>
                                 </div>
-
-                                <div class="category-chips" id="category-chips-container" style="margin-bottom: 0;">
-                                    <button class="chip active" data-cat="">Todas</button>
-                                    <button class="chip" data-cat="adventure"><i class="ph-fill ph-sword"></i> Aventura & Jefes</button>
-                                    <button class="chip" data-cat="technology"><i class="ph-fill ph-cpu"></i> Tecnología</button>
-                                    <button class="chip" data-cat="magic"><i class="ph-fill ph-sparkle"></i> Magia</button>
-                                    <button class="chip" data-cat="mobs"><i class="ph-fill ph-skull"></i> Criaturas</button>
-                                    <button class="chip" data-cat="equipment"><i class="ph-fill ph-shield"></i> Armaduras & Armas</button>
-                                    <button class="chip" data-cat="worldgen"><i class="ph-fill ph-tree"></i> Biomas</button>
-                                    <button class="chip" data-cat="sound"><i class="ph-fill ph-speaker-high"></i> SFX</button>
-                                    <button class="chip" data-cat="optimization"><i class="ph-fill ph-rocket"></i> FPS</button>
-                                </div>
                             </div>
 
-   <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                                <button id="btn-template-rpg" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-sword"></i> Plantilla RPG</button>
-                                <button id="btn-template-tech" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;"><i class="ph-bold ph-gear"></i> Plantilla Técnica</button>
-                                <button id="btn-randomizer" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #8b5cf6; border:none;"><i class="ph-bold ph-magic-wand"></i> Auto-Modpacker</button>
-                                
-                                <button id="btn-import-jars" class="btn btn-primary" style="flex: 1; font-size: 0.85rem; background: #3b82f6; border:none;" title="Selecciona los .jar de tu carpeta mods">
-                                    <i class="ph-bold ph-upload-simple"></i> Importar .JAR
-                                </button>
-                                <input type="file" id="import-jars-input" multiple accept=".jar" style="display: none;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <button id="btn-fps-boost" class="btn btn-primary w-100" style="background: linear-gradient(45deg, #10b981, #059669); border: none; font-size: 0.95rem; padding: 12px;">
-                                    <i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización (Boost FPS)
-                                </button>
-                            </div>
-
-                            <div class="filter-group mb-20" style="margin-bottom: 10px;">
-                                <button class="filter-btn active" data-filter="mod"><i class="ph-bold ph-puzzle-piece"></i> Mods</button>
-                                <button class="filter-btn" data-filter="library"><i class="ph-bold ph-books"></i> Librerías</button>
-                                <button class="filter-btn" data-filter="resourcepack"><i class="ph-bold ph-paint-brush"></i> Texturas</button>
-                                <button class="filter-btn" data-filter="shader"><i class="ph-bold ph-aperture"></i> Shaders</button>
-                                <button class="filter-btn" data-filter="datapack"><i class="ph-bold ph-file-code"></i> DataPacks</button>
+                            <div class="category-chips custom-scrollbar" id="category-chips-container" style="margin: 0;">
+                                <button class="chip active" data-cat="">Todas</button>
+                                <button class="chip" data-cat="adventure"><i class="ph-fill ph-sword"></i> Aventura</button>
+                                <button class="chip" data-cat="technology"><i class="ph-fill ph-cpu"></i> Tecnología</button>
+                                <button class="chip" data-cat="magic"><i class="ph-fill ph-sparkle"></i> Magia</button>
+                                <button class="chip" data-cat="mobs"><i class="ph-fill ph-skull"></i> Criaturas</button>
+                                <button class="chip" data-cat="equipment"><i class="ph-fill ph-shield"></i> Armaduras</button>
+                                <button class="chip" data-cat="worldgen"><i class="ph-fill ph-tree"></i> Biomas</button>
+                                <button class="chip" data-cat="sound"><i class="ph-fill ph-speaker-high"></i> SFX</button>
+                                <button class="chip" data-cat="optimization"><i class="ph-fill ph-rocket"></i> Rendimiento</button>
                             </div>
                         </div>
 
-                        <div class="mods-grid custom-scrollbar" id="mods-grid"></div>
-                        <div style="text-align: center; margin-top: 20px; padding-bottom: 30px;">
-                            <button id="btn-load-more" class="btn btn-secondary hidden"><i class="ph-bold ph-caret-down"></i> Cargar Más</button>
+                        <div class="mods-grid" id="mods-grid"></div>
+                        <div style="text-align: center; margin-top: 20px; padding-bottom: 40px;">
+                            <button id="btn-load-more" class="btn btn-secondary hidden" style="margin: 0 auto; padding: 15px 30px; border-radius: 30px;"><i class="ph-bold ph-caret-down"></i> Cargar Más Resultados</button>
                         </div>
                     </div>
 
                     <div id="view-worlds" class="builder-view hidden panel">
-                        
-                        <div class="panel" style="background: var(--bg-hover); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color);">
-                            <div style="flex: 1; min-width: 200px;">
-                                <h3 style="margin-bottom: 10px;"><i class="ph-bold ph-user-focus"></i> Tu Personaje</h3>
-                                <p class="muted-text text-sm mb-10">Escribe tu nombre premium de Minecraft para ver tu Skin e info.</p>
-                                <div style="display: flex; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            
+                            <div class="panel" style="background: linear-gradient(to bottom, var(--bg-hover), var(--bg-main));">
+                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-user-focus" style="color: var(--accent);"></i> Perfil Premium</h3>
+                                <p class="muted-text text-sm mb-20">Ingresa tu usuario para obtener tu skin UUID oficial.</p>
+                                
+                                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                                     <input type="text" id="mc-skin-input" class="form-input" placeholder="Ej: Zeryux" style="flex: 1;">
                                     <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i></button>
                                 </div>
                                 
-                                <div id="mc-advanced-info" style="display: none; margin-top: 15px; width: 100%; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                                    <p class="text-sm muted-text mb-10"><i class="ph-bold ph-identification-card"></i> Base de datos de Mojang:</p>
-                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <div style="display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 12px; height: 180px; border: 1px solid var(--border-color);">
+                                    <img id="mc-skin-preview" src="https://crafatar.com/renders/body/Steve?overlay=true" style="height: 150px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); transition: 0.3s;">
+                                </div>
+                                
+                                <div id="mc-advanced-info" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
                                         <span class="dependency-tag" style="color: #6ee7b7; border-color: #059669; background: rgba(5, 150, 105, 0.1);" id="mc-uuid-badge">UUID: ...</span>
                                         <span class="dependency-tag" style="color: #93c5fd; border-color: #2563eb; background: rgba(37, 99, 235, 0.1);" id="mc-cape-badge">Capa: No</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div style="width: 100px; height: 100px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid var(--border-color);">
-                                <img id="mc-skin-preview" src="https://crafatar.com/renders/body/Steve?overlay=true" alt="Skin" style="height: 120px; object-fit: contain; margin-top: -10px; transition: 0.3s;">
-                            </div>
-                        </div>
 
-                        <h2 class="title mb-10"><i class="ph-bold ph-sliders"></i> Generación del Mundo</h2>
-                        <div class="settings-grid mt-20">
-                            <div class="form-group"><label>Semilla</label><input type="text" id="world-seed-input" class="form-input"></div>
-                            <div class="form-group">
-                                <label>Modo de Juego</label>
-                                <select id="world-gamemode" class="form-select"><option value="survival">Supervivencia</option><option value="creative">Creativo</option></select>
-                            </div>
-                            <div class="form-group">
-                                <label>Dificultad</label>
-                                <select id="world-difficulty" class="form-select">
-                                    <option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px;">
-                                <label style="margin:0; font-weight:bold;">Generar Estructuras</label>
+                            <div class="panel" style="background: var(--bg-panel);">
+                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-globe" style="color: #3b82f6;"></i> Servidor / Mundo</h3>
+                                <p class="muted-text text-sm mb-20">Estas propiedades se inyectarán en tu server.properties.</p>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Semilla (Seed)</label>
+                                        <input type="text" id="world-seed-input" class="form-input" placeholder="Dejar en blanco para random">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Modo de Juego</label>
+                                        <select id="world-gamemode" class="form-select">
+                                            <option value="survival">⚔️ Supervivencia</option>
+                                            <option value="creative">🏗️ Creativo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Dificultad</label>
+                                        <select id="world-difficulty" class="form-select">
+                                            <option value="easy">😊 Fácil</option>
+                                            <option value="normal" selected>😐 Normal</option>
+                                            <option value="hard">💀 Difícil</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                                        <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px; accent-color: var(--accent);">
+                                        <label style="margin:0; font-weight:600;">Generar Estructuras (Aldeas, etc)</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="view-profiles" class="builder-view hidden panel">
-                        <h2 class="title mb-20"><i class="ph-bold ph-folder-open"></i> Mis Modpacks</h2>
-                        <div id="profiles-grid" class="profiles-grid"></div>
+                    <div id="view-profiles" class="builder-view hidden panel" style="background: transparent; border: none; padding: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <div>
+                                <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-folder-open" style="color: var(--accent);"></i> Mis Modpacks</h2>
+                                <p class="muted-text mt-10">Gestiona los ensamblados que has guardado en la nube.</p>
+                            </div>
+                        </div>
+                        <div id="profiles-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
                     </div>
                 </div>
 
-                <aside class="cart-panel panel">
-                    <div class="cart-header">
+                <aside class="cart-panel panel" style="padding: 0; background: var(--bg-main);">
+                    <div class="cart-header" style="background: var(--bg-panel); border-bottom: 1px solid var(--border-color);">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
-                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
+                            <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="ph-fill ph-package" style="color: var(--accent);"></i> Ensamblado</h3>
+                            <button id="btn-migrate-pack" class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 20px;" title="Migrar de Versión"><i class="ph-bold ph-magic-wand"></i> Migrar</button>
                         </div>
-                        <p class="muted-text text-sm mt-10">Target: <strong id="cart-version-label" style="color: var(--text-main);">1.20.1 Forge</strong></p>
+                        <div style="margin-top: 15px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <i class="ph-fill ph-info"></i>
+                            <span id="cart-version-label" style="font-size: 0.8rem; font-weight: 600;">1.20.1 Forge</span>
+                        </div>
                     </div>
+                    
                     <div class="cart-body custom-scrollbar">
-                        <div id="empty-cart-msg" class="empty-state"><i class="ph-fill ph-ghost"></i><p>Vacío.</p></div>
+                        <div id="empty-cart-msg" class="empty-state">
+                            <i class="ph-duotone ph-ghost" style="color: var(--border-color); font-size: 60px;"></i>
+                            <p style="margin-top: 15px; font-weight: 500;">Tu modpack está vacío.</p>
+                            <p class="text-sm muted-text mt-10">Añade mods desde el explorador para comenzar.</p>
+                        </div>
                         <ul id="cart-list" class="cart-list"></ul>
                         
                         <div id="recommendations-box" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px; display: none;">
-                            <p class="muted-text text-sm mb-10"><i class="ph-bold ph-lightbulb"></i> Recomendado para ti:</p>
-                            <div id="rec-item" style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-hover); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+                            <p class="muted-text text-sm mb-10"><i class="ph-fill ph-lightbulb" style="color: #fbbf24;"></i> Faltan Esenciales:</p>
+                            <div id="rec-item" style="display: flex; flex-direction: column; gap: 8px;"></div>
                         </div>
                     </div>
-                    <div class="cart-footer">
-                        <button id="btn-open-save-modal" class="btn btn-primary w-100" disabled><i class="ph-bold ph-download-simple"></i> Construir Pack</button>
+                    
+                    <div class="cart-footer" style="background: var(--bg-panel); border-top: 1px solid var(--border-color);">
+                        <button id="btn-open-save-modal" class="btn btn-primary w-100" disabled style="padding: 15px; font-size: 1rem; border-radius: 12px;">
+                            <i class="ph-bold ph-download-simple"></i> Finalizar y Construir
+                        </button>
                     </div>
                 </aside>
             </div>
         </main>
     </div>
 
-<div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;">
-    <div class="modal-content modal-jei"> 
-        
-        <div class="jei-sidebar-left custom-scrollbar" style="display: none;">
-            <div id="jei-mobs-container">
-                <div class="jei-header" style="color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs</div>
-                <div id="jei-mobs-grid" class="jei-items-grid" style="padding: 15px;"></div>
+    <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;">
+        <div class="modal-content modal-jei"> 
+            <div class="jei-sidebar-left custom-scrollbar" style="display: none;">
+                <div id="jei-mobs-container">
+                    <div class="jei-header" style="color: #f59e0b;"><i class="ph-bold ph-skull"></i> Entidades / Mobs</div>
+                    <div id="jei-mobs-grid" class="jei-items-grid" style="padding: 15px;"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="jei-center-content custom-scrollbar" style="padding: 0; position: relative;">
-            <div style="position: sticky; top: 0; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 15px 25px; display: flex; align-items: center; gap: 20px; z-index: 50;">
-                <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="background: rgba(239,68,68,0.1); padding: 8px 12px; border-radius: 8px;"><i class="ph-bold ph-arrow-left" style="font-size: 20px;"></i></button>
-                
-                <img id="detail-icon" src="" style="width: 64px; height: 64px; border-radius: 12px; background: var(--bg-main); padding: 5px;">
-                <div style="flex: 1; text-align: left;">
-                    <h2 id="detail-title" class="title" style="font-size: 1.5rem; margin-bottom: 5px;">Cargando...</h2>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <p id="detail-author" class="muted-text text-sm" style="margin:0;"></p>
-                        <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
+            <div class="jei-center-content custom-scrollbar" style="padding: 0; position: relative;">
+                <div style="position: sticky; top: 0; background: rgba(18, 18, 20, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid var(--border-color); padding: 20px 30px; display: flex; align-items: center; gap: 20px; z-index: 50;">
+                    <button class="btn-icon-danger" onclick="document.getElementById('mod-details-modal').classList.add('hidden')" style="background: rgba(239,68,68,0.1); padding: 10px 15px; border-radius: 10px;"><i class="ph-bold ph-arrow-left" style="font-size: 20px;"></i></button>
+                    
+                    <img id="detail-icon" src="" style="width: 70px; height: 70px; border-radius: 14px; background: var(--bg-main); padding: 5px; border: 1px solid var(--border-color);">
+                    <div style="flex: 1; text-align: left;">
+                        <h2 id="detail-title" class="title" style="font-size: 1.8rem; margin-bottom: 5px; font-weight: 800;">Cargando...</h2>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <p id="detail-author" class="muted-text text-sm" style="margin:0;"></p>
+                            <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
+                        </div>
                     </div>
+                    <div id="detail-top-actions" style="display: flex; gap: 10px; align-items: center;"></div>
                 </div>
-                <div id="detail-top-actions" style="display: flex; gap: 10px; align-items: center;"></div>
+
+                <div id="detail-dependencies" style="margin-top: 20px; padding: 0 30px;"></div>
+                <div class="mod-description-body" id="detail-description" style="padding: 20px 30px; border: none; background: transparent;"></div>
+                <h3 class="subtitle mt-20 mb-10" style="padding: 0 30px;"><i class="ph-bold ph-image"></i> Galería</h3>
+                <div id="detail-gallery" class="gallery-grid" style="padding: 0 30px 30px 30px;"></div>
             </div>
 
-            <div id="detail-dependencies" style="margin-top: 20px; padding: 0 25px;"></div>
-            <div class="mod-description-body" id="detail-description" style="padding: 20px 25px;"></div>
-            <h3 class="subtitle mt-20 mb-10" style="padding: 0 25px;"><i class="ph-bold ph-image"></i> Galería</h3>
-            <div id="detail-gallery" class="gallery-grid" style="padding: 0 25px 25px 25px;"></div>
-        </div>
-
-        <div class="jei-sidebar-right" style="display: none; flex-direction: column; overflow: hidden; height: 100%;">
-            
-            <div class="jei-header" style="color: var(--accent); flex-shrink: 0; z-index: 30;">
-                <i class="ph-bold ph-cube"></i> Ítems / Bloques
-            </div>
-            
-            <div id="jei-recipe-viewer" style="display: none; padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); flex-shrink: 0; z-index: 20; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-                    <span style="font-weight: bold; font-size: 0.85rem;"><i class="ph-bold ph-book-open"></i> Crafteo Seleccionado</span>
-                    <button class="btn-icon-danger" id="btn-close-recipe" style="font-size: 16px;"><i class="ph-bold ph-x"></i></button>
+            <div class="jei-sidebar-right" style="display: none; flex-direction: column; overflow: hidden; height: 100%;">
+                <div class="jei-header" style="color: var(--accent); flex-shrink: 0; z-index: 30;">
+                    <i class="ph-bold ph-cube"></i> Ítems / Bloques
                 </div>
-                <div id="jei-recipe-content"></div>
-            </div>
-
-            <div id="jei-items-grid" class="jei-items-grid custom-scrollbar" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
-            
-        </div>
-        </div>
-
-    </div>
-</div>
-    <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
-        <div class="modal-content" style="max-width: 400px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h2 class="title" id="mob-3d-title" style="color: var(--accent);"><i class="ph-bold ph-user"></i> Modelo 3D</h2>
-                <button class="btn-icon-danger" onclick="document.getElementById('mob-3d-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <p class="muted-text mb-20 text-sm">Textura del mod proyectada en humanoide.</p>
-            <div class="mc-biped-container">
-                <div class="mc-biped" id="mc-biped-model">
-                    <div class="mc-part head"></div><div class="mc-part body"></div>
-                    <div class="mc-part arm-left"></div><div class="mc-part arm-right"></div>
-                    <div class="mc-part leg-left"></div><div class="mc-part leg-right"></div>
+                
+                <div id="jei-recipe-viewer" style="display: none; padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); flex-shrink: 0; z-index: 20; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                        <span style="font-weight: bold; font-size: 0.85rem;"><i class="ph-bold ph-book-open"></i> Crafteo Seleccionado</span>
+                        <button class="btn-icon-danger" id="btn-close-recipe" style="font-size: 16px;"><i class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div id="jei-recipe-content"></div>
                 </div>
+
+                <div id="jei-items-grid" class="jei-items-grid custom-scrollbar" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
             </div>
         </div>
     </div>
-    
+
+    <div class="modal-overlay hidden" id="ai-builder-modal" style="z-index: 10008; backdrop-filter: blur(15px);">
+        <div class="modal-content" style="max-width: 550px; background: rgba(15, 15, 18, 0.98); border: 2px solid #8b5cf6; box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); padding: 30px;">
+            <div style="text-align: center; margin-bottom: 25px; position: relative;">
+                <i class="ph-duotone ph-brain" style="font-size: 60px; color: #a78bfa;"></i>
+                <h2 style="color: white; margin-top: 15px; font-size: 2rem; font-weight: 800;">IA Ensamblador</h2>
+                <p class="muted-text text-sm" style="max-width: 350px; margin: 0 auto; margin-top: 10px;">Dime qué buscas y armaré el modpack perfecto para ti con compatibilidad asegurada.</p>
+            </div>
+            <textarea id="ai-prompt-input" class="search-bar custom-scrollbar" style="width: 100%; height: 120px; resize: none; margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.5); font-size: 1rem; padding: 20px;" placeholder="Ej: 'Quiero un modpack muy difícil de magia con dragones, que esté súper optimizado para pocos recursos...'"></textarea>
+            <div id="ai-terminal" class="custom-scrollbar" style="display: none; background: #000; padding: 15px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 12px; color: #4ade80; margin-bottom: 20px; height: 150px; overflow-y: auto; border: 1px solid #333; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+                > IA Esperando órdenes...<br>
+            </div>
+            <button class="btn btn-primary w-100" id="btn-generate-ai-download" style="background: linear-gradient(45deg, #ec4899, #8b5cf6); border: none; padding: 18px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);">
+                <i class="ph-bold ph-lightning"></i> Generar y Descargar Modpack
+            </button>
+            <button class="btn btn-text w-100 mt-10" id="btn-ai-cancel">Cerrar IA</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="save-pack-modal">
+        <div class="modal-content" style="padding: 40px;">
+            <h2 class="title mb-20" style="font-size: 1.8rem;"><i class="ph-duotone ph-floppy-disk" style="color: var(--accent);"></i> Guardar Proyecto</h2>
+            <div class="form-group mb-20">
+                <label style="font-weight: 600; margin-bottom: 8px; display: block;">Nombre del Modpack</label>
+                <input type="text" id="pack-name-input" class="form-input" style="padding: 15px; font-size: 1.1rem;">
+            </div>
+
+            <div class="form-group mb-10" style="background: rgba(16, 185, 129, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <input type="checkbox" id="export-server-pack" style="width: 20px; height: 20px; accent-color: var(--accent);">
+                    <label style="margin:0; font-weight:bold; color: var(--accent); font-size: 1.1rem;">Crear Server Pack</label>
+                </div>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye start.bat</p>
+            </div>
+
+            <div class="form-group mb-20" style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <input type="checkbox" id="export-mrpack" style="width: 20px; height: 20px; accent-color: #3b82f6;">
+                    <label style="margin:0; font-weight:bold; color: #3b82f6; font-size: 1.1rem;">Formato .mrpack</label>
+                </div>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Compatible con Prism Launcher. Pesa KB en vez de MB.</p>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-primary w-100" id="btn-confirm-save-download" style="padding: 15px; font-size: 1.1rem;"><i class="ph-bold ph-download-simple"></i> Guardar y Descargar ZIP</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" id="btn-just-save" style="flex: 1; border-color: var(--accent); color: var(--accent);"><i class="ph-bold ph-cloud-arrow-up"></i> Guardar Nube</button>
+                    <button class="btn btn-secondary" id="btn-just-download" style="flex: 1;"><i class="ph-bold ph-file-zip"></i> Solo Bajar</button>
+                </div>
+                <button class="btn btn-text w-100 mt-10" onclick="document.getElementById('save-pack-modal').classList.add('hidden')">Cancelar Operación</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="shared-pack-modal" style="z-index: 10009; backdrop-filter: blur(10px);">
+        <div class="modal-content" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; background: rgba(24, 24, 27, 0.95); border: 1px solid var(--accent);">
+            
+            <div style="text-align: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+                <i class="ph-fill ph-package" style="font-size: 40px; color: var(--accent);"></i>
+                <h2 style="margin-top: 10px; color: white;">Modpack Compartido</h2>
+                <p class="muted-text text-sm">Alguien te ha invitado a probar este modpack. Revisa el contenido antes de instalarlo en tu ensamblador.</p>
+            </div>
+
+            <div id="shared-pack-list" class="custom-scrollbar" style="flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; gap: 10px;">
+                <div style="text-align:center; padding: 30px; color: var(--muted);">
+                    <i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i>
+                    <p style="margin-top: 10px;">Extrayendo información de la base de datos...</p>
+                </div>
+            </div>
+
+            <div style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+                <button class="btn btn-primary" id="btn-install-shared" style="flex: 2; font-size: 1rem;"><i class="ph-bold ph-download-simple"></i> Instalar Modpack</button>
+                <button class="btn btn-secondary" id="btn-cancel-shared" style="flex: 1;">Rechazar</button>
+            </div>
+            
+        </div>
+    </div>
+
     <div class="modal-overlay hidden" id="config-editor-modal" style="z-index: 10006;">
         <div class="modal-content modal-lg" style="max-width: 600px;">
             <div class="modal-header-mod" style="padding: 15px 25px;">
@@ -289,37 +389,44 @@
         </div>
     </div>
 
-    <div class="modal-overlay hidden" id="save-pack-modal">
-        <div class="modal-content">
-            <h2 class="title mb-20"><i class="ph-bold ph-floppy-disk"></i> Guardar Proyecto</h2>
-            <div class="form-group mb-20"><label>Nombre del Modpack</label><input type="text" id="pack-name-input" class="form-input"></div>
-
-            <div class="form-group mb-10" style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--accent);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <input type="checkbox" id="export-server-pack" style="width: 20px; height: 20px;">
-                    <label style="margin:0; font-weight:bold; color: var(--accent);">Crear Server Pack</label>
-                </div>
-                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye start.bat</p>
+    <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
+        <div class="modal-content" style="max-width: 500px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 class="title" id="mob-3d-title" style="color: var(--accent);"><i class="ph-bold ph-cube"></i> Holograma de Entidad</h2>
+                <button class="btn-icon-danger" onclick="document.getElementById('mob-3d-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
             </div>
-
-            <div class="form-group mb-20" style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--success);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <input type="checkbox" id="export-mrpack" style="width: 20px; height: 20px;">
-                    <label style="margin:0; font-weight:bold; color: var(--success);">Formato .mrpack (Ligero)</label>
+            <p class="muted-text mb-20 text-sm">Textura interna extraída del archivo .jar</p>
+            
+            <div class="hologram-container">
+                <div class="hologram-cube" id="mob-hologram-cube">
+                    <div class="hologram-face front"></div>
+                    <div class="hologram-face back"></div>
+                    <div class="hologram-face right"></div>
+                    <div class="hologram-face left"></div>
+                    <div class="hologram-face top"></div>
+                    <div class="hologram-face bottom"></div>
                 </div>
-                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Compatible con Prism Launcher. Pesa KB en vez de MB.</p>
-            </div>
-
-<div class="modal-actions">
-                <button class="btn btn-primary w-100 mb-10" id="btn-confirm-save-download"><i class="ph-bold ph-download-simple"></i> Guardar y Descargar</button>
-                <button class="btn btn-secondary w-100 mb-10" id="btn-just-save" style="border-color: var(--accent); color: var(--accent);"><i class="ph-bold ph-floppy-disk"></i> Solo Guardar Perfil</button>
-                <button class="btn btn-secondary w-100 mb-10" id="btn-just-download"><i class="ph-bold ph-file-zip"></i> Solo Descargar</button>
-                <button class="btn btn-text w-100" onclick="document.getElementById('save-pack-modal').classList.add('hidden')">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
+    <div class="modal-overlay hidden" id="shader-compare-modal" style="z-index: 10010;">
+        <div class="modal-content" style="max-width: 600px; text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 class="title"><i class="ph-bold ph-aperture"></i> Comparador de Shaders</h2>
+                <button class="btn-icon-danger" onclick="document.getElementById('shader-compare-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <p class="muted-text mb-20">Desliza la barra para ver la diferencia visual.</p>
+            <div class="shader-compare-container" id="shader-compare-container">
+                <img src="https://i.imgur.com/M6PZ1Y4.jpeg" alt="Vanilla" class="shader-img-vanilla">
+                <img src="https://i.imgur.com/kSGB20u.jpeg" alt="Con Shaders" class="shader-img-shader" id="shader-img-top">
+                <div class="shader-slider-line" id="shader-slider-line">
+                    <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
+                </div>
+                <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
+            </div>
+        </div>
+    </div>
 
     <div class="modal-overlay hidden" id="epic-deps-modal" style="z-index: 10005;">
         <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);">
@@ -350,95 +457,8 @@
         </div>
     </div>
 
-    <div class="modal-overlay hidden" id="shader-compare-modal" style="z-index: 10010;">
-        <div class="modal-content" style="max-width: 600px; text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 class="title"><i class="ph-bold ph-aperture"></i> Comparador de Shaders</h2>
-                <button class="btn-icon-danger" onclick="document.getElementById('shader-compare-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <p class="muted-text mb-20">Desliza la barra para ver la diferencia visual.</p>
-            <div class="shader-compare-container" id="shader-compare-container">
-                <img src="https://i.imgur.com/M6PZ1Y4.jpeg" alt="Vanilla" class="shader-img-vanilla">
-                <img src="https://i.imgur.com/kSGB20u.jpeg" alt="Con Shaders" class="shader-img-shader" id="shader-img-top">
-                <div class="shader-slider-line" id="shader-slider-line">
-                    <div class="shader-slider-button"><i class="ph-bold ph-arrows-left-right"></i></div>
-                </div>
-                <input type="range" min="0" max="100" value="50" class="shader-slider-input" id="shader-slider-input">
-            </div>
-        </div>
-    </div>
+    <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
 
-    <div class="modal-overlay hidden" id="mob-3d-modal" style="z-index: 10015;">
-        <div class="modal-content" style="max-width: 500px; text-align: center; background: radial-gradient(circle, #18181b 0%, #09090b 100%); border: 1px solid var(--accent);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h2 class="title" id="mob-3d-title" style="color: var(--accent);"><i class="ph-bold ph-cube"></i> Holograma de Entidad</h2>
-                <button class="btn-icon-danger" onclick="document.getElementById('mob-3d-modal').classList.add('hidden')"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <p class="muted-text mb-20 text-sm">Textura interna extraída del archivo .jar</p>
-            
-            <div class="hologram-container">
-                <div class="hologram-cube" id="mob-hologram-cube">
-                    <div class="hologram-face front"></div>
-                    <div class="hologram-face back"></div>
-                    <div class="hologram-face right"></div>
-                    <div class="hologram-face left"></div>
-                    <div class="hologram-face top"></div>
-                    <div class="hologram-face bottom"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-<div class="modal-overlay hidden" id="ai-builder-modal" style="z-index: 10008; backdrop-filter: blur(15px);">
-    <div class="modal-content" style="max-width: 550px; background: rgba(15, 15, 18, 0.98); border: 2px solid #8b5cf6; box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); padding: 25px;">
-        
-        <div style="text-align: center; margin-bottom: 25px; position: relative;">
-            <div style="position: absolute; top: -10px; right: 0; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <i class="ph ph-translate" style="color: #a78bfa;"></i>
-                <span style="font-size: 10px; color: #a78bfa; font-weight: bold;">AUTO-DETECT</span>
-            </div>
-            <i class="ph-fill ph-brain-cell" style="font-size: 45px; color: #a78bfa;"></i>
-            <h2 style="color: white; margin-top: 10px; font-size: 1.8rem;">Ensamblador IA <span style="font-size: 0.8rem; color: #f59e0b;">PRO</span></h2>
-            <p class="muted-text text-sm" style="max-width: 350px; margin: 0 auto; margin-top: 5px;">Háblame en cualquier idioma. Entiendo temas, mecánicas, estilos visuales y límites de rendimiento.</p>
-        </div>
-        
-        <textarea id="ai-prompt-input" class="search-bar" style="width: 100%; height: 120px; resize: none; margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.5); font-size: 0.9rem; padding: 15px;" placeholder="Ej: 'Make an adventure modpack with dragons and dynamic animations. Around 25 mods, very optimized for FPS please.'"></textarea>
-        
-        <div id="ai-terminal" style="display: none; background: #000; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 11px; color: #4ade80; margin-bottom: 15px; height: 150px; overflow-y: auto; border: 1px solid #333; box-shadow: inset 0 0 10px #000;">
-            > IA Esperando órdenes...<br>
-        </div>
-
-        <button class="btn btn-primary w-100" id="btn-generate-ai-download" style="background: linear-gradient(45deg, #ec4899, #8b5cf6); border: none; padding: 15px; font-size: 1rem;">
-            <i class="ph-bold ph-lightning"></i> Generar y Descargar Modpack Directo
-        </button>
-        <button class="btn btn-text w-100 mt-10" id="btn-ai-cancel">Cancelar</button>
-    </div>
-</div>
-
-    <div class="modal-overlay hidden" id="shared-pack-modal" style="z-index: 10009; backdrop-filter: blur(10px);">
-    <div class="modal-content" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; background: rgba(24, 24, 27, 0.95); border: 1px solid var(--accent);">
-        
-        <div style="text-align: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
-            <i class="ph-fill ph-package" style="font-size: 40px; color: var(--accent);"></i>
-            <h2 style="margin-top: 10px; color: white;">Modpack Compartido</h2>
-            <p class="muted-text text-sm">Alguien te ha invitado a probar este modpack. Revisa el contenido antes de instalarlo en tu ensamblador.</p>
-        </div>
-
-        <div id="shared-pack-list" class="custom-scrollbar" style="flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; gap: 10px;">
-            <div style="text-align:center; padding: 30px; color: var(--muted);">
-                <i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i>
-                <p style="margin-top: 10px;">Extrayendo información de la base de datos...</p>
-            </div>
-        </div>
-
-        <div style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
-            <button class="btn btn-primary" id="btn-install-shared" style="flex: 2; font-size: 1rem;"><i class="ph-bold ph-download-simple"></i> Instalar Modpack</button>
-            <button class="btn btn-secondary" id="btn-cancel-shared" style="flex: 1;">Rechazar</button>
-        </div>
-        
-    </div>
-</div>
-    
     <script src="js/content.js"></script>
 </body>
 </html>
