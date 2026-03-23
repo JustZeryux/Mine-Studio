@@ -651,24 +651,91 @@ if (sharedPack) {
         modal.classList.remove('hidden');
     }
 
-// ==========================================
-    // HERRAMIENTAS (PLANTILLAS MASIVAS Y AUTO-MODPACKER)
-    // ==========================================
-    async function installTemplate(slugs, buttonId, text) {
-        const btn = document.getElementById(buttonId); btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Cargando...'; btn.disabled = true; let añadidos = 0;
-        for (const slug of slugs) {
-            try { const res = await fetch(`https://api.modrinth.com/v2/project/${slug}`); if (res.ok) { const modData = await res.json(); if (!window.modpackCart.some(item => item.id === modData.id)) { window.modpackCart.push({ id: modData.id, title: modData.title, type: 'mod' }); añadidos++; } } } catch(e) {}
+// ============================================================
+    // 3. MOTOR DE PLANTILLAS Y BOOST FPS (Auto-Llenado inteligente)
+    // ============================================================
+    const btnTemplateRpg = document.getElementById('btn-template-rpg');
+    const btnTemplateTech = document.getElementById('btn-template-tech');
+    const btnFpsBoost = document.getElementById('btn-fps-boost');
+
+    // Función general para inyectar listas de mods al carrito
+    async function applyTemplate(btnElement, templateName, slugsArray) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+        btnElement.disabled = true;
+
+        try {
+            // Pedimos a la API de Modrinth la info de todos esos mods de golpe
+            const formatIds = slugsArray.map(slug => `"${slug}"`).join(',');
+            const res = await fetch(`https://api.modrinth.com/v2/projects?ids=[${formatIds}]`);
+            const projects = await res.json();
+
+            let added = 0;
+            projects.forEach(p => {
+                // Si el mod no está ya en el carrito, lo agregamos
+                if (!window.modpackCart.some(item => item.id === p.id)) {
+                    window.modpackCart.push({ id: p.id, title: p.title, type: p.project_type || 'mod' });
+                    added++;
+                }
+            });
+
+            window.updateCartUI(); // Actualizamos la vista lateral
+            
+            // Efecto visual de éxito
+            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${added} Mods Añadidos!`;
+            btnElement.style.background = 'var(--success)';
+            btnElement.style.color = 'white';
+            btnElement.style.borderColor = 'var(--success)';
+            
+            // Regresar el botón a la normalidad después de 3 segundos
+            setTimeout(() => {
+                btnElement.innerHTML = originalHtml;
+                btnElement.style = '';
+                btnElement.disabled = false;
+            }, 3000);
+
+        } catch (error) {
+            alert(`❌ Error al aplicar la plantilla ${templateName}: ${error.message}`);
+            btnElement.innerHTML = originalHtml;
+            btnElement.disabled = false;
         }
-        window.updateCartUI(); btn.innerHTML = text; btn.disabled = false; if(añadidos > 0) alert(`Se añadieron ${añadidos} mods a tu ensamblador.`);
     }
 
-    // Plantillas de 15+ mods esenciales
-    document.getElementById('btn-template-rpg')?.addEventListener('click', () => installTemplate(['better-combat', 'waystones', 'farmers-delight', 'appleskin', 'ice-and-fire-dragons', 'irons-spells-n-spellbooks', 'apotheosis', 'corail-tombstone', 'sophisticated-backpacks', 'blood-magic', 'twilight-forest', 'valhelsia-structures', 'artifacts', 'alexs-mobs'], 'btn-template-rpg', '<i class="ph-bold ph-sword"></i> Plantilla RPG'));
-    
-    document.getElementById('btn-template-tech')?.addEventListener('click', () => installTemplate(['create', 'jei', 'mouse-tweaks', 'jade', 'applied-energistics-2', 'mekanism', 'thermal-expansion', 'industrial-foregoing', 'iron-chests', 'powah', 'flux-networks', 'cc-tweaked', 'immersive-engineering', 'botania'], 'btn-template-tech', '<i class="ph-bold ph-gear"></i> Plantilla Técnica'));
-    
-    document.getElementById('btn-fps-boost')?.addEventListener('click', () => installTemplate(['sodium', 'lithium', 'ferrite-core', 'entityculling', 'indium', 'krypton', 'lazydfu', 'starlight', 'memoryleakfix', 'modernfix', 'cull-leaves'], 'btn-fps-boost', '<i class="ph-bold ph-rocket"></i> Auto-Instalar Pack de Optimización'));
-    
+    // --- ASIGNACIÓN DE BOTONES ---
+
+    if (btnTemplateRpg) {
+        btnTemplateRpg.addEventListener('click', () => {
+            // Lista de los mejores mods RPG (Slugs oficiales de Modrinth)
+            const rpgMods = ["epic-fight", "waystones", "irons-spells-n-spellbooks", "better-combat", "cataclysm", "jei", "appleskin"];
+            applyTemplate(btnTemplateRpg, "RPG", rpgMods);
+        });
+    }
+
+    if (btnTemplateTech) {
+        btnTemplateTech.addEventListener('click', () => {
+            // Lista de los mejores mods Técnicos
+            const techMods = ["create", "mekanism", "applied-energistics-2", "cc-tweaked", "jei", "mouse-tweaks"];
+            applyTemplate(btnTemplateTech, "Técnica", techMods);
+        });
+    }
+
+    if (btnFpsBoost) {
+        btnFpsBoost.addEventListener('click', () => {
+            const loader = document.getElementById('mod-loader-select').value;
+            
+            // Mods de optimización base (sirven para todos)
+            let fpsMods = ['ferrite-core', 'entityculling', 'modernfix', 'clumps'];
+            
+            // Inteligencia: Elegir el motor de renderizado correcto según el cargador
+            if (loader === 'fabric') {
+                fpsMods.push('sodium', 'lithium', 'iris');
+            } else {
+                fpsMods.push('embeddium', 'oculus', 'canary'); 
+            }
+            
+            applyTemplate(btnFpsBoost, "Boost FPS", fpsMods);
+        });
+    }
     // Auto-Modpacker Masivo (50 a 150 mods compatibles de golpe)
     document.getElementById('btn-randomizer')?.addEventListener('click', async () => {
         if(!confirm("Esto vaciará tu carrito actual y generará un Modpack de 50 a 150 mods compatibles. ¿Continuar?")) return;
