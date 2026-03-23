@@ -194,14 +194,10 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 }
 
 /* Cart Panel */
-.cart-panel { width: 320px; display: flex; flex-direction: column; padding: 0; overflow: hidden; height: 100%; max-height: 100%; }
 .cart-header, .cart-footer { padding: 20px; background-color: rgba(0,0,0,0.2); }
 .cart-body { flex: 1; overflow-y: auto; padding: 20px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; }
 .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
-.cart-list { list-style: none; }
-.cart-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-hover); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: 0.9rem; border: 1px solid transparent; transition: 0.2s; }
-.cart-item:hover { border-color: var(--border-color); }
 .btn-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; }
 .btn-remove:hover { background: rgba(239, 68, 68, 0.1); }
 
@@ -407,3 +403,98 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 
 @keyframes swingArm { 0% { transform: translate(-32px, -16px) rotateX(-30deg); } 100% { transform: translate(-32px, -16px) rotateX(30deg); } }
 @keyframes swingLeg { 0% { transform: translate(-16px, 32px) rotateX(-30deg); } 100% { transform: translate(-16px, 32px) rotateX(30deg); } }
+
+/* ============================================================
+   REFORMA TOTAL DEL CARRITO (Estilo "App" y Categorizado)
+   ============================================================ */
+
+/* 1. Botón Flotante de Paquete (Visible en Celular y ESCRITORIO) */
+.mobile-cart-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001; /* Encima de todo */
+    background: var(--accent);
+    color: white;
+    border: none;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    box-shadow: 0 5px 20px rgba(16,185,129,0.5);
+    display: flex; justify-content: center; align-items: center;
+    font-size: 26px; cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mobile-cart-toggle:hover { transform: scale(1.1) translateY(-5px); background: var(--accent-hover); }
+.mobile-cart-toggle .badge { position: absolute; top: -3px; right: -3px; background: var(--danger); font-size: 11px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid var(--bg-panel); }
+
+/* 2. Panel del Carrito (Oculto por defecto en Escritorio también) */
+.cart-panel {
+    position: fixed;
+    top: 70px; /* Debajo de la topbar */
+    right: -360px; /* Totalmente oculto a la derecha */
+    width: 340px;
+    height: calc(100vh - 70px) !important;
+    background-color: var(--bg-panel);
+    border-left: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+    z-index: 1000;
+    transition: right 0.3s ease-in-out; /* Transición suave */
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    padding: 0; overflow: hidden;
+}
+
+/* Estado Activo (Cuando se presiona el botón circular) */
+.cart-panel.active { right: 0; }
+
+.cart-header, .cart-footer { padding: 20px; background-color: rgba(0,0,0,0.3); border-color: var(--border-color); flex-shrink: 0; }
+.cart-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+/* 3. Estilos de Categorización Dinámica */
+.cart-category-container { margin-bottom: 25px; display: none; /* Se muestra vía JS */ }
+.cart-category-header {
+    font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.cart-category-header i { font-size: 1rem; }
+
+/* 4. Nuevo Tarjeta del Item del Carrito (Icono + Banner + Premium) */
+.cart-item-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.cart-item {
+    background: var(--bg-main); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-md);
+    overflow: hidden; display: flex; flex-direction: column; position: relative; transition: all 0.2s;
+}
+.cart-item:hover { border-color: var(--accent); transform: translateX(-3px); }
+
+/* Banner pequeño de fondo en el carrito */
+.cart-item-banner { height: 45px; background-size: cover; background-position: center; position: relative; }
+.cart-item-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(18,18,18,0.9)); }
+
+/* Avatar flotante sobre el banner en el carrito */
+.cart-item-avatar {
+    width: 36px; height: 36px; border-radius: 8px; border: 3px solid var(--bg-main);
+    position: absolute; left: 10px; bottom: -12px; z-index: 2; object-fit: cover; background: var(--bg-panel);
+}
+
+/* Info y Botones del Item */
+.cart-item-info { padding: 18px 10px 10px 10px; display: flex; flex-direction: column; }
+.cart-item-title { font-weight: 700; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Botón Gear (Config) flotante a la derecha */
+.btn-config-cart { position: absolute; top: 5px; right: 35px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; opacity: 0.7; z-index: 3; }
+.btn-config-cart:hover { opacity: 1; background: var(--bg-hover); }
+
+/* Botón Trash (Eliminar) flotante a la derecha */
+.btn-remove-cart { position: absolute; top: 5px; right: 5px; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; z-index: 3; }
+.btn-remove-cart:hover { background: var(--danger); color: white; }
+
+
+/* ============================================================
+   RESPONSIVIDAD MÓVIL (Correcciones para el nuevo carrito)
+   ============================================================ */
+@media (max-width: 992px) {
+    /* El carrito móvil ocupa casi toda la pantalla */
+    .cart-panel { top: 0; height: 100vh !important; width: 85vw; right: -90vw; }
+    .cart-panel.active { right: 0; }
+    /* El botón circular sube un poco para no tapar la navbar móvil inferior */
+    .mobile-cart-toggle { bottom: 80px; }
+}
