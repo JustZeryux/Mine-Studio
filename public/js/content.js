@@ -1301,12 +1301,13 @@ let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
             if (cartPanel.style.right === '0px') {
                 cartPanel.style.right = '-400px';
                 mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
-            } else {
+} else {
                 cartPanel.style.right = '0px';
                 mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
             }
         });
     }
+    // ^^^ SI AQUÍ HAY OTRA LLAVE "}" SOBRANDO, BÓRRALA.
 
     // ==========================================
     // 12. COMPARADOR DE SHADERS
