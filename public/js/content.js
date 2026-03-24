@@ -867,6 +867,107 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================================
+    // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
+    // ============================================================
+
+    // Nueva función: Genera plantillas aleatorias jalando de 50 a 200 mods de una categoría
+    async function applyRandomTemplate(btnElement, templateName, categoryFacet) {
+        if(!confirm(`Esto vaciará tu carrito y generará un Modpack aleatorio de ${templateName} (entre 50 y 200 mods). ¿Continuar?`)) return;
+        
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+        btnElement.disabled = true;
+
+        window.modpackCart = []; 
+        window.updateCartUI();
+
+        const mcVers = versionSelect.value;
+        const loader = loaderSelect.value;
+        const randomLimit = Math.floor(Math.random() * (200 - 50 + 1)) + 50; // 50 a 200 mods
+
+        const aiTerminal = document.getElementById('ai-terminal'); 
+        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Buscando ${randomLimit} mods de ${templateName}...<br>`; }
+
+        try {
+            // Construimos los filtros (facets) para la API
+            let facets = [
+                [`versions:${mcVers}`],
+                [`categories:${loader}`],
+                ["project_type:mod"]
+            ];
+            // Si pasamos una categoría (ej. adventure), la añadimos al filtro
+            if(categoryFacet) facets.push([`categories:${categoryFacet}`]);
+
+            // Llamada a la API de Modrinth (ordenado por descargas para que sean buenos mods)
+            const res = await fetch(`https://api.modrinth.com/v2/search?limit=${randomLimit}&index=downloads&facets=${encodeURIComponent(JSON.stringify(facets))}`);
+            const data = await res.json();
+            
+            data.hits.forEach(mod => {
+                window.modpackCart.push({ id: mod.project_id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url });
+            });
+
+            window.updateCartUI();
+            
+            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${data.hits.length} Mods!`;
+            btnElement.style.background = 'var(--success)';
+            btnElement.style.color = 'white';
+            
+            if(aiTerminal) aiTerminal.innerHTML += `> Plantilla ${templateName} completada con ${data.hits.length} mods.`;
+
+            setTimeout(() => { 
+                btnElement.innerHTML = originalHtml; 
+                btnElement.style = ''; 
+                btnElement.disabled = false; 
+                if(aiTerminal) aiTerminal.style.display='none'; 
+            }, 4000);
+
+        } catch(e) { 
+            alert(`Error conectando con la API para la plantilla ${templateName}.`); 
+            btnElement.innerHTML = originalHtml;
+            btnElement.style = '';
+            btnElement.disabled = false;
+        }
+    }
+
+    // Asignamos las categorías a los botones de plantillas
+    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyRandomTemplate(btnTemplateRpg, "RPG Épico", "adventure"));
+    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyRandomTemplate(btnTemplateTech, "Industrial", "technology"));
+    
+    // Plantilla fija: FPS Boost no debe ser aleatorio, deben ser los mods exactos de optimización
+    if (btnFpsBoost) btnFpsBoost.addEventListener('click', async () => {
+        if(!confirm("Se añadirán los mods base de optimización. ¿Continuar?")) return;
+        const originalHtml = btnFpsBoost.innerHTML;
+        btnFpsBoost.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+        btnFpsBoost.disabled = true;
+
+        let fpsMods = ['ferrite-core', 'entityculling', 'modernfix', 'clumps'];
+        if (loaderSelect.value === 'fabric') fpsMods.push('sodium', 'lithium', 'iris'); else fpsMods.push('embeddium', 'oculus', 'canary'); 
+        
+        try {
+            const formatIds = fpsMods.map(slug => `"${slug}"`).join(',');
+            const res = await fetch(`https://api.modrinth.com/v2/projects?ids=[${formatIds}]`);
+            const projects = await res.json();
+            let addedCount = 0;
+            projects.forEach(p => {
+                if(!window.modpackCart.some(item => item.id === p.id)) {
+                    window.modpackCart.push({ id: p.id, title: p.title, type: 'mod', icon: p.icon_url, banner: p.icon_url, categories: p.categories });
+                    addedCount++;
+                }
+            });
+            window.updateCartUI();
+            btnFpsBoost.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${addedCount} Mods Listos!`;
+            btnFpsBoost.style.background = 'var(--success)'; btnFpsBoost.style.color = 'white';
+        } catch(e) {}
+        
+        setTimeout(() => { btnFpsBoost.innerHTML = originalHtml; btnFpsBoost.style = ''; btnFpsBoost.disabled = false; }, 3000);
+    });
+
+    // Ruleta de Retos: Aleatorio total sin filtro de categoría (Cualquier cosa puede salir)
+    if (btnRandomizer) {
+        btnRandomizer.addEventListener('click', () => applyRandomTemplate(btnRandomizer, "Caos Total", null));
+    }
+
+    // ============================================================
     // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
     // ============================================================
     let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
