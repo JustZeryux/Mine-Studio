@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. CONFIGURACIÓN DE SUPABASE ---
-    // Reemplaza esto con tus datos de Configuración > API en Supabase
-    const SUPABASE_URL = 'https://dndknmfpekswzgeroawu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_secret_l2BYir2jorVAlMOPX9REYA_3FbevGn3';
+    const SUPABASE_URL = 'https://vylftqxybrmkivfmswzi.supabase.co';
+    const SUPABASE_ANON_KEY = 'Pega_Aqui_Tu_Anon_Key_Larguisima_De_Supabase'; // <--- OJO AQUÍ
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- ELEMENTOS UI PRINCIPALES ---
     const profileSection = document.querySelector('.profile-section');
     const authModal = document.getElementById('auth-modal');
     const authLocalSection = document.getElementById('auth-local-section');
@@ -19,13 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (session) {
             const user = session.user;
-            
-            // Consultar la tabla de usuarios (PostgreSQL) para ver si ya completó su perfil
-            const { data: profile, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', user.id)
-                .single();
+            const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
 
             if (profile) {
                 // Perfil completo: Mostrar interfaz logueada
@@ -44,14 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.reload();
                 });
                 
-                document.getElementById('btn-open-save-modal').disabled = false;
+                const saveModalBtn = document.getElementById('btn-open-save-modal');
+                if(saveModalBtn) saveModalBtn.disabled = false;
                 if(authModal) authModal.classList.add('hidden');
                 
             } else {
                 // Usuario autenticado por Discord/Google pero NO ha elegido Username
-                authModal.classList.remove('hidden');
-                authLocalSection.classList.add('hidden');
-                completeProfileSection.classList.remove('hidden');
+                if(authModal) {
+                    authModal.classList.remove('hidden');
+                    authLocalSection.classList.add('hidden');
+                    completeProfileSection.classList.remove('hidden');
+                }
             }
         } else {
             // Usuario NO logueado
@@ -65,18 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 completeProfileSection.classList.add('hidden');
                 authModal.classList.remove('hidden');
             });
-            document.getElementById('btn-open-save-modal').disabled = true;
+            const saveModalBtn = document.getElementById('btn-open-save-modal');
+            if(saveModalBtn) saveModalBtn.disabled = true;
         }
     }
 
-    // Escuchar cambios de inicio de sesión (cuando el usuario vuelve de Discord/Google)
     supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-            checkUser();
-        }
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') checkUser();
     });
 
-    // Iniciar comprobación al cargar la página
     checkUser();
 
     // --- 3. LÓGICA DEL FORMULARIO LOCAL (EMAIL + PASS) ---
@@ -115,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Comprobar Username Único consultando PostgreSQL directo (Supabase)
     if(usernameInput) {
         usernameInput.addEventListener('input', () => {
             const username = usernameInput.value.trim();
@@ -126,16 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(username.length < 3) return;
 
             checkTimeout = setTimeout(async () => {
-                // Buscamos en la base de datos si existe alguien con ese nombre
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('username')
-                    .eq('username_lowercase', username.toLowerCase());
-
+                const { data } = await supabase.from('users').select('username').eq('username_lowercase', username.toLowerCase());
                 if (data && data.length === 0) {
                     usernameAvailable = true;
                     if (isRegisterMode) btnSubmit.disabled = false;
-                    // El usuario ESTÁ DISPONIBLE
                 }
             }, 500);
         });
@@ -156,11 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isRegisterMode) {
                     if(!usernameAvailable) throw new Error("Nombre de usuario ocupado");
                     
-                    // 1. Registrar el correo en el sistema de Auth
                     const { data, error } = await supabase.auth.signUp({ email, password });
                     if (error) throw error;
 
-                    // 2. Guardar el perfil en PostgreSQL
                     const avatarUrl = `https://crafatar.com/avatars/${username}?size=40`;
                     const { error: dbError } = await supabase.from('users').insert([{
                         id: data.user.id,
@@ -173,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     alert(`¡Cuenta creada! Bienvenido, ${username}.`);
                 } else {
-                    // Login
                     const { error } = await supabase.auth.signInWithPassword({ email, password });
                     if (error) throw error;
                 }
@@ -187,9 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 4. INICIOS DE SESIÓN MULTIPLATAFORMA (OAuth) ---
+    // --- 4. INICIOS DE SESIÓN OAUTH ---
     async function loginOAuth(providerName) {
-        // Redirige al proveedor, y al terminar vuelve a la misma página
         await supabase.auth.signInWithOAuth({
             provider: providerName,
             options: { redirectTo: window.location.origin + window.location.pathname }
@@ -198,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-firebase-google')?.addEventListener('click', () => loginOAuth('google'));
     document.getElementById('btn-firebase-discord')?.addEventListener('click', () => loginOAuth('discord'));
-    document.getElementById('btn-firebase-microsoft')?.addEventListener('click', () => loginOAuth('azure')); // Azure es Microsoft
+    document.getElementById('btn-firebase-microsoft')?.addEventListener('click', () => loginOAuth('azure'));
 
     // --- 5. COMPLETAR PERFIL (Usuarios nuevos de Discord/Google) ---
     const completeProfileForm = document.getElementById('complete-profile-form');
@@ -214,7 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = completeUsernameInput.value.trim();
             completeUsernameAvailable = false;
             btnCompleteSubmit.disabled = true;
-            checkIcon.style.display = 'none'; errorIcon.style.display = 'none';
+            if(checkIcon) checkIcon.style.display = 'none'; 
+            if(errorIcon) errorIcon.style.display = 'none';
             
             if(checkTimeout) clearTimeout(checkTimeout);
             if(username.length < 3) return;
@@ -224,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data && data.length === 0) {
                     completeUsernameAvailable = true;
                     btnCompleteSubmit.disabled = false;
-                    checkIcon.style.display = 'block';
+                    if(checkIcon) checkIcon.style.display = 'block';
                 } else {
-                    errorIcon.style.display = 'block';
+                    if(errorIcon) errorIcon.style.display = 'block';
                 }
             }, 500);
         });
@@ -251,10 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarUrl = `https://crafatar.com/avatars/${username}?size=40`;
 
             try {
-                // 1. Le asignamos la contraseña al usuario de Discord/Google para que pueda entrar por correo si quiere
                 await supabase.auth.updateUser({ password: password });
 
-                // 2. Guardamos su perfil en PostgreSQL
                 const { error } = await supabase.from('users').insert([{
                     id: session.user.id,
                     username: username,
@@ -266,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
                 
                 alert(`¡Perfil completado! Bienvenido, ${username}.`);
-                window.location.reload(); // Recargamos para que quite la pantalla y muestre su perfil
+                window.location.reload(); 
 
             } catch (error) {
                 alert('❌ Error al completar perfil: ' + error.message);
