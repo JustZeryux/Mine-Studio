@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
-    // 1. VARIABLES GLOBALES
+    // 1. VARIABLES GLOBALES Y PLANTILLAS
     // ==========================================
     window.modConfigs = {}; 
     const urlParams = new URLSearchParams(window.location.search);
@@ -12,6 +12,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentOffset = 0; 
     let isFetchingMods = false;
 
+    // DEFINICIÓN DE PLANTILLAS OFICIALES
+    window.modpackTemplates = [
+        {
+            name: "RPG Adventurer PRO",
+            mcVersion: "1.20.1",
+            modLoader: "forge",
+            description: "Enfoque en mazmorras, exploración, misiones y combate avanzado.",
+            modsData: ["waystones", "irons-spells-n-spellbooks", "epic-fight", "cataclysm", "dungeons-libraries", "twilight-forest", "blue-skies", "xaeros-minimap", "better-combat", "jei", "appleskin"]
+        },
+        {
+            name: "Tech Master PRO",
+            mcVersion: "1.20.1",
+            modLoader: "forge",
+            description: "Domina la automatización con Create, Mekanism y Refined Storage.",
+            modsData: ["create", "mekanism", "cc-tweaked", "immersive-engineering", "refined-storage", "building-gadgets", "mouse-tweaks", "extremereactors", "powah", "jei"]
+        },
+        {
+            name: "Optimization (Auto-Boost)",
+            mcVersion: "1.20.1",
+            modLoader: "fabric",
+            description: "Solo para maximizar FPS y estabilidad. ¡Ideal para computadoras lentas!",
+            modsData: ["sodium", "lithium", "iris", "ferrite-core", "entityculling", "clumps", "immediatelyfast", "indium"]
+        },
+        {
+            name: "Vanilla+ Journeyman",
+            mcVersion: "1.20.4",
+            modLoader: "fabric",
+            description: "Mejoras sutiles de calidad de vida sin cambiar la esencia del juego.",
+            modsData: ["jei", "mouse-tweaks", "xaeros-minimap", "appleskin", "inventory-profiles-next", "litematica"]
+        }
+    ];
+
     // Elementos UI principales
     const searchInput = document.getElementById('mod-search-input');
     const sortSelect = document.getElementById('mod-sort-select');
@@ -19,7 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loaderSelect = document.getElementById('mod-loader-select');
     const modsGrid = document.getElementById('mods-grid');
     const btnLoadMore = document.getElementById('btn-load-more');
-    const cartList = document.getElementById('cart-list');
     const btnOpenSaveModal = document.getElementById('btn-open-save-modal');
     const authModal = document.getElementById('auth-modal');
     const btnTemplateRpg = document.getElementById('btn-template-rpg');
@@ -28,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnRandomizer = document.getElementById('btn-randomizer'); 
 
     // ==========================================
-    // 2. SISTEMA DE SESIONES (AUTENTICACIÓN)
+    // 2. SISTEMA DE SESIONES (Preparado para Auth Backend/Firebase)
     // ==========================================
     const isLoggedIn = localStorage.getItem('usuario_token'); 
     const profileSection = document.querySelector('.profile-section');
@@ -46,8 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             const user = JSON.parse(isLoggedIn);
             profileSection.innerHTML = `
-                <span id="header-username">${user.username}</span>
-                <img src="${user.avatar}" class="avatar">
+                <span id="header-username">${user.username || 'Usuario'}</span>
+                <img src="${user.avatar || 'https://crafatar.com/avatars/Steve?size=40'}" class="avatar" style="border-color: var(--accent);">
                 <button class="btn btn-text" id="btn-logout" style="padding: 4px; margin-left: 5px; color: var(--danger);" title="Cerrar Sesión"><i class="ph-bold ph-sign-out"></i></button>
             `;
             document.getElementById('btn-logout').addEventListener('click', () => {
@@ -58,13 +89,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if(authModal) {
-        document.getElementById('btn-fake-discord').addEventListener('click', () => {
-            localStorage.setItem('usuario_token', JSON.stringify({username: 'Zeryux_Dev', avatar: 'https://crafatar.com/avatars/Zeryux?size=40'}));
-            window.location.reload();
+        // Redirige al sistema de Prisma/Passport que subiste en backend.js
+        document.getElementById('btn-fake-discord')?.addEventListener('click', () => {
+            document.getElementById('btn-fake-discord').innerHTML = '<i class="ph ph-spinner ph-spin"></i> Redirigiendo...';
+            window.location.href = '/auth/discord'; // <-- Esto activa el backend real
         });
-        document.getElementById('btn-fake-google').addEventListener('click', () => {
-            localStorage.setItem('usuario_token', JSON.stringify({username: 'Invitado', avatar: 'https://crafatar.com/avatars/Steve?size=40'}));
-            window.location.reload();
+        document.getElementById('btn-fake-google')?.addEventListener('click', () => {
+            alert('Integración con Google en camino.');
         });
     }
 
@@ -79,21 +110,272 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     
     navButtons.forEach(btn => btn.addEventListener('click', () => {
-        if(btn.id === 'btn-ai-builder') return; 
+        if(btn.id === 'btn-ai-builder' || btn.id === 'btn-ai-builder-mobile') return; 
         navButtons.forEach(b => b.classList.remove('active')); 
         btn.classList.add('active');
         
-        Object.values(views).forEach(v => v.classList.add('hidden')); 
-        views[btn.getAttribute('data-target')].classList.remove('hidden');
+        Object.values(views).forEach(v => { if(v) v.classList.add('hidden') }); 
+        if(views[btn.getAttribute('data-target')]) views[btn.getAttribute('data-target')].classList.remove('hidden');
         
         if (btn.getAttribute('data-target') === 'profiles') window.loadMyProfiles();
     }));
 
     // ==========================================
-    // FUNCIÓN: ABRIR DETALLES SOBREPUESTOS
+    // 4. INSTALADOR DE MODPACKS COMPARTIDOS
+    // ==========================================
+    if (sharedPack) {
+        try {
+            let parsedItems = [];
+            if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
+                parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
+            } else {
+                const items = sharedPack.split('-');
+                parsedItems = items.map(item => {
+                    const parts = item.split('_');
+                    return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
+                });
+            }
+
+            const sharedModal = document.getElementById('shared-pack-modal');
+            const sharedList = document.getElementById('shared-pack-list');
+            const btnInstall = document.getElementById('btn-install-shared');
+            const btnCancel = document.getElementById('btn-cancel-shared');
+
+            if(sharedModal) {
+                sharedModal.classList.remove('hidden'); 
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                const ids = parsedItems.map(m => `"${m.id}"`).join(',');
+                if(ids) {
+                    fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
+                        .then(r => r.json())
+                        .then(data => {
+                            sharedList.innerHTML = '';
+                            const projectMap = {};
+                            data.forEach(p => projectMap[p.id] = p);
+
+                            parsedItems.forEach(item => {
+                                const proj = projectMap[item.id];
+                                if(proj) {
+                                    item.title = proj.title;
+                                    const icon = proj.icon_url || 'https://placehold.co/48x48/18181b/ffffff?text=M';
+                                    const desc = proj.description ? proj.description.substring(0, 75) + '...' : 'Sin descripción disponible.';
+                                    let typeColor = 'var(--accent)', typeText = 'MOD', iconType = 'ph-puzzle-piece';
+                                    
+                                    if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
+                                    else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
+
+                                    sharedList.innerHTML += `
+                                        <div class="shared-mod-item" onclick="window.openModDetailsById('${proj.id}')" style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;">
+                                            <img src="${icon}" onerror="this.src='https://placehold.co/50x50/18181b/ffffff?text=M'" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #27272a;">
+                                            <div style="flex: 1; text-align: left;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <h4 style="margin: 0; font-size: 1rem; color: #fff;">${proj.title}</h4>
+                                                    <span style="font-size: 0.65rem; background: ${typeColor}20; color: ${typeColor}; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid ${typeColor}40;">
+                                                        <i class="ph-fill ${iconType}"></i> ${typeText}
+                                                    </span>
+                                                </div>
+                                                <p style="margin: 0; font-size: 0.8rem; color: var(--muted); margin-top: 5px; line-height: 1.2;">${desc}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+
+                            btnInstall.onclick = async () => {
+                                btnInstall.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
+                                btnInstall.disabled = true;
+                                try {
+                                    window.modpackCart = [];
+                                    parsedItems.forEach(pi => {
+                                        if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) window.modpackCart.push(pi);
+                                    });
+                                    window.updateCartUI();
+                                    await window.requestBuild('download_only');
+                                    sharedModal.classList.add('hidden');
+                                    alert(`✅ ¡Felicidades! Tu Modpack compartido se ha descargado correctamente.`);
+                                } catch(e) {
+                                    alert(`❌ Hubo un error al empaquetar el ZIP: ${e.message}`);
+                                } finally {
+                                    btnInstall.innerHTML = '<i class="ph-bold ph-download-simple"></i> Instalar Modpack';
+                                    btnInstall.disabled = false;
+                                }
+                            };
+
+                            btnCancel.onclick = () => sharedModal.classList.add('hidden');
+                        });
+                }
+            }
+        } catch(e) { alert("El enlace del modpack está corrupto o es inválido."); }
+    }
+
+    // ==========================================
+    // 5. MOTOR UNIFICADO DE EXPORTACIÓN (ZIP, SERVER, MRPACK)
+    // ==========================================
+    const modalSave = document.getElementById('save-pack-modal');
+    const btnJustDownload = document.getElementById('btn-just-download');
+    const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
+    const btnJustSave = document.getElementById('btn-just-save');
+    const packNameInput = document.getElementById('pack-name-input');
+    
+    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => {
+        const cP = document.querySelector('.cart-panel');
+        if(cP) { cP.style.right = ''; cP.classList.remove('active'); }
+        modalSave.classList.remove('hidden');
+    });
+
+    window.requestBuild = async function(action = 'download_only') {
+        const isSaving = (action === 'save_only' || action === 'save_download');
+        const isDownloading = (action === 'download_only' || action === 'save_download');
+
+        if (isSaving && !isLoggedIn) {
+            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en la nube.');
+            if(authModal) authModal.classList.remove('hidden');
+            modalSave.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
+            const mcVersion = versionSelect.value;
+            const loader = loaderSelect.value;
+            const isServerPack = document.getElementById('export-server-pack')?.checked;
+            const isMrPack = document.getElementById('export-mrpack')?.checked;
+
+            let activeBtn = btnJustDownload;
+            if(action === 'save_only') activeBtn = btnJustSave;
+            if(action === 'save_download') activeBtn = btnSaveAndDownload;
+
+            if(activeBtn) { activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; activeBtn.disabled = true; }
+
+            // Lógica de Guardado (Local -> Nube) - [BUG 1 ARREGLADO: COPIA PROFUNDA]
+            if (isSaving) {
+                const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
+                // Copia profunda para evitar bucles infinitos al editar
+                const cartCopy = JSON.parse(JSON.stringify(window.modpackCart)); 
+                profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: cartCopy, iconBase64: null });
+                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
+                window.loadMyProfiles();
+
+                if(action === 'save_only') {
+                    alert('✅ Perfil guardado correctamente en "Mis Modpacks".');
+                    modalSave.classList.add('hidden');
+                    if(activeBtn) { activeBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Guardar Nube'; activeBtn.disabled = false; }
+                    return; 
+                }
+            }
+
+            // Lógica de Descarga y Ensamblado ZIP
+            if (isDownloading) {
+                if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
+                const zip = new JSZip();
+
+                if(Object.keys(window.modConfigs).length > 0) {
+                    const confFolder = zip.folder("config");
+                    for (const modId in window.modConfigs) { confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content); }
+                }
+
+                let procesados = 0;
+                const totalMods = window.modpackCart.length;
+
+                if (isMrPack) {
+                    if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando MRPack...`;
+                    const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
+                    
+                    await Promise.all(window.modpackCart.map(async (item) => {
+                        try {
+                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                            const versData = await versRes.json();
+                            if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                                const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
+                                let envData = { client: "required", server: "required" };
+                                if (isServerPack) { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') return; }
+                                let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
+                                mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
+                            }
+                        } catch(e) {}
+                        finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Indexando (${procesados}/${totalMods})...`; }
+                    }));
+                    zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
+
+                } else {
+                    const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
+                    
+                    // Extraer Configuración Extendida del Mundo Vanilla
+                    const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
+                    const wDifficulty = document.getElementById('world-difficulty')?.value || 'normal';
+                    const wHardcore = document.getElementById('world-hardcore')?.checked ? 'true' : 'false';
+                    const wPvp = document.getElementById('world-pvp')?.checked ? 'true' : 'false';
+                    const wMaxPlayers = document.getElementById('world-max-players')?.value || '20';
+                    const wStructures = document.getElementById('world-structures')?.checked ? 'true' : 'false';
+                    const wMotd = document.getElementById('world-motd')?.value || 'Servidor Mine-Studio';
+
+                    let propsContent = `# Generado por MinePack Studio\nmotd=${wMotd}\ngamemode=${wGamemode}\ndifficulty=${wDifficulty}\nhardcore=${wHardcore}\npvp=${wPvp}\nmax-players=${wMaxPlayers}\ngenerate-structures=${wStructures}\n`;
+                    const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
+                    zip.file("server.properties", propsContent);
+
+                    if (isServerPack) {
+                        zip.file("eula.txt", "eula=true\n");
+                        zip.file("iniciar_servidor.bat", "@echo off\ncolor 0a\ntitle Servidor CoreMod\necho Iniciando servidor con 4GB de RAM...\njava -Xms4G -Xmx4G -jar server.jar nogui\npause");
+                        zip.file("iniciar_servidor.sh", "#!/bin/bash\njava -Xms4G -Xmx4G -jar server.jar nogui");
+                        zip.file("LEER_IMPORTANTE.txt", "=== TU SERVER PACK ESTA LISTO ===\n1. Descarga el archivo de Forge/Fabric y mételo aquí.\n2. Renómbralo a 'server.jar'.\n3. Ejecuta iniciar_servidor.bat\n¡Mods listos en la carpeta /mods!");
+                    }
+
+                    const batchSize = 10;
+                    for (let i = 0; i < totalMods; i += batchSize) {
+                        const batch = window.modpackCart.slice(i, i + batchSize);
+                        await Promise.all(batch.map(async (item) => {
+                            try {
+                                if (isServerPack && (item.type === 'shader' || item.type === 'resourcepack')) return; 
+                                if (isServerPack) { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') return; }
+                                
+                                const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                                const versData = await versRes.json();
+                                if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                                    const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                                    const fileRes = await fetch(fileObj.url);
+                                    const fileBlob = await fileRes.blob();
+                                    if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
+                                }
+                            } catch(err) {} 
+                            finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descarga Turbo (${procesados}/${totalMods})...`; }
+                        }));
+                    }
+                }
+
+                if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Finalizando ZIP...';
+                const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
+                const url = window.URL.createObjectURL(zipContent);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                
+                const cleanName = packName.replace(/\s+/g, '_');
+                let ext = isMrPack ? "mrpack" : "zip";
+                let suffix = isServerPack ? "_SERVER" : "";
+                a.download = cleanName + suffix + "_" + mcVersion + "." + ext;
+                
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
+                modalSave.classList.add('hidden');
+            }
+
+        } catch (error) { 
+            alert("Error al procesar: " + error.message); 
+        } finally {
+            if(btnJustSave) { btnJustSave.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> Guardar Nube'; btnJustSave.disabled = false; }
+            if(btnJustDownload) { btnJustDownload.innerHTML = '<i class="ph-bold ph-file-zip"></i> Solo Bajar'; btnJustDownload.disabled = false; }
+            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = '<i class="ph-bold ph-download-simple"></i> Guardar y Descargar'; btnSaveAndDownload.disabled = false; }
+        }
+    };
+
+    if(btnJustSave) btnJustSave.addEventListener('click', () => window.requestBuild('save_only'));
+    if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
+    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
+
+    // ==========================================
+    // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
     // ==========================================
     window.openModDetailsById = async function(modId) {
         const modal = document.getElementById('mod-details-modal');
+        if(!modal) return;
         modal.classList.remove('hidden');
 
         document.getElementById('detail-title').textContent = "Cargando...";
@@ -157,251 +439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('detail-description').innerHTML = `<p style="color:var(--danger); text-align:center;">Error al cargar información del mod de la API.</p>`;
         }
     };
-
-    // ==========================================
-    // 4. INSTALADOR DE MODPACKS COMPARTIDOS
-    // ==========================================
-    if (sharedPack) {
-        try {
-            let parsedItems = [];
-            if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
-                parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
-            } else {
-                const items = sharedPack.split('-');
-                parsedItems = items.map(item => {
-                    const parts = item.split('_');
-                    return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
-                });
-            }
-
-            const sharedModal = document.getElementById('shared-pack-modal');
-            const sharedList = document.getElementById('shared-pack-list');
-            const btnInstall = document.getElementById('btn-install-shared');
-            const btnCancel = document.getElementById('btn-cancel-shared');
-
-            if(sharedModal) {
-                sharedModal.classList.remove('hidden'); 
-                window.history.replaceState({}, document.title, window.location.pathname);
-
-                const ids = parsedItems.map(m => `"${m.id}"`).join(',');
-                if(ids) {
-                    fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
-                        .then(r => r.json())
-                        .then(data => {
-                            sharedList.innerHTML = '';
-                            const projectMap = {};
-                            data.forEach(p => projectMap[p.id] = p);
-
-                            parsedItems.forEach(item => {
-                                const proj = projectMap[item.id];
-                                if(proj) {
-                                    item.title = proj.title;
-                                    const icon = proj.icon_url || 'https://placehold.co/48x48/18181b/ffffff?text=M';
-                                    const desc = proj.description ? proj.description.substring(0, 75) + '...' : 'Sin descripción disponible.';
-                                    let typeColor = 'var(--accent)', typeText = 'MOD', iconType = 'ph-puzzle-piece';
-                                    
-                                    if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
-                                    else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
-
-                                    // REEMPLAZA DESDE sharedList.innerHTML += ` HASTA EL CIERRE DEL STRING `; EN LA SECCIÓN 4
-                                    sharedList.innerHTML += `
-                                        <div class="shared-mod-item" onclick="window.openModDetailsById('${proj.id}')" style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;">
-                                            <img src="${icon}" onerror="this.src='https://placehold.co/50x50/18181b/ffffff?text=M'" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #27272a;">
-                                            <div style="flex: 1; text-align: left;">
-                                                <div style="display: flex; align-items: center; gap: 8px;">
-                                                    <h4 style="margin: 0; font-size: 1rem; color: #fff;">${proj.title}</h4>
-                                                    <span style="font-size: 0.65rem; background: ${typeColor}20; color: ${typeColor}; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid ${typeColor}40;">
-                                                        <i class="ph-fill ${iconType}"></i> ${typeText}
-                                                    </span>
-                                                </div>
-                                                <p style="margin: 0; font-size: 0.8rem; color: var(--muted); margin-top: 5px; line-height: 1.2;">${desc}</p>
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            });
-
-                            btnInstall.onclick = async () => {
-                                btnInstall.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
-                                btnInstall.disabled = true;
-                                try {
-                                    window.modpackCart = [];
-                                    parsedItems.forEach(pi => {
-                                        if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) window.modpackCart.push(pi);
-                                    });
-                                    window.updateCartUI();
-                                    await window.requestBuild('download_only');
-                                    sharedModal.classList.add('hidden');
-                                    alert(`✅ ¡Felicidades! Tu Modpack compartido se ha descargado correctamente.`);
-                                } catch(e) {
-                                    alert(`❌ Hubo un error al empaquetar el ZIP: ${e.message}`);
-                                } finally {
-                                    btnInstall.innerHTML = '<i class="ph-bold ph-download-simple"></i> Instalar Modpack';
-                                    btnInstall.disabled = false;
-                                }
-                            };
-
-                            btnCancel.onclick = () => sharedModal.classList.add('hidden');
-                        });
-                }
-            }
-        } catch(e) { alert("El enlace del modpack está corrupto o es inválido."); }
-    }
-
-    // ==========================================
-    // 5. MOTOR UNIFICADO DE EXPORTACIÓN (ZIP, SERVER, MRPACK)
-    // ==========================================
-    const modalSave = document.getElementById('save-pack-modal');
-    const btnJustDownload = document.getElementById('btn-just-download');
-    const btnSaveAndDownload = document.getElementById('btn-confirm-save-download');
-    const btnJustSave = document.getElementById('btn-just-save');
-    const packNameInput = document.getElementById('pack-name-input');
-    
-    if(btnOpenSaveModal) btnOpenSaveModal.addEventListener('click', () => {
-        document.querySelector('.cart-panel').style.right = ''; 
-        document.querySelector('.cart-panel').classList.remove('active');
-        modalSave.classList.remove('hidden');
-    });
-
-    window.requestBuild = async function(action = 'download_only') {
-        const isSaving = (action === 'save_only' || action === 'save_download');
-        const isDownloading = (action === 'download_only' || action === 'save_download');
-
-        if (isSaving && !isLoggedIn) {
-            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles.');
-            if(authModal) authModal.classList.remove('hidden');
-            modalSave.classList.add('hidden');
-            return;
-        }
-
-        try {
-            const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
-            const mcVersion = versionSelect.value;
-            const loader = loaderSelect.value;
-            const isServerPack = document.getElementById('export-server-pack')?.checked;
-            const isMrPack = document.getElementById('export-mrpack')?.checked;
-
-            let activeBtn = btnJustDownload;
-            if(action === 'save_only') activeBtn = btnJustSave;
-            if(action === 'save_download') activeBtn = btnSaveAndDownload;
-
-            if(activeBtn) { activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; activeBtn.disabled = true; }
-
-            // Lógica de Guardado en Nube (Local)
-            if (isSaving) {
-                const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
-                profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: window.modpackCart, iconBase64: null });
-                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
-                window.loadMyProfiles();
-
-                if(action === 'save_only') {
-                    alert('✅ Perfil guardado correctamente en "Mis Modpacks".');
-                    modalSave.classList.add('hidden');
-                    if(activeBtn) { activeBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Solo Guardar Perfil'; activeBtn.disabled = false; }
-                    return; 
-                }
-            }
-
-            // Lógica de Descarga y Ensamblado ZIP
-            if (isDownloading) {
-                if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
-                const zip = new JSZip();
-
-                // Añadir configuraciones manuales
-                if(Object.keys(window.modConfigs).length > 0) {
-                    const confFolder = zip.folder("config");
-                    for (const modId in window.modConfigs) { confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content); }
-                }
-
-                let procesados = 0;
-                const totalMods = window.modpackCart.length;
-
-                // --- FORMATO MRPACK ---
-                if (isMrPack) {
-                    if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando Índices MRPack...`;
-                    const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
-                    
-                    await Promise.all(window.modpackCart.map(async (item) => {
-                        try {
-                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                            const versData = await versRes.json();
-                            if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                                const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
-                                let envData = { client: "required", server: "required" };
-                                if (isServerPack) { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') return; }
-                                let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
-                                mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
-                            }
-                        } catch(e) {}
-                        finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Indexando (${procesados}/${totalMods})...`; }
-                    }));
-                    zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
-
-                } else {
-                    // --- FORMATO ZIP CLÁSICO Y SERVER PACK ---
-                    const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
-                    const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
-                    let propsContent = `# Generado por MinePack Studio\ngamemode=${wGamemode}\n`;
-                    const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
-                    zip.file("server.properties", propsContent);
-
-                    // INYECCIÓN MAGNÉTICA DE SERVER PACK (.bat y EULA)
-                    if (isServerPack) {
-                        zip.file("eula.txt", "eula=true\n");
-                        zip.file("iniciar_servidor.bat", "@echo off\ncolor 0a\ntitle Servidor CoreMod\necho Iniciando servidor con 4GB de RAM...\njava -Xms4G -Xmx4G -jar server.jar nogui\npause");
-                        zip.file("iniciar_servidor.sh", "#!/bin/bash\njava -Xms4G -Xmx4G -jar server.jar nogui");
-                        zip.file("LEER_IMPORTANTE.txt", "=== TU SERVER PACK ESTA LISTO ===\n1. Descarga el archivo de Forge/Fabric y mételo aquí.\n2. Renómbralo a 'server.jar'.\n3. Ejecuta iniciar_servidor.bat\n¡Mods listos en la carpeta /mods!");
-                    }
-
-                    const batchSize = 10;
-                    for (let i = 0; i < totalMods; i += batchSize) {
-                        const batch = window.modpackCart.slice(i, i + batchSize);
-                        await Promise.all(batch.map(async (item) => {
-                            try {
-                                if (isServerPack && (item.type === 'shader' || item.type === 'resourcepack')) return; 
-                                if (isServerPack) { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') return; }
-                                
-                                const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                                const versData = await versRes.json();
-                                if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                                    const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
-                                    const fileRes = await fetch(fileObj.url);
-                                    const fileBlob = await fileRes.blob();
-                                    if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
-                                }
-                            } catch(err) {} 
-                            finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descarga Turbo (${procesados}/${totalMods})...`; }
-                        }));
-                    }
-                }
-
-                if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Finalizando ZIP...';
-                const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
-                const url = window.URL.createObjectURL(zipContent);
-                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                
-                // Concatenación Segura de Nombre
-                const cleanName = packName.replace(/\s+/g, '_');
-                let ext = isMrPack ? "mrpack" : "zip";
-                let suffix = isServerPack ? "_SERVER" : "";
-                a.download = cleanName + suffix + "_" + mcVersion + "." + ext;
-                
-                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-                modalSave.classList.add('hidden');
-            }
-
-        } catch (error) { 
-            alert("Error al procesar: " + error.message); 
-        } finally {
-            if(btnJustSave) { btnJustSave.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Solo Guardar Perfil'; btnJustSave.disabled = false; }
-            if(btnJustDownload) { btnJustDownload.innerHTML = '<i class="ph-bold ph-file-zip"></i> Solo Descargar'; btnJustDownload.disabled = false; }
-            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = '<i class="ph-bold ph-download-simple"></i> Guardar y Descargar'; btnSaveAndDownload.disabled = false; }
-        }
-    };
-
-    if(btnJustSave) btnJustSave.addEventListener('click', () => window.requestBuild('save_only'));
-    if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
-    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
@@ -505,8 +542,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         mods.forEach(mod => {
             const card = document.createElement('div'); card.className = 'mod-card';
             const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
-            
-            // FIX: Ya no usamos placehold para los banners vacíos, el fallback es el ícono del mod
             const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : iconUrl;
             
             const isAdded = window.modpackCart.some(item => item.id === mod.project_id);
@@ -588,88 +623,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod')) return; 
-                const modal = document.getElementById('mod-details-modal'); modal.classList.remove('hidden');
+                window.openModDetailsById(mod.project_id);
                 runAutoScanJEI(mod.project_id, versionSelect.value, loaderSelect.value);
-                
-                document.getElementById('detail-title').textContent = mod.title;
-                document.getElementById('detail-author').innerHTML = `por ${mod.author}`;
-                document.getElementById('detail-icon').src = iconUrl;
-                document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
-                document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando...</p></div>`;
-                document.getElementById('detail-gallery').innerHTML = '';
-                
-                const topActions = document.getElementById('detail-top-actions');
-                const isAlreadyInCart = window.modpackCart.some(item => item.id === mod.project_id);
-                if (topActions) {
-                    topActions.innerHTML = `
-                        <button class="btn btn-primary btn-add-top" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAlreadyInCart ? 'disabled' : ''} style="padding: 10px 20px; font-size: 0.9rem; ${isAlreadyInCart ? 'background: var(--success); color: white;' : ''}">
-                            <i class="ph-bold ${isAlreadyInCart ? 'ph-check' : 'ph-plus'}"></i> ${isAlreadyInCart ? 'Añadido' : 'Añadir'}
-                        </button>
-                        <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="border-color: #8b5cf6; color: #8b5cf6; padding: 10px;">
-                            <i class="ph-bold ph-download-simple" style="font-size: 20px;"></i>
-                        </button>
-                    `;
-                    const btnAddTop = topActions.querySelector('.btn-add-top');
-                    btnAddTop.addEventListener('click', () => {
-                        if (!window.modpackCart.some(item => item.id === mod.project_id)) {
-                            let fType = mod.project_type || 'mod';
-                            if(mod.display_categories && mod.display_categories.includes('library')) fType = 'library';
-
-                            window.modpackCart.push({ 
-                                id: mod.project_id, 
-                                title: mod.title, 
-                                type: fType, 
-                                icon: iconUrl, 
-                                banner: bannerUrl, 
-                                categories: mod.display_categories 
-                            });
-                            window.updateCartUI();
-                            btnAddTop.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; btnAddTop.style.background = 'var(--success)'; btnAddTop.disabled = true;
-                            const outerBtn = card.querySelector('.btn-add-mod');
-                            if(outerBtn) { outerBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; outerBtn.style.background = 'var(--success)'; outerBtn.disabled = true; }
-                        }
-                    });
-                }
-                
-                const depsContainer = document.getElementById('detail-dependencies'); depsContainer.innerHTML = '';
-                if (mod.project_type === 'mod') {
-                    getRequiredDependencies(mod.project_id, versionSelect.value, loaderSelect.value).then(depProjs => {
-                        if (depProjs.length > 0) {
-                            let depsHtml = '<h3 class="subtitle mb-10 w-100"><i class="ph-bold ph-books"></i> Librerías Necesarias</h3><div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">';
-                            depProjs.forEach(p => { depsHtml += `<div style="background: var(--bg-hover); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); display:flex; align-items:center; gap:10px;"><img src="${p.icon_url || 'https://via.placeholder.com/40'}" style="width:24px; height:24px; border-radius:4px;"><span style="font-size:0.85rem; font-weight:600;">${p.title}</span></div>`; });
-                            depsHtml += `</div><button class="btn btn-secondary w-100" id="btn-detail-add-all" style="margin-bottom: 20px;"><i class="ph-bold ph-stack"></i> Añadir Mod y Librerías al Carrito</button>`;
-                            depsContainer.innerHTML = depsHtml;
-                            depsContainer.innerHTML += `<button class="btn btn-secondary w-100 btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" style="margin-bottom: 20px; border-color: #8b5cf6; color: #8b5cf6;"><i class="ph-bold ph-download-simple"></i> Descargar .jar (Mod + Librerías)</button>`;
-                            
-                            document.getElementById('btn-detail-add-all').onclick = () => {
-                                if (!window.modpackCart.some(item => item.id === mod.project_id)) {
-                                    let fType = mod.project_type || 'mod';
-                                    window.modpackCart.push({ id: mod.project_id, title: mod.title, type: fType, icon: iconUrl, banner: bannerUrl, categories: mod.display_categories });
-                                }
-                                depProjs.forEach(dep => { 
-                                    if (!window.modpackCart.some(item => item.id === dep.id)) {
-                                        window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: dep.icon_url, categories: ['library'] });
-                                    }
-                                });
-                                window.updateCartUI();
-                                addBtn.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; addBtn.style.background = 'var(--success)'; addBtn.disabled = true;
-                                modal.classList.add('hidden');
-                            };
-                        }
-                    });
-                }
-
-                fetch(`https://api.modrinth.com/v2/project/${mod.project_id}`).then(res => res.json()).then(projectData => {
-                    document.getElementById('detail-description').innerHTML = projectData.body ? marked.parse(projectData.body) : `<p>${projectData.description}</p>`;
-                    const gallery = document.getElementById('detail-gallery');
-                    if(projectData.gallery && projectData.gallery.length > 0) {
-                        projectData.gallery.forEach(img => {
-                            const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.style.cursor = 'zoom-in';
-                            imgEl.onclick = () => { lightboxImg.src = img.url; lightbox.classList.remove('hidden'); };
-                            gallery.appendChild(imgEl);
-                        });
-                    }
-                });
             });
 
             modsGrid.appendChild(card);
@@ -703,28 +658,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 8. BUSCADOR DE SKINS / INFO PREMIUM
+    // 8. BUSCADOR DE SKINS 3D / INFO PREMIUM
     // ==========================================
     const btnLoadSkin = document.getElementById('btn-load-skin');
     const inputSkin = document.getElementById('mc-skin-input');
-    const imgSkinPreview = document.getElementById('mc-skin-preview');
+    const skinLoading = document.getElementById('skin_loading');
     const advInfoBox = document.getElementById('mc-advanced-info');
     const uuidBadge = document.getElementById('mc-uuid-badge');
     const capeBadge = document.getElementById('mc-cape-badge');
 
-    if (btnLoadSkin && inputSkin && imgSkinPreview) {
+    // Se asume que en index.html está importada la librería skinview3d
+    window.skinViewerInstance = null;
+
+    if (btnLoadSkin && inputSkin) {
         const fetchMojangData = async (username) => {
             if (username === '') return;
             btnLoadSkin.innerHTML = '<i class="ph ph-spinner ph-spin"></i>'; btnLoadSkin.disabled = true;
-            imgSkinPreview.style.opacity = '0.5';
+            if(skinLoading) skinLoading.style.display = 'block';
             
             try {
                 const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
                 if (!res.ok) throw new Error("No encontrado");
                 const data = await res.json();
                 
-                imgSkinPreview.src = `https://crafatar.com/renders/body/${data.uuid}?overlay=true`;
-                imgSkinPreview.onload = () => imgSkinPreview.style.opacity = '1';
+                // RENDERIZADO 3D USANDO skinview3d
+                if (typeof skinview3d !== 'undefined') {
+                    if (window.skinViewerInstance) { window.skinViewerInstance.dispose(); }
+                    
+                    window.skinViewerInstance = new skinview3d.SkinViewer({
+                        canvas: document.getElementById("skin_container"),
+                        width: 300,
+                        height: 300,
+                        skin: `https://crafatar.com/skins/${data.uuid}`
+                    });
+
+                    // Añadir capa si la tiene
+                    if (data.textures && data.textures.cape) {
+                        window.skinViewerInstance.loadCape(`https://crafatar.com/capes/${data.uuid}`);
+                    }
+
+                    // Controles de cámara automática y animación de caminar
+                    window.skinViewerInstance.autoRotate = true;
+                    window.skinViewerInstance.autoRotateSpeed = 0.5;
+                    window.skinViewerInstance.animation = new skinview3d.WalkingAnimation();
+                }
                 
                 if (advInfoBox) {
                     advInfoBox.style.display = 'block';
@@ -740,11 +717,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('minepack_username', username);
             } catch (error) {
                 alert('❌ No se encontró el usuario premium.');
-                imgSkinPreview.src = "https://crafatar.com/renders/body/Steve?overlay=true";
-                imgSkinPreview.style.opacity = '1';
                 if (advInfoBox) advInfoBox.style.display = 'none';
             } finally {
                 btnLoadSkin.innerHTML = '<i class="ph-bold ph-magnifying-glass"></i>'; btnLoadSkin.disabled = false;
+                if(skinLoading) skinLoading.style.display = 'none';
             }
         };
 
@@ -852,7 +828,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 target.main.style.display = 'block';
 
                 const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=M';
-                // FIX: El carrito ahora usa item.icon si banner está vacío (en vez de placehold)
                 const banner = item.banner || item.icon || '';
 
                 const li = document.createElement('li');
@@ -892,109 +867,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================================
-    // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
-    // ============================================================
-
-    async function applyTemplate(btnElement, templateName, slugsArray) {
-        if(!confirm(`Esto añadirá aproximadamente ${slugsArray.length} mods temáticos a tu pack. ¿Continuar?`)) return;
-        const originalHtml = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
-        btnElement.disabled = true;
-
-        const mcVers = versionSelect.value;
-        const loader = loaderSelect.value;
-        window.modpackCart = []; 
-        window.updateCartUI();
-
-        let addedCount = 0;
-        const aiTerminal = document.getElementById('ai-terminal'); 
-        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Iniciando plantilla ${templateName}...<br>`; }
-
-        const batchSize = 10;
-        for(let i=0; i<slugsArray.length; i+=batchSize) {
-            const batch = slugsArray.slice(i, i+batchSize);
-            const formatIds = batch.map(slug => `"${slug}"`).join(',');
-            
-            try {
-                const res = await fetch(`https://api.modrinth.com/v2/projects?ids=[${formatIds}]`);
-                const projects = await res.json();
-
-                projects.forEach(p => {
-                    if(!p.game_versions.includes(mcVers) || !p.categories.includes(loader)) return;
-                    let finalType = p.project_type || 'mod';
-                    if(p.categories.includes('library')) finalType = 'library';
-
-                    window.modpackCart.push({ id: p.id, title: p.title, type: finalType, icon: p.icon_url, banner: (p.gallery && p.gallery.length > 0) ? p.gallery[0].url : p.icon_url, categories: p.categories });
-                    addedCount++;
-                });
-                window.updateCartUI();
-                if(aiTerminal) { aiTerminal.innerHTML += `> Lote ${i/batchSize + 1} listo. Mods en pack: ${addedCount}<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
-
-            } catch(e) {}
-        }
-
-        btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${addedCount} Mods Listos!`;
-        btnElement.style.background = 'var(--success)'; btnElement.style.color = 'white';
-        if(aiTerminal) aiTerminal.innerHTML += `> Plantilla ${templateName} completada.`;
-        
-        setTimeout(() => { btnElement.innerHTML = originalHtml; btnElement.style = ''; btnElement.disabled = false; if(aiTerminal) aiTerminal.style.display='none'; }, 4000);
-    }
-
-    const listRpgPro = ["epic-fight", "irons-spells-n-spellbooks", "cataclysm", "ice-and-fire", "waystones", "better-combat", "jei", "appleskin", "alexsmobs", "aquaculture-2", "wawla", "xaeros-minimap", "mowzies-mobs", "byg", "the-twilight-forest", "blue-skies", "ars-nouveau", "reliquary", "valhelsia-structures", "the-undergarden", "when-dungeons-arise", "born-in-chaos", "dungeons-libraries", "goblins-and-dungeons", "naturalist", "friends-and-foes", "environmental", "upgrade-aquatic", "guard-villagers", "castle-in-the-sky", "bountiful", "comforts", "towers-of-the-wild-reworked", "graveyard", "eidolon", "simple-shops", "tombstone", "endrem"]; 
-    const listTechPro = ["create", "mekanism", "applied-energistics-2", "cc-tweaked", "immersive-engineering", "refined-storage", "jei", "thermal_expansion", "industrial-forethought", "pneumaticcraft", "rftools-base", "powah", "mouse-tweaks", "extremereactors", "computercraft", "ae2-things", "mekanism-generators", "create-confectionery", "create-steam-n-rails", "little-logistics", "building-gadgets", "tinkers-construct", "botania", "quark", "alexsmobs", "refined-storage-addons", "thermal_foundation", "immersive-petroleum", "cyclic", "industrial-revolution", "modern-industrialization", "tech-reborn"]; 
-
-    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyTemplate(btnTemplateRpg, "RPG Épico", listRpgPro));
-    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyTemplate(btnTemplateTech, "Industrial Pro", listTechPro));
-    
-    if (btnFpsBoost) btnFpsBoost.addEventListener('click', () => {
-        let fpsMods = ['ferrite-core', 'entityculling', 'modernfix', 'clumps'];
-        if (loaderSelect.value === 'fabric') fpsMods.push('sodium', 'lithium', 'iris'); else fpsMods.push('embeddium', 'oculus', 'canary'); 
-        applyTemplate(btnFpsBoost, "Boost FPS", fpsMods);
-    });
-
-    if (btnRandomizer) {
-        btnRandomizer.addEventListener('click', async () => {
-            if(!confirm("Esto vaciará tu carrito y generará un Modpack COMPLETAMENTE ALEATORIO para un survival sorpresa. ¿Continuar?")) return;
-            
-            btnRandomizer.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Girando Ruleta...';
-            btnRandomizer.disabled = true;
-            btnRandomizer.style.background = 'linear-gradient(45deg, #ec4899, #8b5cf6)'; 
-
-            window.modpackCart = []; window.updateCartUI();
-
-            const mcVers = versionSelect.value;
-            const loader = loaderSelect.value;
-            const randomLimit = Math.floor(Math.random() * (130 - 50 + 1)) + 50; 
-            
-            try {
-                const res = await fetch(`https://api.modrinth.com/v2/search?limit=${randomLimit}&index=downloads&facets=[["versions:${mcVers}"],["categories:${loader}"],["project_type:mod"]]`);
-                const data = await res.json();
-                
-                data.hits.forEach(mod => {
-                    window.modpackCart.push({ id: mod.project_id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url });
-                });
-
-                window.updateCartUI();
-                
-                btnRandomizer.innerHTML = `<i class="ph-bold ph-check"></i> ${data.hits.length} Mods al Azar`;
-                btnRandomizer.style.background = 'var(--success)';
-
-                setTimeout(() => {
-                    btnRandomizer.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Ruleta de Retos';
-                    btnRandomizer.style = '';
-                    btnRandomizer.disabled = false;
-                }, 3000);
-
-            } catch(e) { 
-                alert("Error conectando con la Ruleta Cósmica."); 
-                btnRandomizer.innerHTML = '<i class="ph-bold ph-magic-wand"></i> Ruleta de Retos';
-                btnRandomizer.style = '';
-                btnRandomizer.disabled = false;
-            }
-        });
-    }
-
-    // ============================================================
     // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
     // ============================================================
     let mobileBtn = document.getElementById('mobile-cart-toggle-btn');
@@ -1009,15 +881,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cartPanel = document.querySelector('.cart-panel');
     if (mobileBtn && cartPanel) {
         mobileBtn.addEventListener('click', () => {
-            // Logica para el nuevo botón "X" de cerrar dentro del carrito
-    const btnCloseCartMobile = document.getElementById('btn-close-cart-mobile');
-    if (btnCloseCartMobile && cartPanel) {
-        btnCloseCartMobile.addEventListener('click', () => {
-            cartPanel.classList.remove('active');
-            cartPanel.style.right = ''; 
-            if (mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
-        });
-    }
             if (cartPanel.classList.contains('active')) {
                 cartPanel.classList.remove('active');
                 cartPanel.style.right = ''; 
@@ -1027,6 +890,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cartPanel.style.right = ''; 
                 mobileBtn.innerHTML = `<i class="ph-bold ph-x"></i>`; 
             }
+        });
+    }
+
+    const btnCloseCartMobile = document.getElementById('btn-close-cart-mobile');
+    if (btnCloseCartMobile && cartPanel) {
+        btnCloseCartMobile.addEventListener('click', () => {
+            cartPanel.classList.remove('active');
+            cartPanel.style.right = ''; 
+            if (mobileBtn) mobileBtn.innerHTML = `<i class="ph-bold ph-package"></i> <span class="badge">${window.modpackCart.length}</span>`;
         });
     }
 
@@ -1052,9 +924,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ==========================================
-    // 13. GESTIÓN DE PERFILES GUARDADOS (REDISEÑO PREMIUM)
+    // 13. GESTIÓN DE PLANTILLAS Y PERFILES GUARDADOS
     // ==========================================
+    window.loadTemplates = function() {
+        const grid = document.getElementById('templates-grid');
+        if(!grid) return;
+        
+        grid.innerHTML = '';
+        window.modpackTemplates.forEach((p, index) => {
+            const profileIcon = `https://placehold.co/64x64/18181b/3b82f6?text=Official`;
+            const profileBanner = profileIcon;
+            const modsCount = p.modsData ? p.modsData.length : 0;
+            
+            grid.innerHTML += `
+                <div class="profile-card panel" style="padding:0; overflow:hidden; display:flex; flex-direction:column; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-lg); background: var(--bg-panel);">
+                    <div class="profile-banner" style="background-image: url('${profileBanner}'); height: 100px; background-size: cover; background-position: center; position: relative;">
+                        <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, var(--bg-panel));"></div>
+                    </div>
+                    <div class="profile-content" style="padding: 15px; position: relative; z-index: 2; margin-top: -40px; display: flex; flex-direction: column; flex: 1;">
+                        <div class="profile-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                            <img src="${profileIcon}" class="profile-icon" style="width: 54px; height: 54px; border-radius: 12px; border: 3px solid var(--bg-panel); background: #18181b; object-fit: cover;">
+                        </div>
+                        <div class="profile-title" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 8px;">${p.name}</div>
+                        <p class="muted-text text-sm mb-10" style="line-height: 1.4;">${p.description}</p>
+                        <div class="profile-badges" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
+                            <span class="p-badge" style="background:rgba(59, 130, 246, 0.1); color:#3b82f6; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-game-controller"></i> ${p.mcVersion}</span>
+                            <span class="p-badge" style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-hammer"></i> ${p.modLoader.toUpperCase()}</span>
+                            <span class="p-badge" style="background:rgba(255,255,255,0.1); color:#fff; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} Mods</span>
+                        </div>
+                        <div class="profile-actions" style="display: flex; gap: 10px; margin-top: auto;">
+                            <button class="btn btn-primary btn-use-template w-100" data-index="${index}" style="padding: 12px; font-size: 0.95rem; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none;">
+                                <i class="ph-fill ph-package"></i> Usar Plantilla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.querySelectorAll('.btn-use-template').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = e.currentTarget.dataset.index;
+                const template = window.modpackTemplates[index];
+                
+                if (confirm(`¿Crear un nuevo perfil a partir de la plantilla "${template.name}"?`)) {
+                    window.modpackCart = template.modsData.map(modSlug => ({ id: modSlug, title: modSlug, type: 'mod', icon: null, banner: null }));
+                    versionSelect.value = template.mcVersion;
+                    loaderSelect.value = template.modLoader;
+                    window.updateCartUI();
+                    document.querySelector('.nav-btn[data-target="mods"]').click();
+                    versionSelect.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+    };
+
     window.loadMyProfiles = function() {
+        window.loadTemplates();
+        
         const grid = document.getElementById('profiles-grid');
         if(!grid) return;
         if(!isLoggedIn) { grid.innerHTML = `<div style="text-align: center; padding: 40px;"><i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i><p style="margin-top: 10px;">Inicia sesión para guardar tus modpacks aquí.</p></div>`; return; }
@@ -1071,8 +998,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const maxPreview = 8;
                 const previewMods = p.modsData.slice(0, maxPreview);
                 previewMods.forEach((mod, i) => {
-                    const icon = mod.icon || 'https://placehold.co/32x32/27272a/ffffff?text=M';
-                    modsPreviewHtml += `<img src="${icon}" title="${mod.title}" style="z-index: ${maxPreview - i}; width:32px; height:32px; border-radius:50%; border:2px solid var(--bg-panel); margin-left:-10px; object-fit:cover; background:#27272a;">`;
+                    // BUG 3 ARREGLADO: Validar que exista el ícono
+                    const icon = (mod.icon && mod.icon.startsWith('http')) ? mod.icon : 'https://placehold.co/32x32/27272a/ffffff?text=M';
+                    modsPreviewHtml += `<img src="${icon}" title="${mod.title}" onerror="this.src='https://placehold.co/32x32/27272a/ffffff?text=M'" style="z-index: ${maxPreview - i}; width:32px; height:32px; border-radius:50%; border:2px solid var(--bg-panel); margin-left:-10px; object-fit:cover; background:#27272a;">`;
                 });
                 if(modsCount > maxPreview) {
                     modsPreviewHtml += `<div class="profile-mods-extra" style="width:32px; height:32px; border-radius:50%; background:var(--bg-hover); border:2px solid var(--bg-panel); display:flex; justify-content:center; align-items:center; font-size:0.7rem; font-weight:bold; margin-left:-10px; z-index:1; color:var(--text-muted);">+${modsCount - maxPreview}</div>`;
@@ -1081,7 +1009,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 modsPreviewHtml = '<span class="muted-text text-sm">Perfil Vacío</span>';
             }
 
-            const profileIcon = p.iconBase64 || (p.modsData && p.modsData[0] && p.modsData[0].icon) || 'https://placehold.co/64x64/18181b/10b981?text=Pack';
+            // BUG 3 ARREGLADO: Validar que exista banner
+            const fallbackIcon = 'https://placehold.co/64x64/18181b/10b981?text=Pack';
+            const profileIcon = p.iconBase64 || (p.modsData && p.modsData[0] && p.modsData[0].icon) || fallbackIcon;
             const profileBanner = (p.modsData && p.modsData[0] && p.modsData[0].banner) || profileIcon;
 
             grid.innerHTML += `
@@ -1092,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="profile-content" style="padding: 15px; position: relative; z-index: 2; margin-top: -40px; display: flex; flex-direction: column; flex: 1;">
                         
                         <div class="profile-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
-                            <img src="${profileIcon}" class="profile-icon" style="width: 54px; height: 54px; border-radius: 12px; border: 3px solid var(--bg-panel); background: #18181b; object-fit: cover;">
+                            <img src="${profileIcon}" onerror="this.src='${fallbackIcon}'" class="profile-icon" style="width: 54px; height: 54px; border-radius: 12px; border: 3px solid var(--bg-panel); background: #18181b; object-fit: cover;">
                             <div style="display: flex; gap: 6px;">
                                 <button class="btn-edit-name" data-index="${index}" title="Renombrar" style="background: rgba(255,255,255,0.1); border:none; color:white; padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-pencil-simple"></i></button>
                                 <button class="btn-share-profile" data-index="${index}" title="Compartir" style="background: rgba(99,102,241,0.2); border:none; color:var(--accent); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-link"></i></button>
@@ -1159,7 +1089,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.btn-edit-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const profile = profiles[e.currentTarget.dataset.index];
-                window.modpackCart = profile.modsData; 
+                // BUG 1 ARREGLADO: Copia profunda en vez de pasar referencia
+                window.modpackCart = JSON.parse(JSON.stringify(profile.modsData)); 
                 versionSelect.value = profile.mcVersion; 
                 loaderSelect.value = profile.modLoader;
                 window.updateCartUI(); 
@@ -1179,9 +1110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sharedModal.querySelector('h2').textContent = `Contenido: ${p.name}`;
                     sharedModal.querySelector('p').textContent = `Vista previa de los ${p.modsData.length} mods instalados.`;
                     
-                    // REEMPLAZA DESDE sharedList.innerHTML += ` HASTA EL CIERRE DEL STRING `; EN LA SECCIÓN 13
+                    sharedList.innerHTML = '';
                     p.modsData.forEach(item => {
-                        // Respaldo de icono seguro
                         const icon = item.icon && item.icon.startsWith('http') ? item.icon : 'https://placehold.co/40x40/18181b/ffffff?text=M';
                         sharedList.innerHTML += `
                             <div class="shared-mod-item" onclick="window.openModDetailsById('${item.id}')" style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;">
