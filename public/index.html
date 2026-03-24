@@ -1,15 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoreMod</title>
+    <title>CoreMod Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/skinview3d@3.0.0-alpha.1/bundles/skinview3d.bundle.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -56,7 +58,6 @@
                 <div id="dynamic-center-area" class="center-area custom-scrollbar">
                     
                     <div id="view-mods" class="builder-view">
-                        
                         <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(24,24,27,0) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg); padding: 40px; margin-bottom: 25px; position: relative; overflow: hidden;">
                             <i class="ph-duotone ph-puzzle-piece" style="position: absolute; right: -20px; top: -20px; font-size: 200px; color: rgba(16,185,129,0.05); transform: rotate(15deg);"></i>
                             <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; position: relative; z-index: 2;">Descubre. Ensambla. Juega.</h2>
@@ -143,16 +144,17 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                             
                             <div class="panel" style="background: linear-gradient(to bottom, var(--bg-hover), var(--bg-main));">
-                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-user-focus" style="color: var(--accent);"></i> Perfil Premium</h3>
-                                <p class="muted-text text-sm mb-20">Ingresa tu usuario para obtener tu skin UUID oficial.</p>
+                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-user-focus" style="color: var(--accent);"></i> Buscador de Skins 3D</h3>
+                                <p class="muted-text text-sm mb-20">Revisa la apariencia de jugadores premium oficiales.</p>
                                 
                                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                                     <input type="text" id="mc-skin-input" class="form-input" placeholder="Ej: Zeryux" style="flex: 1;">
                                     <button id="btn-load-skin" class="btn btn-primary"><i class="ph-bold ph-magnifying-glass"></i></button>
                                 </div>
                                 
-                                <div style="display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 12px; height: 180px; border: 1px solid var(--border-color);">
-                                    <img id="mc-skin-preview" src="https://crafatar.com/renders/body/Steve?overlay=true" style="height: 150px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); transition: 0.3s;">
+                                <div style="display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); border-radius: 12px; height: 260px; border: 1px solid var(--border-color); overflow: hidden; position: relative;">
+                                    <canvas id="skin_container" style="cursor: grab; width: 100%; height: 100%;"></canvas>
+                                    <div id="skin_loading" style="position: absolute; display: none; color: var(--accent); font-weight: bold;"><i class="ph ph-spinner ph-spin"></i> Cargando modelo...</div>
                                 </div>
                                 
                                 <div id="mc-advanced-info" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
@@ -164,32 +166,58 @@
                             </div>
 
                             <div class="panel" style="background: var(--bg-panel);">
-                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-globe" style="color: #3b82f6;"></i> Servidor / Mundo</h3>
-                                <p class="muted-text text-sm mb-20">Estas propiedades se inyectarán en tu server.properties.</p>
+                                <h3 style="margin-bottom: 15px; font-size: 1.3rem;"><i class="ph-duotone ph-globe" style="color: #3b82f6;"></i> Mundo y Servidor</h3>
+                                <p class="muted-text text-sm mb-20">Propiedades inyectadas en tu server.properties al exportar.</p>
                                 
-                                <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div class="custom-scrollbar" style="display: flex; flex-direction: column; gap: 15px; max-height: 380px; overflow-y: auto; padding-right: 10px;">
+                                    
                                     <div class="form-group">
-                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Semilla (Seed)</label>
-                                        <input type="text" id="world-seed-input" class="form-input" placeholder="Dejar en blanco para random">
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">MOTD (Mensaje de Bienvenida)</label>
+                                        <input type="text" id="world-motd" class="form-input" placeholder="Servidor Mine-Studio 1.20.1">
                                     </div>
+
                                     <div class="form-group">
-                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Modo de Juego</label>
-                                        <select id="world-gamemode" class="form-select">
-                                            <option value="survival">⚔️ Supervivencia</option>
-                                            <option value="creative">🏗️ Creativo</option>
-                                        </select>
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Semilla de Generación (Seed)</label>
+                                        <input type="text" id="world-seed-input" class="form-input" placeholder="Dejar en blanco para aleatoria">
                                     </div>
+                                    
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-group">
+                                            <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Modo de Juego</label>
+                                            <select id="world-gamemode" class="form-select">
+                                                <option value="survival" selected>⚔️ Supervivencia</option>
+                                                <option value="creative">🏗️ Creativo</option>
+                                                <option value="adventure">🗺️ Aventura</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Dificultad</label>
+                                            <select id="world-difficulty" class="form-select">
+                                                <option value="easy">😊 Fácil</option>
+                                                <option value="normal" selected>😐 Normal</option>
+                                                <option value="hard">💀 Difícil</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <div class="form-group">
-                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Dificultad</label>
-                                        <select id="world-difficulty" class="form-select">
-                                            <option value="easy">😊 Fácil</option>
-                                            <option value="normal" selected>😐 Normal</option>
-                                            <option value="hard">💀 Difícil</option>
-                                        </select>
+                                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Máximo de Jugadores</label>
+                                        <input type="number" id="world-max-players" class="form-input" value="20" min="1" max="1000">
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                                        <input type="checkbox" id="world-structures" checked style="width: 20px; height: 20px; accent-color: var(--accent);">
-                                        <label style="margin:0; font-weight:600;">Generar Estructuras (Aldeas, etc)</label>
+
+                                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="checkbox" id="world-structures" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                                            <label style="margin:0; font-weight:600; font-size: 0.9rem;">Generar Estructuras (Aldeas, Templos)</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="checkbox" id="world-pvp" checked style="width: 18px; height: 18px; accent-color: var(--danger);">
+                                            <label style="margin:0; font-weight:600; font-size: 0.9rem;">Permitir PvP (Daño entre jugadores)</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="checkbox" id="world-hardcore" style="width: 18px; height: 18px; accent-color: #8b5cf6;">
+                                            <label style="margin:0; font-weight:600; font-size: 0.9rem; color: #a78bfa;">Modo Hardcore (Una sola vida)</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -199,8 +227,16 @@
                     <div id="view-profiles" class="builder-view hidden panel" style="background: transparent; border: none; padding: 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                             <div>
+                                <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-package" style="color: #3b82f6;"></i> Plantillas Oficiales</h2>
+                                <p class="muted-text mt-10">Conjuntos de mods pre-definidos para empezar rápido.</p>
+                            </div>
+                        </div>
+                        <div id="templates-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;"></div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <div>
                                 <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-folder-open" style="color: var(--accent);"></i> Mis Modpacks</h2>
-                                <p class="muted-text mt-10">Gestiona los ensamblados que has guardado en la nube.</p>
+                                <p class="muted-text mt-10">Gestiona los ensamblados que has guardado.</p>
                             </div>
                         </div>
                         <div id="profiles-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
@@ -208,7 +244,6 @@
                 </div>
 
                 <aside class="cart-panel panel">
-                    
                     <div class="cart-header">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3><i class="ph-bold ph-package"></i> Ensamblado</h3>
@@ -269,7 +304,7 @@
         </main>
     </div>
 
-    <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10006;">
+    <div class="modal-overlay hidden" id="mod-details-modal" style="z-index: 10020;">
         <div class="modal-content modal-jei"> 
             <div class="jei-sidebar-left custom-scrollbar" style="display: none;">
                 <div id="jei-mobs-container">
@@ -324,7 +359,7 @@
                 <h2 style="color: white; margin-top: 15px; font-size: 2rem; font-weight: 800;">IA Ensamblador</h2>
                 <p class="muted-text text-sm" style="max-width: 350px; margin: 0 auto; margin-top: 10px;">Dime qué buscas y armaré el modpack perfecto para ti con compatibilidad asegurada.</p>
             </div>
-            <textarea id="ai-prompt-input" class="search-bar custom-scrollbar" style="width: 100%; height: 120px; resize: none; margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.5); font-size: 1rem; padding: 20px;" placeholder="Ej: 'Quiero un modpack muy difícil de magia con dragones, que esté súper optimizado para pocos recursos...'"></textarea>
+            <textarea id="ai-prompt-input" class="search-bar custom-scrollbar" style="width: 100%; height: 120px; resize: none; margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.5); font-size: 1rem; padding: 20px;" placeholder="Ej: 'Quiero un modpack muy difícil de magia con dragones...'"></textarea>
             <div id="ai-terminal" class="custom-scrollbar" style="display: none; background: #000; padding: 15px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 12px; color: #4ade80; margin-bottom: 20px; height: 150px; overflow-y: auto; border: 1px solid #333; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
                 > IA Esperando órdenes...<br>
             </div>
@@ -348,7 +383,7 @@
                     <input type="checkbox" id="export-server-pack" style="width: 20px; height: 20px; accent-color: var(--accent);">
                     <label style="margin:0; font-weight:bold; color: var(--accent); font-size: 1.1rem;">Crear Server Pack</label>
                 </div>
-                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales (ej. Minimapas) e incluye start.bat</p>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Elimina mods visuales e inyecta server.properties</p>
             </div>
 
             <div class="form-group mb-20" style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
@@ -356,7 +391,7 @@
                     <input type="checkbox" id="export-mrpack" style="width: 20px; height: 20px; accent-color: #3b82f6;">
                     <label style="margin:0; font-weight:bold; color: #3b82f6; font-size: 1.1rem;">Formato .mrpack</label>
                 </div>
-                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Compatible con Prism Launcher. Pesa KB en vez de MB.</p>
+                <p class="text-sm muted-text" style="margin: 0; padding-left: 30px;">Compatible con Prism Launcher. Súper ligero.</p>
             </div>
 
             <div class="modal-actions" style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
@@ -376,7 +411,7 @@
             <div style="text-align: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
                 <i class="ph-fill ph-package" style="font-size: 40px; color: var(--accent);"></i>
                 <h2 style="margin-top: 10px; color: white;">Modpack Compartido</h2>
-                <p class="muted-text text-sm">Alguien te ha invitado a probar este modpack. Revisa el contenido antes de instalarlo en tu ensamblador.</p>
+                <p class="muted-text text-sm">Alguien te ha invitado a probar este modpack. Revisa el contenido antes de instalarlo.</p>
             </div>
 
             <div id="shared-pack-list" class="custom-scrollbar" style="flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; gap: 10px;">
@@ -390,7 +425,6 @@
                 <button class="btn btn-primary" id="btn-install-shared" style="flex: 2; font-size: 1rem;"><i class="ph-bold ph-download-simple"></i> Instalar Modpack</button>
                 <button class="btn btn-secondary" id="btn-cancel-shared" style="flex: 1;">Rechazar</button>
             </div>
-            
         </div>
     </div>
 
@@ -461,14 +495,14 @@
         <div class="modal-content" style="max-width: 650px; text-align: center; background: linear-gradient(145deg, #18181b, #27272a); border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);">
             <i class="ph-duotone ph-warning-circle" style="font-size: 70px; color: #fbbf24; margin-bottom: 15px;"></i>
             <h2 class="title mb-10">¡Un momento! Faltan piezas.</h2>
-            <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white; font-size: 1.1rem;">Este Mod</strong> funcione perfectamente y no rompa el juego, requiere estas librerías obligatorias:</p>
+            <p class="muted-text mb-20">Para que <strong id="epic-mod-name" style="color: white; font-size: 1.1rem;">Este Mod</strong> funcione perfectamente, requiere estas librerías obligatorias:</p>
             <div id="epic-deps-list" class="dependencies-container mb-20" style="justify-content: center; max-height: 350px; overflow-y: auto;"></div>
             <div style="display: flex; gap: 15px; margin-top: 25px;">
                 <button class="btn btn-primary w-100" id="btn-epic-add-all" style="font-size: 1.1rem; padding: 15px;">
                     <i class="ph-bold ph-stack"></i> Añadir Todo al Ensamblado
                 </button>
                 <button class="btn btn-secondary" onclick="document.getElementById('epic-deps-modal').classList.add('hidden')">
-                    Ignorar y Cancelar
+                    Ignorar
                 </button>
             </div>
         </div>
@@ -477,17 +511,18 @@
     <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000;">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
-            <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en tu navegador.</p>
+            <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en la nube.</p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-primary" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;"><i class="ph-bold ph-discord-logo"></i> Entrar con Discord</button>
-                <button class="btn btn-secondary" id="btn-fake-google" style="padding: 12px; font-size: 1rem;"><i class="ph-bold ph-google-logo"></i> Entrar con Google</button>
+                <button class="btn btn-primary btn-discord" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;"><i class="ph-bold ph-discord-logo"></i> Entrar con Discord</button>
+                <button class="btn btn-secondary btn-google" id="btn-fake-google" style="padding: 12px; font-size: 1rem;"><i class="ph-bold ph-google-logo"></i> Entrar con Google (Próximamente)</button>
                 <button class="btn btn-text mt-10" onclick="document.getElementById('auth-modal').classList.add('hidden')">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <div class="lightbox-overlay hidden" id="image-lightbox"><img id="lightbox-img" src=""></div>
+    <div class="lightbox-overlay hidden" id="image-lightbox" style="z-index: 10030;"><img id="lightbox-img" src=""></div>
 
     <script src="js/content.js"></script>
+    <script src="js/auth.js"></script>
 </body>
 </html>
