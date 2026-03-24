@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. CONFIGURACIÓN DE SUPABASE ---
     const SUPABASE_URL = 'https://dndknmfpekswzgeroawu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_STjgHfoAo0Osx-oRUZmrZg_6o8FsWE8'; // <--- OJO AQUÍ
+    const SUPABASE_ANON_KEY = 'sb_secret_l2BYir2jorVAlMOPX9REYA_3FbevGn3'; // <--- OJO AQUÍ
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
