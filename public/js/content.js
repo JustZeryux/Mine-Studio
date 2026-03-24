@@ -59,6 +59,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnRandomizer = document.getElementById('btn-randomizer'); 
 
 
+    // ==========================================
+    // BUSCADOR AUTOMÁTICO DE YOUTUBE SHOWCASES
+    // ==========================================
+    const YOUTUBE_API_KEY = 'AIzaSyCu35RupyXPEyADr7PLnZra_hT64UShEYw'; // <-- Pon aquí tu llave
+
+    async function loadModShowcase(modTitle) {
+        const container = document.getElementById('detail-video-container');
+        const iframe = document.getElementById('detail-video-iframe');
+        const credit = document.getElementById('detail-video-credit');
+        
+        // Ocultamos el video por defecto mientras carga
+        container.style.display = 'none';
+        iframe.src = '';
+        
+        if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'TU_API_KEY_AQUI') {
+            console.warn("Falta la API Key de YouTube para buscar tutoriales.");
+            return;
+        }
+
+        try {
+            // Buscamos exactamente un showcase del mod
+            const query = encodeURIComponent(`Minecraft mod ${modTitle} showcase tutorial`);
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${query}&type=video&key=${YOUTUBE_API_KEY}`);
+            const data = await res.json();
+            
+            if (data.items && data.items.length > 0) {
+                const video = data.items[0];
+                // Inyectamos el video en el iframe
+                iframe.src = `https://www.youtube.com/embed/${video.id.videoId}`;
+                // Damos créditos al canal creador
+                credit.innerHTML = `Créditos del video: <strong style="color: white;"><i class="ph-fill ph-user"></i> ${video.snippet.channelTitle}</strong>`;
+                // Mostramos el contenedor con una suave animación
+                container.style.display = 'block';
+            }
+        } catch (e) {
+            console.error("Error cargando el video de YouTube:", e);
+        }
+    }
 
     // ==========================================
     // 3. NAVEGACIÓN Y VISTAS
@@ -335,6 +373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
     // ==========================================
     window.openModDetailsById = async function(modId) {
+        loadModShowcase(mod.title);
         const modal = document.getElementById('mod-details-modal');
         if(!modal) return;
         modal.classList.remove('hidden');
