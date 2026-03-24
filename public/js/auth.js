@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. CONFIGURACIÓN DE SUPABASE ---
     const SUPABASE_URL = 'https://dndknmfpekswzgeroawu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_secret_l2BYir2jorVAlMOPX9REYA_3FbevGn3'; // <--- OJO AQUÍ
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuZGtubWZwZWtzd3pnZXJvYXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMTQxOTgsImV4cCI6MjA4OTg5MDE5OH0.7faTwRX1ueVEoy7x-76lvoBGu8GhPtJ2Ydfj4lN3aNE'; // <--- OJO AQUÍ
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
