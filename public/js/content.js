@@ -58,46 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnFpsBoost = document.getElementById('btn-fps-boost');
     const btnRandomizer = document.getElementById('btn-randomizer'); 
 
-    // ==========================================
-    // 2. SISTEMA DE SESIONES (Preparado para Auth Backend/Firebase)
-    // ==========================================
-    const isLoggedIn = localStorage.getItem('usuario_token'); 
-    const profileSection = document.querySelector('.profile-section');
 
-    if (profileSection) {
-        if (!isLoggedIn) {
-            profileSection.innerHTML = `
-                <button class="btn btn-primary" id="btn-trigger-login" style="padding: 6px 16px; border-radius: 20px; font-size: 0.9rem;">
-                    <i class="ph-bold ph-sign-in"></i> Iniciar Sesión
-                </button>
-            `;
-            document.getElementById('btn-trigger-login').addEventListener('click', () => {
-                if(authModal) authModal.classList.remove('hidden');
-            });
-        } else {
-            const user = JSON.parse(isLoggedIn);
-            profileSection.innerHTML = `
-                <span id="header-username">${user.username || 'Usuario'}</span>
-                <img src="${user.avatar || 'https://crafatar.com/avatars/Steve?size=40'}" class="avatar" style="border-color: var(--accent);">
-                <button class="btn btn-text" id="btn-logout" style="padding: 4px; margin-left: 5px; color: var(--danger);" title="Cerrar Sesión"><i class="ph-bold ph-sign-out"></i></button>
-            `;
-            document.getElementById('btn-logout').addEventListener('click', () => {
-                localStorage.removeItem('usuario_token');
-                window.location.reload();
-            });
-        }
-    }
-
-    if(authModal) {
-        // Redirige al sistema de Prisma/Passport que subiste en backend.js
-        document.getElementById('btn-fake-discord')?.addEventListener('click', () => {
-            document.getElementById('btn-fake-discord').innerHTML = '<i class="ph ph-spinner ph-spin"></i> Redirigiendo...';
-            window.location.href = '/auth/discord'; // <-- Esto activa el backend real
-        });
-        document.getElementById('btn-fake-google')?.addEventListener('click', () => {
-            alert('Integración con Google en camino.');
-        });
-    }
 
     // ==========================================
     // 3. NAVEGACIÓN Y VISTAS
