@@ -141,8 +141,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isRegisterMode) {
                     if(!usernameAvailable) throw new Error("Nombre de usuario ocupado");
                     
-                    const { data, error } = await supabase.auth.signUp({ email, password });
-                    if (error) throw error;
+// Obtenemos el código secreto que genera el captcha al resolverlo
+const captchaToken = hcaptcha.getResponse();
+
+if (!captchaToken) {
+    throw new Error("Por favor, resuelve el CAPTCHA.");
+}
+
+const { data, error } = await supabase.auth.signUp({ 
+    email, 
+    password,
+    options: {
+        captchaToken: captchaToken // Se lo mandamos a Supabase
+    }
+});                    if (error) throw error;
 
                     const avatarUrl = `https://crafatar.com/avatars/${username}?size=40`;
                     const { error: dbError } = await supabase.from('users').insert([{
