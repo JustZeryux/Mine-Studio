@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CoreMod</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -13,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/skinview3d@3.0.0-alpha.1/bundles/skinview3d.bundle.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -526,7 +528,7 @@
             
             <div id="auth-local-section">
                 <h2 class="title mb-10" id="auth-title"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
-                <p class="muted-text mb-20" id="auth-subtitle">Accede a tu cuenta global de Mine-Studio.</p>
+                <p class="muted-text mb-20" id="auth-subtitle">Accede a tu cuenta global de CoreMod</p>
                 
                 <form id="local-auth-form" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
                     <input type="text" id="auth-username" class="form-input" placeholder="Nombre de Usuario MC (Solo registro)" style="display: none;">
@@ -534,7 +536,7 @@
                     <input type="password" id="auth-password" class="form-input" placeholder="Contraseña" required>
                     <button type="submit" class="btn btn-primary w-100" id="btn-auth-submit" style="padding: 15px; font-size: 1rem;"><i class="ph-bold ph-sign-in"></i> Entrar</button>
                 </form>
-
+<div class="h-captcha" data-sitekey="e6d821ea-6bae-49d4-99a6-de1a440abbd8" style="margin-bottom: 10px; display: none;" id="captcha-container"></div>
                 <p class="muted-text text-sm mb-10">¿No tienes cuenta? <a href="#" id="toggle-auth-mode" style="color: var(--accent);">Regístrate aquí</a></p>
 
                 <div style="display: flex; align-items: center; margin: 15px 0;">
@@ -553,7 +555,7 @@
             <div id="auth-complete-profile-section" class="hidden">
                 <i class="ph-duotone ph-sparkle" style="font-size: 60px; color: var(--accent); margin-bottom: 15px;"></i>
                 <h2 class="title mb-10">¡Casi listo!</h2>
-                <p class="muted-text mb-20">Establece tu nombre de usuario de Minecraft y una contraseña para el acceso local.</p>
+                <p class="muted-text mb-20">Establece tu nombre de usuario de Minecraft y una contraseña para la creacion de cuenta</p>
                 
                 <form id="complete-profile-form" style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="position: relative;">
