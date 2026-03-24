@@ -520,14 +520,53 @@
         </div>
     </div>
 
-    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000;">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <h2 class="title mb-10"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
-            <p class="muted-text mb-20">Únete para guardar tus modpacks directamente en la nube.</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-primary btn-discord" id="btn-fake-discord" style="background: #5865F2; border: none; padding: 12px; font-size: 1rem;"><i class="ph-bold ph-discord-logo"></i> Entrar con Discord</button>
-                <button class="btn btn-secondary btn-google" id="btn-fake-google" style="padding: 12px; font-size: 1rem;"><i class="ph-bold ph-google-logo"></i> Entrar con Google (Próximamente)</button>
-                <button class="btn btn-text mt-10" onclick="document.getElementById('auth-modal').classList.add('hidden')">Cancelar</button>
+<div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000; backdrop-filter: blur(10px);">
+        <div class="modal-content custom-scrollbar" style="max-width: 450px; text-align: center; position: relative; max-height: 90vh; overflow-y: auto; padding: 30px; border-radius: 20px;">
+            <button class="btn-icon-danger" onclick="document.getElementById('auth-modal').classList.add('hidden')" style="position: absolute; top: 15px; right: 15px;"><i class="ph-bold ph-x"></i></button>
+            
+            <div id="auth-local-section">
+                <h2 class="title mb-10" id="auth-title"><i class="ph-bold ph-user-circle"></i> Iniciar Sesión</h2>
+                <p class="muted-text mb-20" id="auth-subtitle">Accede a tu cuenta global de Mine-Studio.</p>
+                
+                <form id="local-auth-form" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                    <input type="text" id="auth-username" class="form-input" placeholder="Nombre de Usuario MC (Solo registro)" style="display: none;">
+                    <input type="email" id="auth-email" class="form-input" placeholder="Correo electrónico" required>
+                    <input type="password" id="auth-password" class="form-input" placeholder="Contraseña" required>
+                    <button type="submit" class="btn btn-primary w-100" id="btn-auth-submit" style="padding: 15px; font-size: 1rem;"><i class="ph-bold ph-sign-in"></i> Entrar</button>
+                </form>
+
+                <p class="muted-text text-sm mb-10">¿No tienes cuenta? <a href="#" id="toggle-auth-mode" style="color: var(--accent);">Regístrate aquí</a></p>
+
+                <div style="display: flex; align-items: center; margin: 15px 0;">
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                    <span class="muted-text" style="padding: 0 10px; font-size: 0.8rem;">O usa tus redes</span>
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
+                    <button class="btn btn-secondary btn-google" id="btn-firebase-google" style="padding: 12px; font-size: 1rem; border-color: #3b82f6; color: #3b82f6;"><i class="ph-bold ph-google-logo"></i> Google</button>
+                    <button class="btn btn-secondary btn-microsoft" id="btn-firebase-microsoft" style="padding: 12px; font-size: 1rem; border-color: #f59e0b; color: #f59e0b;"><i class="ph-bold ph-microsoft-logo"></i> Microsoft</button>
+                    <button class="btn btn-secondary btn-discord" id="btn-firebase-discord" style="padding: 12px; font-size: 1rem; border-color: #5865F2; color: #5865F2;"><i class="ph-bold ph-discord-logo"></i> Discord</button>
+                </div>
+            </div>
+
+            <div id="auth-complete-profile-section" class="hidden">
+                <i class="ph-duotone ph-sparkle" style="font-size: 60px; color: var(--accent); margin-bottom: 15px;"></i>
+                <h2 class="title mb-10">¡Casi listo!</h2>
+                <p class="muted-text mb-20">Establece tu nombre de usuario de Minecraft y una contraseña para el acceso local.</p>
+                
+                <form id="complete-profile-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="position: relative;">
+                        <input type="text" id="complete-username" class="form-input" placeholder="Nombre de Usuario de Minecraft (Único)" required>
+                        <i class="ph-bold ph-check-circle" id="username-check-icon" style="position: absolute; right: 15px; top: 15px; color: var(--success); display: none;"></i>
+                        <i class="ph-bold ph-x-circle" id="username-error-icon" style="position: absolute; right: 15px; top: 15px; color: var(--danger); display: none;"></i>
+                    </div>
+                    <input type="password" id="complete-password" class="form-input" placeholder="Contraseña (Mín. 6 caracteres)" required>
+                    <input type="password" id="complete-password-confirm" class="form-input" placeholder="Confirmar contraseña" required>
+                    <button type="submit" class="btn btn-primary w-100" id="btn-complete-submit" style="padding: 15px; font-size: 1rem;" disabled>
+                        <i class="ph-bold ph-check"></i> Finalizar Registro
+                    </button>
+                </form>
             </div>
         </div>
     </div>
