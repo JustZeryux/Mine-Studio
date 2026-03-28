@@ -1670,7 +1670,165 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.querySelector('.nav-btn[data-target="community"]')?.addEventListener('click', () => window.loadCommunityGallery());
     document.getElementById('btn-close-community-modal')?.addEventListener('click', () => commModal.classList.add('hidden'));
-    
+
+
+    // ============================================================
+    // 20. HERRAMIENTAS PRO (CRASH LOGS Y WHITELIST)
+    // ============================================================
+    const viewTools = document.getElementById('view-tools');
+    if (viewTools) views['tools'] = viewTools;
+
+    // --- ANALIZADOR INTELIGENTE DE CRASH LOGS ---
+    const crashDropzone = document.getElementById('crash-dropzone');
+    const crashInput = document.getElementById('crash-input');
+    const crashResult = document.getElementById('crash-result');
+
+    if (crashDropzone && crashInput) {
+        crashDropzone.addEventListener('click', () => crashInput.click());
+        
+        crashDropzone.addEventListener('dragover', (e) => { e.preventDefault(); crashDropzone.style.borderColor = 'var(--accent)'; });
+        crashDropzone.addEventListener('dragleave', () => crashDropzone.style.borderColor = 'rgba(255,255,255,0.2)');
+        crashDropzone.addEventListener('drop', (e) => { 
+            e.preventDefault(); 
+            crashDropzone.style.borderColor = 'rgba(255,255,255,0.2)'; 
+            handleCrashFile(e.dataTransfer.files[0]); 
+        });
+        
+        crashInput.addEventListener('change', (e) => handleCrashFile(e.target.files[0]));
+    }
+
+    function handleCrashFile(file) {
+        if (!file || !file.name.endsWith('.txt')) return alert("Por favor sube un archivo de texto (.txt)");
+        const reader = new FileReader();
+        reader.onload = (e) => analyzeCrashLog(e.target.result);
+        reader.readAsText(file);
+    }
+
+    function analyzeCrashLog(text) {
+        crashResult.style.display = 'block';
+        crashResult.style.background = 'var(--bg-main)';
+        crashResult.style.border = 'none';
+        crashResult.innerHTML = '<div style="text-align:center;"><i class="ph ph-spinner ph-spin"></i> Escaneando trazas de código...</div>';
+        
+        setTimeout(() => {
+            let culprit = "Origen Desconocido";
+            let reason = "Posible conflicto general, corrupción del mundo o falta de memoria profunda.";
+            let color = "#f87171"; // Rojo por defecto
+            
+            // Heurísticas de análisis
+            if (text.includes("java.lang.OutOfMemoryError")) {
+                culprit = "Falta de RAM Asignada"; 
+                reason = "Tu servidor o juego se quedó sin memoria física. Asigna más GB de RAM."; 
+                color = "#fbbf24";
+            } else if (text.match(/Suspected Mods:\s*(.+)/)) {
+                // Fabric y Forge modernos suelen decir qué mod es el sospechoso
+                culprit = text.match(/Suspected Mods:\s*(.+)/)[1].trim();
+                reason = "El modloader detectó directamente que este mod o sus dependencias causaron el crasheo crítico.";
+            } else if (text.includes("Multiple entries with same key")) {
+                culprit = "Conflicto de Registros (IDs)"; 
+                reason = "Dos mods están intentando registrar el mismo ítem, bioma o bloque. Quita los mods más recientes.";
+            } else if (text.includes("java.lang.NoSuchMethodError")) {
+                culprit = "Versión Incorrecta"; 
+                reason = "Un mod está intentando ejecutar código que no existe. Esto ocurre por usar mods de otra versión (ej. un mod 1.19 en 1.20) o falta de una librería.";
+            } else {
+                // Buscar paquetes de java sospechosos que no sean de minecraft vanilla
+                const traceMatch = text.match(/at ([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)/);
+                if (traceMatch && !traceMatch[1].startsWith("net.minecraft") && !traceMatch[1].startsWith("java.")) {
+                    culprit = traceMatch[1] + " (Paquete de Código)";
+                    reason = "El error reventó en esta línea de código. Revisa en tu lista de mods a quién le pertenece este paquete.";
+                }
+            }
+
+            crashResult.style.background = 'rgba(239, 68, 68, 0.1)';
+            crashResult.style.border = `1px solid ${color}`;
+            crashResult.innerHTML = `
+                <h4 style="color: ${color}; margin: 0 0 5px 0;"><i class="ph-fill ph-warning"></i> Causa probable: ${culprit}</h4>
+                <p style="font-size: 0.85rem; margin: 0; color: #fff;">${reason}</p>
+            `;
+        }, 1200);
+    }
+
+    // --- GESTOR VISUAL DE WHITELIST ---
+    let whitelistArray = [];
+    const btnWlAdd = document.getElementById('btn-wl-add');
+    const wlInput = document.getElementById('wl-input');
+    const wlList = document.getElementById('wl-list');
+
+    btnWlAdd?.addEventListener('click', async () => {
+        const username = wlInput.value.trim();
+        if(!username) return;
+        
+        btnWlAdd.innerHTML = '<i class="ph ph-spinner ph-spin"></i>'; 
+        btnWlAdd.disabled = true;
+        
+        try {
+            // Buscamos al usuario en la API oficial de Mojang
+            const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
+            if(!res.ok) throw new Error();
+            const data = await res.json();
+            
+            // Verificar si ya lo metimos a la lista
+            if(!whitelistArray.some(u => u.uuid === data.uuid)) {
+                whitelistArray.push({ uuid: data.uuid, name: data.username });
+                updateWhitelistUI();
+            }
+            wlInput.value = '';
+        } catch(e) {
+            alert("No se encontró al jugador. ¿Es premium?");
+        } finally {
+            btnWlAdd.innerHTML = '<i class="ph-bold ph-plus"></i>'; 
+            btnWlAdd.disabled = false;
+        }
+    });
+
+    wlInput?.addEventListener('keypress', (e) => { if(e.key === 'Enter') btnWlAdd.click(); });
+
+    function updateWhitelistUI() {
+        if(!wlList) return;
+        wlList.innerHTML = '';
+        if(whitelistArray.length === 0) {
+            wlList.innerHTML = '<p class="muted-text text-sm" style="text-align:center;">Lista vacía.</p>';
+            return;
+        }
+
+        whitelistArray.forEach((user, index) => {
+            wlList.innerHTML += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="https://crafatar.com/avatars/${user.uuid}?size=30" style="width: 30px; height: 30px; border-radius: 6px; background: #27272a;">
+                        <span style="font-weight: 600; font-size: 0.95rem;">${user.name}</span>
+                    </div>
+                    <button class="btn-remove-wl" data-index="${index}" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 5px;"><i class="ph-bold ph-trash"></i></button>
+                </div>
+            `;
+        });
+
+        document.querySelectorAll('.btn-remove-wl').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                whitelistArray.splice(e.currentTarget.dataset.index, 1);
+                updateWhitelistUI();
+            });
+        });
+    }
+
+    // Exportador mágico a JSON
+    document.getElementById('btn-wl-export')?.addEventListener('click', () => {
+        if(whitelistArray.length === 0) return alert("La whitelist está vacía. Añade a alguien primero.");
+        
+        // El servidor de Minecraft necesita que el UUID tenga guiones medios
+        const formatted = whitelistArray.map(u => ({ 
+            uuid: u.uuid.replace(/(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/, "$1-$2-$3-$4-$5"), 
+            name: u.name 
+        }));
+        
+        const blob = new Blob([JSON.stringify(formatted, null, 2)], { type: "application/json" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = 'whitelist.json';
+        a.click(); 
+        window.URL.revokeObjectURL(url);
+    });
 
     // ==========================================
     // 18. SCROLL INFINITO Y AUTO-INICIO
