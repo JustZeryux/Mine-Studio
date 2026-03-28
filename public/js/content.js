@@ -376,10 +376,10 @@ window.requestBuild = async function(action = 'download_only') {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
 // ==========================================
-    // FUNCIÓN CENTRAL: ABRIR DETALLES (FULL PAGE + STICKY + VIDEO FIX)
+    // FUNCIÓN CENTRAL: ABRIR DETALLES (LAYOUT DEFINITIVO + HEADER STICKY + VIDEO PRO)
     // ==========================================
     
-    // CSS para las imágenes, el layout y el sidebar sticky
+    // CSS para las imágenes y las barras de scroll ocultas/limpias
     if (!document.getElementById('cf-styles-custom')) {
         const styleCf = document.createElement('style');
         styleCf.id = 'cf-styles-custom';
@@ -388,11 +388,11 @@ window.requestBuild = async function(action = 'download_only') {
             .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
             .sidebar-title { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
             
-            /* Magia para que el sidebar te siga al hacer scroll */
-            .sticky-sidebar { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 5px; }
-            .sticky-sidebar::-webkit-scrollbar { width: 6px; }
-            .sticky-sidebar::-webkit-scrollbar-track { background: transparent; }
-            .sticky-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+            /* Custom scrollbars para las zonas independientes */
+            .scrolling-area::-webkit-scrollbar { width: 8px; }
+            .scrolling-area::-webkit-scrollbar-track { background: transparent; }
+            .scrolling-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+            .scrolling-area::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
         `;
         document.head.appendChild(styleCf);
     }
@@ -420,80 +420,85 @@ window.requestBuild = async function(action = 'download_only') {
         if (!detailsPage) {
             detailsPage = document.createElement('div');
             detailsPage.id = 'view-mod-details-page';
-            // 🔥 MODO PÁGINA COMPLETA: Sin bordes, position absolute para que cubra todo, fondo sólido
-            detailsPage.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 50; overflow-y: auto; padding: 0; margin: 0; border: none; border-radius: 0; display: flex; flex-direction: column; scroll-behavior: smooth;';
-            document.getElementById('dynamic-center-area').style.position = 'relative'; // Asegura que se ancle bien
+            // 🔥 LAYOUT MAESTRO: Pantalla completa, flexbox en columna, sin desbordarse 🔥
+            detailsPage.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 50; display: flex; flex-direction: column; overflow: hidden; border: none; margin: 0; padding: 0;';
+            document.getElementById('dynamic-center-area').style.position = 'relative'; 
             document.getElementById('dynamic-center-area').appendChild(detailsPage);
         }
         detailsPage.classList.remove('hidden');
-        detailsPage.scrollTop = 0; // Mandar arriba al abrir
 
-        // 🛠️ MAQUETACIÓN HTML FULL PAGE
+        // 🛠️ MAQUETACIÓN HTML: HEADER FIJO ARRIBA, COLUMNAS CON SCROLL ABAJO
         detailsPage.innerHTML = `
-            <div id="cf-banner" style="width: 100%; height: 300px; background: #111; background-size: cover; background-position: center; position: relative;">
-                <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main) 5%, transparent 95%);"></div>
-                <button id="btn-back-to-mods" class="btn btn-secondary" style="position: absolute; top: 20px; left: 30px; z-index: 60; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px;">
-                    <i class="ph-bold ph-arrow-left"></i> Volver al Buscador
-                </button>
-            </div>
-            
-            <div style="width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 40px 40px 40px; margin-top: -100px; position: relative; z-index: 10;">
+            <div style="flex-shrink: 0; background: var(--bg-main); border-bottom: 1px solid var(--border-color); z-index: 20; position: relative;">
                 
-                <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
-                    
-                    <div style="flex: 1; min-width: 600px;">
-                        <div style="display: flex; gap: 25px; align-items: flex-end; margin-bottom: 40px;">
-                            <img id="cf-icon" src="https://placehold.co/150x150/18181b/ffffff?text=M" style="width: 150px; height: 150px; border-radius: 20px; border: 5px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 25px rgba(0,0,0,0.6);">
-                            <div style="padding-bottom: 5px;">
-                                <div id="cf-tags" style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;"></div>
-                                <h1 id="cf-title-main" style="margin: 0 0 8px 0; font-size: 2.5rem; color: #fff;">Cargando...</h1>
-                                <p class="muted-text" style="margin: 0; font-size: 1rem;">Desarrollado por <span id="cf-author" style="color: var(--accent); font-weight: bold;">...</span></p>
-                            </div>
-                        </div>
+                <div id="cf-banner" style="width: 100%; height: 180px; background: #111; background-size: cover; background-position: center; position: relative;">
+                    <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main), transparent);"></div>
+                    <button id="btn-back-to-mods" class="btn btn-secondary" style="position: absolute; top: 20px; left: 30px; z-index: 60; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px;">
+                        <i class="ph-bold ph-arrow-left"></i> Volver al Buscador
+                    </button>
+                </div>
+                
+                <div style="max-width: 1600px; margin: 0 auto; padding: 0 40px; margin-top: -60px; position: relative; display: flex; gap: 25px; align-items: flex-end; padding-bottom: 20px;">
+                    <img id="cf-icon" src="https://placehold.co/120x120/18181b/ffffff?text=M" style="width: 120px; height: 120px; border-radius: 20px; border: 5px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+                    <div style="flex: 1; padding-bottom: 5px;">
+                        <div id="cf-tags" style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;"></div>
+                        <h1 id="cf-title-main" style="margin: 0 0 5px 0; font-size: 2.2rem; color: #fff;">Cargando...</h1>
+                        <p class="muted-text" style="margin: 0; font-size: 1rem;">Desarrollado por <span id="cf-author" style="color: var(--accent); font-weight: bold;">...</span></p>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="sidebar-panel" style="margin-bottom: 0; padding: 30px; background: transparent; border: none;">
-                            <h3 class="sidebar-title" style="font-size: 1.5rem; border-color: rgba(255,255,255,0.1);"><i class="ph-bold ph-file-text"></i> Descripción Oficial</h3>
-                            <div id="cf-description" class="markdown-body" style="font-size: 1.05rem; line-height: 1.8; color: #e4e4e7;">
-                                <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i><p>Conectando con Modrinth...</p></div>
-                            </div>
+            <div style="flex: 1; display: flex; gap: 40px; max-width: 1600px; margin: 0 auto; width: 100%; padding: 30px 40px; overflow: hidden;">
+                
+                <div class="scrolling-area" style="flex: 1; overflow-y: auto; padding-right: 20px; padding-bottom: 40px;">
+                    <h3 style="margin-top: 0; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;"><i class="ph-bold ph-file-text"></i> Descripción Oficial</h3>
+                    <div id="cf-description" class="markdown-body" style="font-size: 1.05rem; line-height: 1.8; color: #e4e4e7;">
+                        <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i><p>Conectando con Modrinth...</p></div>
+                    </div>
+                </div>
+
+                <div class="scrolling-area" style="width: 450px; overflow-y: auto; padding-right: 10px; padding-bottom: 40px; display: flex; flex-direction: column;">
+                    
+                    <div class="sidebar-panel" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
+                        <div id="cf-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Cargando botones...</div>
                         </div>
                     </div>
 
-                    <div class="sticky-sidebar" style="width: 380px;">
-                        
-                        <div class="sidebar-panel" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
-                            <div id="cf-actions" style="display: flex; flex-direction: column; gap: 12px;">
-                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Cargando botones...</div>
+                    <div class="sidebar-panel">
+                        <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Showcase / Tutorial</h4>
+                        <div id="detail-video-container" style="display: none; flex-direction: column; gap: 12px;">
+                            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
+                                <iframe id="detail-video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
                             </div>
-                        </div>
-
-                        <div class="sidebar-panel">
-                            <h4 class="sidebar-title" style="color: #a1a1aa;"><i class="ph-bold ph-books"></i> Librerías Necesarias</h4>
-                            <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
-                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
-                            </div>
-                        </div>
-
-                        <div class="sidebar-panel">
-                            <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Showcase / Tutorial</h4>
-                            <div id="detail-video-container" style="display: none;">
-                                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
-                                    <iframe id="detail-video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
+                            
+                            <div style="display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                                <img id="detail-video-avatar" src="https://placehold.co/45x45/27272a/ffffff?text=C" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+                                <div style="flex: 1; overflow: hidden;">
+                                    <div id="detail-video-author" style="font-size: 1rem; font-weight: bold; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Cargando canal...</div>
+                                    <div style="font-size: 0.8rem; color: var(--muted);">Video extraído de YouTube</div>
                                 </div>
                             </div>
-                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.9rem; padding: 10px 0;"><i class="ph ph-spinner ph-spin"></i> Buscando video en YouTube...</div>
                         </div>
-
-                        <div class="sidebar-panel" style="margin-bottom: 0;">
-                            <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner Interno (JEI)</h4>
-                            <div id="cf-jei">
-                                <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0;">Entidades y Crafteos detectados en el .JAR:</p>
-                                <div id="jei-mobs-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px;"></div>
-                                <div id="jei-items-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;"></div>
-                            </div>
-                        </div>
-
+                        <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.95rem; padding: 10px 0;"><i class="ph ph-spinner ph-spin"></i> Buscando video en YouTube...</div>
                     </div>
+
+                    <div class="sidebar-panel">
+                        <h4 class="sidebar-title" style="color: #a1a1aa;"><i class="ph-bold ph-books"></i> Librerías Necesarias</h4>
+                        <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-panel" style="margin-bottom: 0;">
+                        <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner Interno (JEI)</h4>
+                        <div id="cf-jei">
+                            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0;">Entidades y Crafteos detectados:</p>
+                            <div id="jei-mobs-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px;"></div>
+                            <div id="jei-items-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;"></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         `;
@@ -504,8 +509,11 @@ window.requestBuild = async function(action = 'download_only') {
             document.getElementById('view-mods').classList.remove('hidden');
         });
 
+        // ==========================================
+        // LÓGICA DE CARGA DE DATOS
+        // ==========================================
         try {
-            // 1. OBTENER INFO DEL MOD
+            // 1. INFO BÁSICA
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
             if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red; text-align:center;'>Error 404: Mod no encontrado.</p>"; return; }
             const mod = await res.json();
@@ -526,7 +534,7 @@ window.requestBuild = async function(action = 'download_only') {
                 tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); text-transform: capitalize;">${window.tagIcons ? (window.tagIcons[tag] || '<i class="ph-bold ph-tag"></i>') : '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
             });
 
-            // 2. VERSIONES Y LIBRERÍAS
+            // 2. VERSIONES
             const mcVers = document.getElementById('mod-version-select').value;
             const loader = document.getElementById('mod-loader-select').value;
             let primaryFile = null;
@@ -541,7 +549,7 @@ window.requestBuild = async function(action = 'download_only') {
                 }
             } catch(e) {}
 
-            // 3. BOTONES DE ACCIÓN
+            // 3. BOTONES
             const isAdded = window.modpackCart.some(item => item.id === mod.id);
             const actionsDiv = document.getElementById('cf-actions');
             
@@ -591,52 +599,44 @@ window.requestBuild = async function(action = 'download_only') {
                     `;
                 });
             } else {
-                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.95rem; padding: 12px; background: rgba(16,185,129,0.1); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);"><i class="ph-fill ph-check-circle"></i> Mod independiente. No necesita nada más.</div>';
+                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.95rem; padding: 12px; background: rgba(16,185,129,0.1); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);"><i class="ph-fill ph-check-circle"></i> Mod independiente.</div>';
             }
 
-            // 5. CARGAR VIDEO (SÚPER FIX: Consulta interna garantizada usando una API libre)
+            // 5. YOUTUBE API (FOTO + CANAL DINÁMICO)
             try {
-                // Buscamos directamente el video sin depender de funciones externas que se puedan romper
                 const videoQuery = encodeURIComponent(`${mod.title} minecraft mod showcase`);
                 const ytRes = await fetch(`https://inv.tux.pizza/api/v1/search?q=${videoQuery}`);
                 const ytData = await ytRes.json();
                 
-                if (ytData && ytData.length > 0) {
-                    const videoId = ytData[0].videoId;
+                // Buscar el primer resultado que sea un video
+                const video = ytData.find(v => v.type === 'video') || ytData[0];
+                
+                if (video && video.videoId) {
                     document.getElementById('no-video-msg').style.display = 'none';
-                    document.getElementById('detail-video-container').style.display = 'block';
-                    document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
+                    document.getElementById('detail-video-container').style.display = 'flex';
+                    document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${video.videoId}?autoplay=0`;
+                    
+                    // Inyectar nombre del canal
+                    const channelName = video.author || "Canal de YouTube";
+                    document.getElementById('detail-video-author').textContent = channelName;
+                    
+                    // Generar una foto de perfil basada en la primera letra del canal (API gratuita ui-avatars)
+                    const firstLetter = channelName.charAt(0).toUpperCase();
+                    document.getElementById('detail-video-avatar').src = `https://ui-avatars.com/api/?name=${firstLetter}&background=random&color=fff&size=128&bold=true`;
                 } else {
                     document.getElementById('no-video-msg').innerHTML = "No se encontraron tutoriales en YouTube.";
                 }
             } catch (e) {
-                // Si la API pública falla, intentamos llamar a tu función original si es que existe
-                if (typeof window.loadModShowcase === 'function' || typeof loadModShowcase === 'function') {
-                    try {
-                        const funcToCall = window.loadModShowcase || loadModShowcase;
-                        document.getElementById('no-video-msg').style.display = 'none'; 
-                        funcToCall(mod.title);
-                    } catch(err) {
-                        document.getElementById('no-video-msg').style.display = 'block';
-                        document.getElementById('no-video-msg').textContent = "No se pudo conectar con YouTube.";
-                    }
-                } else {
-                    document.getElementById('no-video-msg').innerHTML = "Buscador de videos no disponible.";
-                }
+                document.getElementById('no-video-msg').innerHTML = "No se pudo conectar con YouTube.";
             }
 
-            // 6. INICIAR AUTO-ESCANER JEI (Crafteos y Mobs)
-            if (typeof window.runAutoScanJEI === 'function' || typeof runAutoScanJEI === 'function') {
-                try {
-                    const funcJEI = window.runAutoScanJEI || runAutoScanJEI;
-                    funcJEI(mod.id, mcVers, loader);
-                } catch (e) {}
+            // 6. JEI
+            if (typeof window.runAutoScanJEI === 'function') {
+                try { window.runAutoScanJEI(mod.id, mcVers, loader); } catch (e) {}
             }
 
         } catch (e) {
-            console.error("Fallo crítico en openModDetailsById:", e);
-            document.getElementById('cf-title-main').textContent = "Error";
-            document.getElementById('cf-description').innerHTML = `<p style="color:var(--danger);">Ocurrió un error cargando el mod.</p>`;
+            console.error("Error crítico:", e);
         }
     };
     
