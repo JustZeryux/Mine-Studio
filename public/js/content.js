@@ -497,23 +497,19 @@ window.requestBuild = async function(action = 'download_only') {
     detailsPage.classList.remove('hidden');
     detailsPage.scrollTop = 0; 
 
-    // 🔥 MAQUETACIÓN: HEADER COMPACTO MEJORADO Y BALANCEADO 🔥
+    // 🔥 MAQUETACIÓN: HEADER COMPACTO PREMIUM 🔥
     detailsPage.innerHTML = `
         <div class="mod-header-compact" style="position: sticky; top: 0; z-index: 100; background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-            
             <div style="display: flex; align-items: center; gap: 24px; flex: 1;">
                 <button id="btn-back-to-mods" class="btn btn-secondary" style="width: 45px; height: 45px; padding: 0; display: flex; justify-content: center; align-items: center; border-radius: 12px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.2s;">
                     <i class="ph-bold ph-arrow-left" style="font-size: 1.2rem; color: #fff;"></i>
                 </button>
-                
                 <img id="cf-icon" src="https://placehold.co/64x64/18181b/ffffff?text=M" style="width: 64px; height: 64px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0;">
-                
                 <div style="display: flex; flex-direction: column; justify-content: center;">
                     <h1 id="cf-title-main" style="margin: 0 0 4px 0; font-size: 1.5rem; font-weight: 800; color: #fff; line-height: 1;">Cargando...</h1>
                     <span style="color: var(--muted); font-size: 0.95rem;">Por <span id="cf-author" style="color: #10b981; font-weight: 600;">...</span></span>
                 </div>
             </div>
-            
             <div id="cf-actions-header" style="display: flex; gap: 12px; align-items: center; flex-shrink: 0;">
                 <div style="color: var(--muted); font-size: 0.95rem;"><i class="ph ph-spinner ph-spin"></i> Cargando...</div>
             </div>
@@ -551,7 +547,6 @@ window.requestBuild = async function(action = 'download_only') {
             </div>
 
             <div class="right-sidebar-sticky custom-scrollbar" style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding-right: 10px;">
-                
                 <div class="sidebar-panel">
                     <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Showcase</h4>
                     <div id="detail-video-container" style="display: none; flex-direction: column; gap: 15px;">
@@ -572,111 +567,148 @@ window.requestBuild = async function(action = 'download_only') {
         </div>
     `;
 
-    // Asignar evento al botón de volver (con el ID correcto)
     document.getElementById('btn-back-to-mods').addEventListener('click', () => {
         window.history.pushState({}, '', window.location.pathname);
         detailsPage.classList.add('hidden');
         document.getElementById('view-mods').classList.remove('hidden');
     });
 
+    // ==========================================
+    // 1. CARGA BÁSICA (Info del Mod)
+    // ==========================================
+    let mod;
     try {
-        // 1. INFO BÁSICA
         const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-        if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red;'>Error 404.</p>"; return; }
-        const mod = await res.json();
-        const iconUrl = mod.icon_url || 'https://placehold.co/150x150/18181b/ffffff?text=M';
+        if(!res.ok) throw new Error("404");
+        mod = await res.json();
+    } catch (e) {
+        document.getElementById('cf-description').innerHTML = "<p style='color:red;'>Error al cargar la información del mod.</p>";
+        document.getElementById('cf-actions-header').innerHTML = "";
+        return;
+    }
 
-        document.getElementById('cf-title-main').textContent = mod.title;
-        document.getElementById('cf-author').textContent = mod.team || 'Independiente';
-        document.getElementById('cf-icon').src = iconUrl;
-        document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
+    const iconUrl = mod.icon_url || 'https://placehold.co/150x150/18181b/ffffff?text=M';
+    document.getElementById('cf-title-main').textContent = mod.title;
+    document.getElementById('cf-author').textContent = mod.team || 'Independiente';
+    document.getElementById('cf-icon').src = iconUrl;
+    document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
 
-        // 2. VERSIONES
-        const mcVers = document.getElementById('mod-version-select').value;
-        const loader = document.getElementById('mod-loader-select').value;
-        let primaryFile = null, reqDeps = [];
+    const mcVers = document.getElementById('mod-version-select')?.value || "1.20.1";
+    const loader = document.getElementById('mod-loader-select')?.value || "forge";
+    let primaryFile = null, reqDeps = [];
 
-        try {
-            const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+    try {
+        const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+        if (versRes.ok) {
             const versData = await versRes.json();
             if (versData.length > 0) {
                 primaryFile = versData[0].files.find(f => f.primary) || versData[0].files[0];
                 if(versData[0].dependencies) reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
             }
-        } catch(e) {}
+        }
+    } catch(e) {}
 
-        // 3. BOTONES CORRECTOS (ESTILIZADOS Y BALANCEADOS)
-        const isAdded = window.modpackCart.some(item => item.id === mod.id);
-        const actionsDiv = document.getElementById('cf-actions-header');
-        
-        let downloadBtnHtml = primaryFile 
-            ? `<a href="${primaryFile.url}" target="_blank" download class="btn" style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'"><i class="ph-bold ph-download-simple" style="font-size: 1.1rem;"></i> Descargar</a>`
-            : `<button class="btn" disabled style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #71717a; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem;"><i class="ph-bold ph-warning" style="font-size: 1.1rem;"></i> N/A</button>`;
+    // ==========================================
+    // 2. CREACIÓN DE BOTONES
+    // ==========================================
+    const isAdded = window.modpackCart.some(item => item.id === mod.id);
+    const actionsDiv = document.getElementById('cf-actions-header');
+    
+    let downloadBtnHtml = primaryFile 
+        ? `<a href="${primaryFile.url}" target="_blank" download class="btn" style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'"><i class="ph-bold ph-download-simple" style="font-size: 1.1rem;"></i> Descargar</a>`
+        : `<button class="btn" disabled style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #71717a; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem;"><i class="ph-bold ph-warning" style="font-size: 1.1rem;"></i> N/A</button>`;
 
-        actionsDiv.innerHTML = `
-            ${downloadBtnHtml}
-            <button class="btn btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 10px 24px; border-radius: 10px; border: none; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); ${isAdded ? 'background: #059669; color: white;' : 'background: linear-gradient(135deg, #10b981, #059669); color: white;'}">
-                <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}" style="font-size: 1.2rem;"></i> ${isAdded ? 'Agregado' : 'Agregar'}
-            </button>
-        `;
-        
-        actionsDiv.querySelector('.btn-add-cf').addEventListener('click', function() {
-            if (!window.modpackCart.some(item => item.id === mod.id)) {
-                window.modpackCart.push({ id: mod.id, title: mod.title, type: 'mod', icon: iconUrl, categories: mod.display_categories });
-                window.updateCartUI();
-                this.innerHTML = '<i class="ph-bold ph-check" style="font-size: 1.2rem;"></i> Agregado';
-                this.style.background = '#059669';
-                this.disabled = true;
-            }
-        });
+    actionsDiv.innerHTML = `
+        ${downloadBtnHtml}
+        <button class="btn btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 10px 24px; border-radius: 10px; border: none; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); ${isAdded ? 'background: #059669; color: white;' : 'background: linear-gradient(135deg, #10b981, #059669); color: white;'}">
+            <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}" style="font-size: 1.2rem;"></i> ${isAdded ? 'Agregado' : 'Agregar'}
+        </button>
+    `;
+    
+    actionsDiv.querySelector('.btn-add-cf')?.addEventListener('click', function() {
+        if (!window.modpackCart.some(item => item.id === mod.id)) {
+            window.modpackCart.push({ id: mod.id, title: mod.title, type: 'mod', icon: iconUrl, categories: mod.display_categories });
+            window.updateCartUI();
+            this.innerHTML = '<i class="ph-bold ph-check" style="font-size: 1.2rem;"></i> Agregado';
+            this.style.background = '#059669';
+            this.disabled = true;
+        }
+    });
 
-        // 4. LIBRERÍAS
+    // ==========================================
+    // 3. AISLAMIENTO TOTAL: LIBRERÍAS (Hilo paralelo)
+    // ==========================================
+    setTimeout(async () => {
         const depsContainer = document.getElementById('cf-dependencies');
-        if (reqDeps.length > 0) {
-            const projectIds = reqDeps.map(d => d.project_id);
-            const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
-            const depProjs = await depProjsRes.json();
-            
-            depsContainer.innerHTML = '';
-            depProjs.forEach(dep => {
-                const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
-                depsContainer.innerHTML += `
-                    <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; cursor:pointer;" onclick="window.openModDetailsById('${dep.id}')">
-                        <img src="${dep.icon_url || 'https://placehold.co/36'}" style="width: 30px; height: 30px; border-radius: 6px;">
-                        <div style="flex:1;">
-                            <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
-                            <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};">${isDepAdded ? 'Instalado' : 'Requerido'}</div>
-                        </div>
-                    </div>
-                `;
-            });
-        } else {
-            depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem; text-align:center;"><i class="ph-fill ph-check-circle"></i> Independiente.</div>';
-        }
-
-        // 5. VIDEO YOUTUBE
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000); 
-            const ytRes = await fetch(`https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(`${mod.title} minecraft mod showcase`)}`, { signal: controller });
-            clearTimeout(timeoutId);
-            const ytData = await ytRes.json();
-            const video = ytData.find(v => v.type === 'video') || ytData[0];
-            
-            if (video && video.videoId) {
-                document.getElementById('no-video-msg').style.display = 'none';
-                document.getElementById('detail-video-container').style.display = 'flex';
-                document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${video.videoId}?autoplay=0`;
+            if (reqDeps.length > 0) {
+                const projectIds = reqDeps.map(d => d.project_id);
+                const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
+                const depProjs = await depProjsRes.json();
+                depsContainer.innerHTML = '';
+                depProjs.forEach(dep => {
+                    const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
+                    depsContainer.innerHTML += `
+                        <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; cursor:pointer;" onclick="window.openModDetailsById('${dep.id}')">
+                            <img src="${dep.icon_url || 'https://placehold.co/36'}" style="width: 30px; height: 30px; border-radius: 6px;">
+                            <div style="flex:1;">
+                                <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
+                                <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};">${isDepAdded ? 'Instalado' : 'Requerido'}</div>
+                            </div>
+                        </div>`;
+                });
             } else {
-                document.getElementById('no-video-msg').innerHTML = "No se encontró video.";
+                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem; text-align:center; background: rgba(16,185,129,0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);"><i class="ph-fill ph-check-circle"></i> Independiente.</div>';
             }
-        } catch (e) { document.getElementById('no-video-msg').innerHTML = "Servidor de videos offline."; }
+        } catch (e) { depsContainer.innerHTML = '<div style="color: #f87171; font-size: 0.9rem; text-align:center;">Error al cargar.</div>'; }
+    }, 0);
 
-        // 6. JEI
-        if (typeof window.runAutoScanJEI === 'function') {
-            try { window.runAutoScanJEI(mod.id, mcVers, loader); } catch (e) {}
+    // ==========================================
+    // 4. AISLAMIENTO TOTAL: YOUTUBE (Hilo paralelo con 3 espejos)
+    // ==========================================
+    setTimeout(async () => {
+        const noVidMsg = document.getElementById('no-video-msg');
+        try {
+            // Servidores espejo por si uno se cae
+            const instances = ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://vid.puffyan.us"];
+            let videoInfo = null;
+            const videoQuery = encodeURIComponent(`${mod.title} minecraft mod showcase`);
+
+            for (let instance of instances) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2000); // Máximo 2 segundos por servidor
+                    const ytRes = await fetch(`${instance}/api/v1/search?q=${videoQuery}`, { signal: controller });
+                    clearTimeout(timeoutId);
+                    if (ytRes.ok) {
+                        const ytData = await ytRes.json();
+                        videoInfo = ytData.find(v => v.type === 'video') || ytData[0];
+                        if (videoInfo) break; // Si encontró, detenemos la búsqueda
+                    }
+                } catch(err) { /* Salta al siguiente servidor si falla */ }
+            }
+
+            if (videoInfo && videoInfo.videoId) {
+                if(noVidMsg) noVidMsg.style.display = 'none';
+                document.getElementById('detail-video-container').style.display = 'flex';
+                document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${videoInfo.videoId}?autoplay=0`;
+            } else {
+                if(noVidMsg) noVidMsg.innerHTML = "No se encontró showcase en YT.";
+            }
+        } catch (e) {
+            if(noVidMsg) noVidMsg.innerHTML = "Servidor de videos offline.";
         }
-    } catch (e) { console.error("Error crítico:", e); }
+    }, 0);
+
+    // ==========================================
+    // 5. AISLAMIENTO TOTAL: JEI (Hilo paralelo)
+    // ==========================================
+    setTimeout(() => {
+        if (typeof window.runAutoScanJEI === 'function') {
+            try { window.runAutoScanJEI(mod.id, mcVers, loader); } 
+            catch (e) { console.warn("Fallo JEI", e); }
+        }
+    }, 50);
 };
     
     // ==========================================
