@@ -134,17 +134,36 @@ window.modpackTemplates = [
 // ==========================================
     // 4. INSTALADOR DE MODPACKS COMPARTIDOS (NUEVO DISEÑO FULLSCREEN)
     // ==========================================
-    if (sharedPack) {
+if (sharedPack) {
         try {
             let parsedItems = [];
-            if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
-                parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
+            let packTitle = "Pack Compartido";
+            
+            // Si el código es cortito (menos de 15 letras) y no tiene guiones, es un ID de Supabase
+            if (sharedPack.length < 15 && !sharedPack.includes('-') && !sharedPack.includes('%')) {
+                
+                const { data, error } = await window.supabaseClient
+                    .from('shared_packs')
+                    .select('*')
+                    .eq('id', sharedPack)
+                    .single();
+                    
+                if (error || !data) throw new Error("Pack no encontrado o enlace caducado.");
+                
+                parsedItems = data.mods_data;
+                packTitle = data.name || "Pack Compartido";
+                
             } else {
-                const items = sharedPack.split('-');
-                parsedItems = items.map(item => {
-                    const parts = item.split('_');
-                    return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
-                });
+                // SISTEMA VIEJO (Mantenido por si alguien entra con un link viejo tuyo)
+                if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
+                    parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                } else {
+                    const items = sharedPack.split('-');
+                    parsedItems = items.map(item => {
+                        const parts = item.split('_');
+                        return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
+                    });
+                }
             }
 
             // Inyectamos la Burbuja Flotante
@@ -161,7 +180,7 @@ window.modpackTemplates = [
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px;">
                         <div>
                             <h1 style="margin: 0; font-size: 2.5rem; color: #fff; display: flex; align-items: center; gap: 15px;">
-                                <i class="ph-fill ph-lock-key" style="color: #6366f1;"></i> Pack Compartido
+                                <i class="ph-fill ph-lock-key" style="color: #6366f1;"></i> ${packTitle}
                             </h1>
                             <p style="color: var(--muted); margin: 5px 0 0 0; font-size: 1.1rem;">Vista panorámica. Clic a un mod para ver info detallada. Tienes la burbuja flotante para regresar aquí.</p>
                         </div>
@@ -1520,12 +1539,46 @@ window.checkIsLoggedIn().then(loggedIn => {
             });
         });
 
-        document.querySelectorAll('.btn-share-profile').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const profile = profiles[e.currentTarget.dataset.index];
-                const compactData = profile.modsData.map(m => `${m.id}${m.type !== 'mod' ? '_'+m.type : ''}`).join('-');
-                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?pack=${compactData}`);
-                alert("🔗 ¡Enlace copiado!");
+document.querySelectorAll('.btn-share-profile').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const btnIcon = e.currentTarget.querySelector('i');
+                const originalClass = btnIcon.className;
+                
+                // Animación de carga en el botón
+                btnIcon.className = 'ph ph-spinner ph-spin';
+                e.currentTarget.disabled = true;
+
+                try {
+                    const profile = profiles[e.currentTarget.dataset.index];
+                    
+                    // Generar un ID corto único (ej: 8aF4xP)
+                    const shortId = Math.random().toString(36).substring(2, 8);
+                    
+                    // Subir el Modpack completo a Supabase
+                    const { error } = await window.supabaseClient
+                        .from('shared_packs')
+                        .insert([{ 
+                            id: shortId, 
+                            name: profile.name,
+                            mc_version: profile.mcVersion,
+                            mod_loader: profile.modLoader,
+                            mods_data: profile.modsData 
+                        }]);
+
+                    if (error) throw error;
+
+                    // Crear y copiar el enlace limpio
+                    const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${shortId}`;
+                    await navigator.clipboard.writeText(shareUrl);
+                    alert(`🔗 ¡Enlace corto copiado!\n${shareUrl}`);
+                    
+                } catch (err) {
+                    console.error("Error al compartir:", err);
+                    alert("❌ Hubo un error al generar el enlace de compartir.");
+                } finally {
+                    btnIcon.className = originalClass;
+                    e.currentTarget.disabled = false;
+                }
             });
         });
 
