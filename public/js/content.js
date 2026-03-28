@@ -369,30 +369,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
-   // ==========================================
+  // ==========================================
     // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
     // ==========================================
     window.openModDetailsById = async function(modId) {
+        // 1. ESCUDO DE SEGURIDAD: Si el ID viene vacío o dice "undefined", abortamos antes de que se congele.
+        if (!modId || modId === 'undefined' || modId === 'null') {
+            console.warn("Se intentó abrir un mod sin ID válido.");
+            return;
+        }
+
         const modal = document.getElementById('mod-details-modal');
         if(!modal) return;
         modal.classList.remove('hidden');
 
+        // Estado de carga inicial
         document.getElementById('detail-title').textContent = "Cargando...";
         document.getElementById('detail-author').innerHTML = "";
         document.getElementById('detail-icon').src = "https://placehold.co/80x80/18181b/ffffff?text=M";
         document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ...`;
-        document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Cargando información del mod...</p></div>`;
+        document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Conectando con Modrinth...</p></div>`;
         document.getElementById('detail-gallery').innerHTML = '';
         
         const topActions = document.getElementById('detail-top-actions');
         if (topActions) topActions.innerHTML = '';
 
         try {
+            // 2. FETCH SEGURO
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            if(!res.ok) throw new Error("No se encontró el mod");
-            const mod = await res.json(); // ✅ AQUÍ SE DEFINE 'mod'
+            
+            // Si la API responde con un error 404 (Not Found), lanzamos el error antes de intentar leer el JSON
+            if(!res.ok) {
+                throw new Error("El mod no existe o fue eliminado de Modrinth.");
+            }
+            
+            // Si pasamos la barrera anterior, es seguro leer el JSON
+            const mod = await res.json(); 
 
-            // ✅ AHORA SÍ, COMO YA TENEMOS EL MOD, CARGAMOS EL YOUTUBE SHOWCASE
+            // Cargar el video de YouTube (si existe la función)
             if (typeof loadModShowcase === 'function') {
                 loadModShowcase(mod.title); 
             }
@@ -440,7 +454,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         } catch (e) {
-            document.getElementById('detail-description').innerHTML = `<p style="color:var(--danger); text-align:center;">Error al cargar información del mod de la API.</p>`;
+            console.error("Error capturado al abrir detalles:", e);
+            document.getElementById('detail-description').innerHTML = `<p style="color:var(--danger); text-align:center;"><strong><i class="ph-bold ph-warning"></i> Error al cargar el mod.</strong><br>El enlace podría estar roto o la base de datos de Modrinth está saturada.</p>`;
         }
     };
 
