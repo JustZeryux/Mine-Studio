@@ -2495,5 +2495,59 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
     if (btnLoadMore) btnLoadMore.addEventListener('click', () => { if(!isFetchingMods) { currentOffset += 50; fetchRealMods(true); } });
 
     fetchRealMods(); 
+function renderSharedFullscreenPanel(parsedItems, packTitle) {
+    // Inyectar Burbuja
+    if(!document.getElementById('shared-bubble-toggle')) {
+        const bubbleHtml = `<button id="shared-bubble-toggle" class="shared-bubble"><i class="ph-fill ph-lock-key"></i></button>`;
+        document.body.insertAdjacentHTML('beforeend', bubbleHtml);
+    }
 
+    // Inyectar Panel si no existe
+    if(!document.getElementById('shared-fullscreen-panel')) {
+        const panelHtml = `
+            <div id="shared-fullscreen-panel" class="shared-fullscreen-panel">
+                <div class="panel-header-fs" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:20px; margin-bottom:20px;">
+                    <div>
+                        <h1 style="color:#fff; margin:0; font-size:2rem;">${packTitle}</h1>
+                        <p style="color:var(--muted); margin:5px 0 0 0;">Este modpack fue compartido contigo.</p>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button id="btn-fs-install" class="btn btn-primary">Descargar ZIP</button>
+                        <button id="btn-fs-close" class="btn btn-secondary">Ocultar</button>
+                    </div>
+                </div>
+                <div id="shared-fs-grid" class="shared-grid"></div>
+            </div>`;
+        document.body.insertAdjacentHTML('beforeend', panelHtml);
+    }
+
+    const fsPanel = document.getElementById('shared-fullscreen-panel');
+    const fsGrid = document.getElementById('shared-fs-grid');
+    
+    fsPanel.classList.add('active');
+
+    // Cargar info de Modrinth para cada mod del pack
+    const ids = parsedItems.map(m => `"${m.id}"`).join(',');
+    fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
+        .then(r => r.json())
+        .then(data => {
+            fsGrid.innerHTML = '';
+            data.forEach(proj => {
+                fsGrid.innerHTML += `
+                    <div class="glass-panel" onclick="document.getElementById('shared-fullscreen-panel').classList.remove('active'); window.openModDetailsById('${proj.id}')" style="cursor:pointer; padding:20px; text-align:center;">
+                        <img src="${proj.icon_url || ''}" style="width:64px; border-radius:10px;">
+                        <h4 style="color:#fff; margin-top:10px;">${proj.title}</h4>
+                    </div>`;
+            });
+        });
+
+    // Eventos de botones
+    document.getElementById('shared-bubble-toggle').onclick = () => fsPanel.classList.add('active');
+    document.getElementById('btn-fs-close').onclick = () => fsPanel.classList.remove('active');
+    document.getElementById('btn-fs-install').onclick = async () => {
+        window.modpackCart = parsedItems;
+        window.updateCartUI();
+        await window.requestBuild('download_only');
+    };
+}
 });
