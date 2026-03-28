@@ -1130,8 +1130,11 @@ function renderRealMods(mods) {
         
         const grid = document.getElementById('profiles-grid');
         if(!grid) return;
-        if(!isLoggedIn) { grid.innerHTML = `<div style="text-align: center; padding: 40px;"><i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i><p style="margin-top: 10px;">Inicia sesión para guardar tus modpacks aquí.</p></div>`; return; }
-
+window.checkIsLoggedIn().then(loggedIn => {
+    if(!loggedIn) { 
+        grid.innerHTML = `<div style="text-align: center; padding: 40px;"><i class="ph-bold ph-lock-key" style="font-size: 40px; color: var(--muted);"></i><p style="margin-top: 10px;">Inicia sesión para guardar tus modpacks aquí.</p></div>`; 
+        return; 
+    }
         const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
         if (profiles.length === 0) { grid.innerHTML = '<div style="text-align:center; padding:40px;"><p>Aún no has guardado ningún Modpack.</p></div>'; return; }
 
