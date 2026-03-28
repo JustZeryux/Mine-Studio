@@ -1514,6 +1514,162 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+
+    // ============================================================
+    // 19. SISTEMA DE COMUNIDAD (SUPABASE)
+    // ============================================================
+    
+    const viewCommunity = document.getElementById('view-community');
+    const communityGrid = document.getElementById('community-grid');
+    const commModal = document.getElementById('community-modal');
+    let currentCommunityPack = null;
+
+    // Registrar la vista
+    views['community'] = viewCommunity;
+
+    window.loadCommunityGallery = async function() {
+        if(!communityGrid) return;
+        communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Conectando con Supabase...</p></div>';
+        
+        try {
+            // Llamada real a tu base de datos Supabase
+            // Reemplaza 'window.supabaseClient' por la variable que uses para supabase
+            const { data: publicPacks, error } = await window.supabaseClient
+                .from('modpacks')
+                .select('*')
+                .eq('is_public', true)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!publicPacks || publicPacks.length === 0) {
+                communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><p>No hay modpacks públicos todavía. ¡Sé el primero en compartir el tuyo!</p></div>';
+                return;
+            }
+
+            communityGrid.innerHTML = '';
+            
+            publicPacks.forEach(pack => {
+                const modsCount = pack.mods_data ? pack.mods_data.length : 0;
+                
+                communityGrid.innerHTML += `
+                    <div class="profile-card panel" style="border: 1px solid var(--border-color); background: var(--bg-panel); padding: 20px;">
+                        <h3 style="margin-top: 0; font-size: 1.3rem;">${pack.name}</h3>
+                        <p class="muted-text text-sm mb-10">Por: <strong style="color: white;">${pack.author}</strong></p>
+                        
+                        <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <span class="p-badge" style="background: rgba(16,185,129,0.1); color: var(--success);"><i class="ph-bold ph-game-controller"></i> ${pack.mc_version}</span>
+                            <span class="p-badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;"><i class="ph-bold ph-hammer"></i> ${pack.mod_loader}</span>
+                            <span class="p-badge" style="background: rgba(255,255,255,0.1); color: white;"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} Mods</span>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                            <span style="font-size: 0.9rem; color: #fbbf24;"><i class="ph-fill ph-star"></i> ${pack.likes} | <i class="ph-bold ph-download-simple" style="color:var(--accent);"></i> ${pack.downloads}</span>
+                            <button class="btn btn-primary btn-open-comm-pack" data-pack='${JSON.stringify(pack)}' style="padding: 6px 15px; font-size: 0.85rem;">Detalles</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Listeners para abrir el modal
+            document.querySelectorAll('.btn-open-comm-pack').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const pack = JSON.parse(e.target.dataset.pack);
+                    currentCommunityPack = pack;
+                    
+                    document.getElementById('comm-modal-title').textContent = pack.name;
+                    document.getElementById('comm-modal-stats').innerHTML = `${pack.mc_version} | ${pack.mod_loader} | ${pack.mods_data.length} Mods`;
+                    
+                    commModal.classList.remove('hidden');
+                    loadCommentsForPack(pack.id);
+                });
+            });
+
+        } catch (error) {
+            console.error("Error cargando comunidad:", error);
+            communityGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error al conectar con la comunidad.</div>';
+        }
+    };
+
+    // Botón de instalación
+    document.getElementById('btn-comm-download')?.addEventListener('click', async () => {
+        if(!currentCommunityPack) return;
+        if(confirm(`¿Quieres cargar "${currentCommunityPack.name}" en tu carrito? (Esto reemplazará tus mods actuales)`)){
+            window.modpackCart = currentCommunityPack.mods_data;
+            document.getElementById('mod-version-select').value = currentCommunityPack.mc_version;
+            document.getElementById('mod-loader-select').value = currentCommunityPack.mod_loader;
+            window.updateCartUI();
+            
+            // Actualizar contador de descargas en Supabase
+            await window.supabaseClient.rpc('increment_downloads', { row_id: currentCommunityPack.id });
+            
+            commModal.classList.add('hidden');
+            document.querySelector('.nav-btn[data-target="mods"]').click();
+            alert("¡Modpack cargado en el Ensamblador!");
+        }
+    });
+
+    // Función para obtener comentarios de Supabase
+    async function loadCommentsForPack(packId) {
+        const commList = document.getElementById('comm-list');
+        commList.innerHTML = '<div style="text-align:center;"><i class="ph ph-spinner ph-spin"></i> Cargando reseñas...</div>';
+        
+        const { data: comments, error } = await window.supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('modpack_id', packId)
+            .order('created_at', { ascending: false });
+
+        if (error || !comments || comments.length === 0) {
+            commList.innerHTML = '<p class="muted-text text-sm" style="text-align:center;">No hay reseñas aún. Sé el primero.</p>';
+            return;
+        }
+
+        commList.innerHTML = '';
+        comments.forEach(c => {
+            const stars = '⭐'.repeat(c.rating);
+            commList.innerHTML += `
+                <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <strong style="color:var(--accent); font-size:0.9rem;">${c.author}</strong>
+                        <span style="color:#fbbf24; font-size:0.8rem;">${stars}</span>
+                    </div>
+                    <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">${c.text}</p>
+                </div>
+            `;
+        });
+    }
+
+    // Enviar comentario a Supabase
+    document.getElementById('btn-comm-submit')?.addEventListener('click', async () => {
+        const text = document.getElementById('comm-text').value;
+        const rating = document.getElementById('comm-rating').value;
+        const btnSubmit = document.getElementById('btn-comm-submit');
+        
+        if(text.trim() === '') return alert("Escribe un comentario.");
+        
+        btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando...';
+        btnSubmit.disabled = true;
+
+        const authorName = localStorage.getItem('minepack_username') || document.getElementById('header-username').textContent || 'Anónimo';
+
+        const { error } = await window.supabaseClient
+            .from('comments')
+            .insert([{ modpack_id: currentCommunityPack.id, text, rating: parseInt(rating), author: authorName }]);
+
+        btnSubmit.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> Enviar Reseña';
+        btnSubmit.disabled = false;
+
+        if (error) {
+            alert("Error al enviar reseña.");
+        } else {
+            document.getElementById('comm-text').value = '';
+            loadCommentsForPack(currentCommunityPack.id); // Recargar la lista
+        }
+    });
+
+    document.querySelector('.nav-btn[data-target="community"]')?.addEventListener('click', () => window.loadCommunityGallery());
+    document.getElementById('btn-close-community-modal')?.addEventListener('click', () => commModal.classList.add('hidden'));
     
 
     // ==========================================
