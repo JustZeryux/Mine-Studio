@@ -555,7 +555,7 @@ window.modpackTemplates = [
     const lightboxImg = document.getElementById('lightbox-img');
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
-    function renderRealMods(mods) {
+function renderRealMods(mods) {
         mods.forEach(mod => {
             const card = document.createElement('div'); card.className = 'mod-card';
             const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
@@ -638,51 +638,22 @@ window.modpackTemplates = [
                 this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
             });
 
-card.addEventListener('click', (e) => {
-                // Evitar que el clic en los botones abra la tarjeta
+            card.addEventListener('click', (e) => {
                 if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar')) return; 
                 
-                // ESCUDO 3: Extraer el ID seguro, sea cual sea el formato que mande Modrinth
                 const safeId = mod.project_id || mod.id || mod.slug;
                 
-if (safeId) {
+                if (safeId) {
                     window.openModDetailsById(safeId);
                     if (typeof runAutoScanJEI === 'function') {
                         runAutoScanJEI(safeId, versionSelect.value, loaderSelect.value);
                     }
                 }
-            }); // Esto cierra el evento de clic de la carta
+            });
 
-            // ¡AGREGA ESTO! Es vital para que las cartas se vean en pantalla
             if(modsGrid) modsGrid.appendChild(card);
             
-        }); // <--- ¡ESTE ES EL CIERRE QUE FALTABA PARA EL mods.forEach!
-    }
-
-    function showEpicDepsModal(mainMod, missingDeps, triggerButton) {
-        const modal = document.getElementById('epic-deps-modal');
-        document.getElementById('epic-mod-name').textContent = mainMod.title;
-        const list = document.getElementById('epic-deps-list'); list.innerHTML = '';
-        
-        missingDeps.forEach((p, index) => {
-            let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
-            list.innerHTML += `
-            <div class="tilt-wrapper" style="margin-bottom: 10px;">
-                <div class="tilt-card ${animClass}" style="background: var(--bg-main);">
-                    <img src="${p.icon_url || 'https://via.placeholder.com/40'}" alt="icon">
-                    <div class="dep-info" style="text-align: left;"><h4>${p.title}</h4><span>Componente central</span></div>
-                </div>
-            </div>`;
-        });
-
-        document.getElementById('btn-epic-add-all').onclick = () => {
-            if (!window.modpackCart.some(item => item.id === mainMod.id)) window.modpackCart.push({ id: mainMod.id, title: mainMod.title, type: mainMod.type || 'mod', icon: mainMod.iconUrl, banner: mainMod.bannerUrl, categories: mainMod.categories });
-            missingDeps.forEach(dep => { if (!window.modpackCart.some(item => item.id === dep.id)) window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: dep.icon_url, categories: ['library'] }); });
-            window.updateCartUI();
-            if(triggerButton) { triggerButton.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; triggerButton.style.background = 'var(--success)'; triggerButton.disabled = true; }
-            modal.classList.add('hidden');
-        };
-        modal.classList.remove('hidden');
+        }); 
     }
 
     // ==========================================
