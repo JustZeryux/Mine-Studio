@@ -2203,36 +2203,178 @@ window.checkIsLoggedIn().then(loggedIn => {
         });
     }
 
+  // ==========================================
+    // RESTAURACIÓN: MOTOR DINÁMICO DE PLANTILLAS Y MINI-PANEL
     // ==========================================
-    // ACTIVAR BOTONES DE PLANTILLAS INICIALES Y URL DIRECTA
-    // ==========================================
-    const applyQuickTemplate = async (templateName) => {
-        const template = window.modpackTemplates.find(t => t.name.includes(templateName));
-        if(!template) return;
+
+    // 1. Inyectar el Mini-Panel al HTML (Solo si no existe)
+    if (!document.getElementById('custom-prompt-modal')) {
+        const modalHtml = `
+        <div id="custom-prompt-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+            <div class="glass-panel fade-in-up" style="padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+                <h3 id="cpm-title" style="margin-top: 0; color: #fff; font-size: 1.3rem; margin-bottom: 10px;"></h3>
+                <p id="cpm-desc" style="color: var(--muted); font-size: 0.95rem; margin-bottom: 20px;"></p>
+                <input type="number" id="cpm-input" value="100" min="20" max="300" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #10b981; font-weight: bold; font-size: 1.2rem; text-align: center; margin-bottom: 20px; outline: none;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="cpm-cancel" class="btn btn-secondary hover-scale" style="flex: 1; padding: 10px;">Cancelar</button>
+                    <button id="cpm-confirm" class="btn btn-primary hover-scale" style="flex: 1; padding: 10px; background: var(--accent); color: white; border: none;">Ensamblar</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 2. Función Promesa para pausar el código hasta que el usuario decida
+    function askForModCount(title, desc) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-prompt-modal');
+            const input = document.getElementById('cpm-input');
+            document.getElementById('cpm-title').textContent = title;
+            document.getElementById('cpm-desc').textContent = desc;
+            modal.classList.remove('hidden');
+            
+            const btnConfirm = document.getElementById('cpm-confirm');
+            const btnCancel = document.getElementById('cpm-cancel');
+            
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                // Clonar botones para limpiar EventListeners viejos
+                btnConfirm.replaceWith(btnConfirm.cloneNode(true));
+                btnCancel.replaceWith(btnCancel.cloneNode(true));
+            };
+
+            document.getElementById('cpm-confirm').addEventListener('click', () => {
+                cleanup(); resolve(parseInt(input.value));
+            });
+            document.getElementById('cpm-cancel').addEventListener('click', () => {
+                cleanup(); resolve(null);
+            });
+        });
+    }
+
+    // 3. Tu función original Restaurada y Mejorada
+    async function applyDynamicTemplate(btnElement, templateName, theme) {
+        let targetSize = await askForModCount(
+            `Pack: ${templateName}`, 
+            `¿Cuántos mods base quieres? (Entre 20 y 300). Las librerías requeridas se descargarán automáticamente solas.`
+        );
         
-        document.getElementById('mod-version-select').value = template.mcVersion;
-        document.getElementById('mod-loader-select').value = template.modLoader;
-        window.modpackCart = [];
+        if (!targetSize || isNaN(targetSize)) return;
+        targetSize = Math.max(20, Math.min(300, targetSize));
+
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+        btnElement.disabled = true;
+
+        window.modpackCart = []; 
         window.updateCartUI();
-        
-        for(let modSlug of template.modsData) {
-            try {
-                const res = await fetch(`https://api.modrinth.com/v2/project/${modSlug}`);
-                if(res.ok) {
-                    const mod = await res.json();
-                    window.modpackCart.push({ id: mod.id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: mod.icon_url, categories: mod.display_categories });
-                }
-            } catch(e){}
+
+        const mcVers = document.getElementById('mod-version-select')?.value || "1.20.1";
+        const loader = document.getElementById('mod-loader-select')?.value || "forge";
+
+        const aiTerminal = document.getElementById('ai-terminal'); 
+        if(aiTerminal) { 
+            aiTerminal.style.display = 'block'; 
+            aiTerminal.innerHTML = `> Escaneando Modrinth para ${targetSize} mods de ${templateName}...<br>`; 
         }
-        window.updateCartUI();
-        alert(`Plantilla "${templateName}" cargada con éxito en el Ensamblador.`);
-    };
 
-    if(btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyQuickTemplate('RPG Adventurer PRO'));
-    if(btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyQuickTemplate('Tech Master PRO'));
-    if(btnFpsBoost) btnFpsBoost.addEventListener('click', () => applyQuickTemplate('Optimization'));
+        const themeCategories = {
+            'rpg': ['adventure', 'magic', 'worldgen', 'equipment'],
+            'tech': ['technology', 'storage', 'energy', 'automation'],
+            'fps': ['optimization']
+        };
+        const categories = themeCategories[theme] || ['adventure', 'technology'];
 
-    // CARGAR MOD DIRECTO DESDE LA URL (Si el usuario entró con un link)
+        let fetchedMods = [];
+        let offset = 0;
+
+        try {
+            // Fase 1: Descargar
+            while (fetchedMods.length < targetSize && offset < 1000) {
+                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                let facets = [[`versions:${mcVers}`], [`categories:${loader}`], ["project_type:mod"]];
+                facets.push([`categories:${randomCategory}`]);
+
+                const res = await fetch(`https://api.modrinth.com/v2/search?limit=100&offset=${offset}&index=relevance&facets=${encodeURIComponent(JSON.stringify(facets))}`);
+                const data = await res.json();
+                
+                if (!data.hits || data.hits.length === 0) break;
+
+                const newMods = data.hits.filter(mod => !fetchedMods.some(m => m.project_id === mod.project_id));
+                fetchedMods = fetchedMods.concat(newMods);
+                offset += 100;
+                
+                if(aiTerminal) { aiTerminal.innerHTML += `> Encontrados ${fetchedMods.length}/${targetSize} mods...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
+            }
+
+            fetchedMods = fetchedMods.sort(() => 0.5 - Math.random()).slice(0, targetSize);
+
+            // Fase 2: Aplicar al UI
+            if(aiTerminal) { aiTerminal.innerHTML += `> Analizando librerías en segundo plano...<br>`; }
+            
+            fetchedMods.forEach(mod => {
+                window.modpackCart.push({ 
+                    id: mod.project_id, title: mod.title, type: 'mod', 
+                    icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
+                    categories: mod.display_categories
+                });
+            });
+
+            window.updateCartUI();
+            
+            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡Pack Listo!`;
+            btnElement.style.background = 'var(--success)';
+            btnElement.style.color = 'white';
+            
+            if(aiTerminal) aiTerminal.innerHTML += `> ¡Éxito! Plantilla inyectada.<br>`;
+
+            setTimeout(() => { 
+                btnElement.innerHTML = originalHtml; 
+                btnElement.style = ''; 
+                btnElement.disabled = false; 
+                if(aiTerminal) aiTerminal.style.display='none'; 
+            }, 5000);
+
+            // Fase 3 Silenciosa: Descargar dependencias
+            fetchedMods.forEach(async (mod) => {
+                try {
+                    const vRes = await fetch(`https://api.modrinth.com/v2/project/${mod.project_id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                    const vData = await vRes.json();
+                    if(vData.length > 0 && vData[0].dependencies) {
+                        const reqDeps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+                        for (let d of reqDeps) {
+                            if (!window.modpackCart.some(item => item.id === d.project_id)) {
+                                const pRes = await fetch(`https://api.modrinth.com/v2/project/${d.project_id}`);
+                                const pData = await pRes.json();
+                                window.modpackCart.push({
+                                    id: pData.id, title: pData.title, type: 'library',
+                                    icon: pData.icon_url, banner: pData.icon_url, categories: ['library']
+                                });
+                                window.updateCartUI();
+                            }
+                        }
+                    }
+                } catch(e) {}
+            });
+
+        } catch(e) { 
+            alert(`Error de conexión con la API.`); 
+            btnElement.innerHTML = originalHtml;
+            btnElement.style = '';
+            btnElement.disabled = false;
+        }
+    }
+
+    // 4. Conectar los botones del HTML al motor
+    const btnRpg = document.getElementById('btn-template-rpg');
+    const btnTech = document.getElementById('btn-template-tech');
+    const btnFps = document.getElementById('btn-fps-boost');
+    
+    if(btnRpg) btnRpg.addEventListener('click', function() { applyDynamicTemplate(this, 'RPG', 'rpg'); });
+    if(btnTech) btnTech.addEventListener('click', function() { applyDynamicTemplate(this, 'Tecnología', 'tech'); });
+    if(btnFps) btnFps.addEventListener('click', function() { applyDynamicTemplate(this, 'Optimización', 'fps'); });
+
+    // 5. Inicializador directo si entraron con URL (?mod=...)
     if (initialMod) {
         setTimeout(() => window.openModDetailsById(initialMod), 500);
     }
