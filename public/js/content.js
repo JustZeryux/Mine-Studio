@@ -369,13 +369,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
-  // ==========================================
+ // ==========================================
     // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
     // ==========================================
     window.openModDetailsById = async function(modId) {
-        // 1. ESCUDO DE SEGURIDAD: Si el ID viene vacío o dice "undefined", abortamos antes de que se congele.
+        // ESCUDO 1: Si el ID viene vacío, cancelamos silenciosamente
         if (!modId || modId === 'undefined' || modId === 'null') {
-            console.warn("Se intentó abrir un mod sin ID válido.");
+            console.error("No se puede abrir el mod: El ID está vacío.");
             return;
         }
 
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(!modal) return;
         modal.classList.remove('hidden');
 
-        // Estado de carga inicial
+        // Reset visual mientras carga
         document.getElementById('detail-title').textContent = "Cargando...";
         document.getElementById('detail-author').innerHTML = "";
         document.getElementById('detail-icon').src = "https://placehold.co/80x80/18181b/ffffff?text=M";
@@ -395,20 +395,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (topActions) topActions.innerHTML = '';
 
         try {
-            // 2. FETCH SEGURO
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
             
-            // Si la API responde con un error 404 (Not Found), lanzamos el error antes de intentar leer el JSON
+            // ESCUDO 2: Si la API dice "Not Found" o cualquier otro error, paramos aquí
             if(!res.ok) {
-                throw new Error("El mod no existe o fue eliminado de Modrinth.");
+                document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 30px; color: var(--danger);"><i class="ph-bold ph-warning-circle" style="font-size: 40px;"></i><p>Error 404: No se pudo obtener la información de este mod.</p></div>`;
+                return; // Evita que llegue al res.json() y explote
             }
             
-            // Si pasamos la barrera anterior, es seguro leer el JSON
-            const mod = await res.json(); 
+            const mod = await res.json();
 
-            // Cargar el video de YouTube (si existe la función)
+            // Cargar Video YouTube si la función existe
             if (typeof loadModShowcase === 'function') {
-                loadModShowcase(mod.title); 
+                try { loadModShowcase(mod.title); } catch(e) {}
             }
 
             document.getElementById('detail-title').textContent = mod.title;
@@ -454,8 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         } catch (e) {
-            console.error("Error capturado al abrir detalles:", e);
-            document.getElementById('detail-description').innerHTML = `<p style="color:var(--danger); text-align:center;"><strong><i class="ph-bold ph-warning"></i> Error al cargar el mod.</strong><br>El enlace podría estar roto o la base de datos de Modrinth está saturada.</p>`;
+            console.error("Fallo general en openModDetailsById:", e);
         }
     };
 
@@ -640,14 +638,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
             });
 
-            card.addEventListener('click', (e) => {
-                if(e.target.closest('.btn-add-mod')) return; 
-                window.openModDetailsById(mod.project_id);
-                runAutoScanJEI(mod.project_id, versionSelect.value, loaderSelect.value);
+card.addEventListener('click', (e) => {
+                // Evitar que el clic en los botones abra la tarjeta
+                if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar')) return; 
+                
+                // ESCUDO 3: Extraer el ID seguro, sea cual sea el formato que mande Modrinth
+                const safeId = mod.project_id || mod.id || mod.slug;
+                
+                if (safeId) {
+                    window.openModDetailsById(safeId);
+                    if (typeof runAutoScanJEI === 'function') {
+                        runAutoScanJEI(safeId, versionSelect.value, loaderSelect.value);
+                    }
+                }
             });
-
-            modsGrid.appendChild(card);
-        });
     }
 
     function showEpicDepsModal(mainMod, missingDeps, triggerButton) {
