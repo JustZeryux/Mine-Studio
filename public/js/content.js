@@ -375,93 +375,192 @@ window.requestBuild = async function(action = 'download_only') {
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
- // ==========================================
-    // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
+// ==========================================
+    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE CON URL)
     // ==========================================
-    window.openModDetailsById = async function(modId) {
-        // ESCUDO 1: Si el ID viene vacío, cancelamos silenciosamente
-        if (!modId || modId === 'undefined' || modId === 'null') {
-            console.error("No se puede abrir el mod: El ID está vacío.");
-            return;
+    
+    // Configurar el botón de retroceso del navegador
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.mod) {
+            window.openModDetailsById(e.state.mod, true);
+        } else {
+            document.getElementById('view-mod-details-page')?.classList.add('hidden');
+            document.getElementById('view-mods')?.classList.remove('hidden');
+        }
+    });
+
+    window.openModDetailsById = async function(modId, isPopState = false) {
+        if (!modId || modId === 'undefined' || modId === 'null') return;
+
+        // 1. Cambiar la URL sin recargar la página (Magia pura)
+        if (!isPopState) {
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('mod', modId);
+            window.history.pushState({ mod: modId }, '', newUrl);
         }
 
-        const modal = document.getElementById('mod-details-modal');
-        if(!modal) return;
-        modal.classList.remove('hidden');
-
-        // Reset visual mientras carga
-        document.getElementById('detail-title').textContent = "Cargando...";
-        document.getElementById('detail-author').innerHTML = "";
-        document.getElementById('detail-icon').src = "https://placehold.co/80x80/18181b/ffffff?text=M";
-        document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ...`;
-        document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px;"></i><p>Conectando con Modrinth...</p></div>`;
-        document.getElementById('detail-gallery').innerHTML = '';
+        // 2. Ocultar la lista de mods y crear/mostrar la vista completa
+        document.getElementById('view-mods').classList.add('hidden');
         
-        const topActions = document.getElementById('detail-top-actions');
-        if (topActions) topActions.innerHTML = '';
+        let detailsPage = document.getElementById('view-mod-details-page');
+        if (!detailsPage) {
+            detailsPage = document.createElement('div');
+            detailsPage.id = 'view-mod-details-page';
+            detailsPage.className = 'panel';
+            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: 100%; position: relative; display: flex; flex-direction: column; background: var(--bg-main); border-radius: var(--radius-lg); border: 1px solid var(--border-color);';
+            document.getElementById('dynamic-center-area').appendChild(detailsPage);
+        }
+        detailsPage.classList.remove('hidden');
+
+        // Layout estilo CurseForge (Banner gigante, Icono sobrepuesto, Columnas)
+        detailsPage.innerHTML = `
+            <div style="position: sticky; top: 0; z-index: 50; background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(10px); padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px;">
+                <button id="btn-back-to-mods" class="btn btn-secondary" style="padding: 8px 15px;"><i class="ph-bold ph-arrow-left"></i> Volver al Buscador</button>
+                <h2 id="cf-title" style="margin: 0; font-size: 1.2rem;">Cargando...</h2>
+            </div>
+            
+            <div id="cf-banner" style="height: 250px; background: #27272a; background-size: cover; background-position: center; position: relative;">
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main), transparent);"></div>
+            </div>
+            
+            <div style="padding: 0 40px 40px 40px; display: flex; gap: 30px; margin-top: -60px; position: relative; z-index: 10;">
+                
+                <div style="flex: 1;">
+                    <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px;">
+                        <img id="cf-icon" src="https://placehold.co/120x120/18181b/ffffff?text=M" style="width: 120px; height: 120px; border-radius: 20px; border: 4px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+                        <div style="padding-bottom: 10px;">
+                            <h1 id="cf-title-main" style="margin: 0 0 5px 0; font-size: 2rem;">Cargando...</h1>
+                            <span id="cf-author" style="color: var(--accent); font-weight: bold;"></span>
+                        </div>
+                        <div style="margin-left: auto; padding-bottom: 10px;" id="cf-actions"></div>
+                    </div>
+                    
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px;">
+                        <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><i class="ph-bold ph-file-text"></i> Descripción</h3>
+                        <div id="cf-description" class="markdown-body" style="font-size: 0.95rem; line-height: 1.6; color: #d4d4d8;">
+                            <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="width: 300px; display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+                        <h4 style="margin-top: 0; color: #a1a1aa;"><i class="ph-bold ph-info"></i> Información</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Descargas</span> <strong id="cf-downloads">...</strong></div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Lanzamiento</span> <strong id="cf-published">...</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Licencia</span> <strong id="cf-license">...</strong></div>
+                    </div>
+
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+                        <h4 style="margin-top: 0; color: #a1a1aa; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><i class="ph-bold ph-books"></i> Librerías Requeridas</h4>
+                        <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('btn-back-to-mods').addEventListener('click', () => {
+            window.history.pushState({}, '', window.location.pathname); // Limpiar URL
+            detailsPage.classList.add('hidden');
+            document.getElementById('view-mods').classList.remove('hidden');
+        });
 
         try {
+            // 3. Obtener Datos del Proyecto
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            
-            // ESCUDO 2: Si la API dice "Not Found" o cualquier otro error, paramos aquí
-            if(!res.ok) {
-                document.getElementById('detail-description').innerHTML = `<div style="text-align:center; padding: 30px; color: var(--danger);"><i class="ph-bold ph-warning-circle" style="font-size: 40px;"></i><p>Error 404: No se pudo obtener la información de este mod.</p></div>`;
-                return; // Evita que llegue al res.json() y explote
-            }
-            
+            if(!res.ok) { document.getElementById('cf-description').innerHTML = "Error 404: No encontrado."; return; }
             const mod = await res.json();
 
-            // Cargar Video YouTube si la función existe
-            if (typeof loadModShowcase === 'function') {
-                try { loadModShowcase(mod.title); } catch(e) {}
-            }
+            const iconUrl = mod.icon_url || 'https://placehold.co/120x120/18181b/ffffff?text=M';
+            const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0].url : iconUrl;
 
-            document.getElementById('detail-title').textContent = mod.title;
-            const author = mod.team || mod.client_side || 'Desarrollador';
-            document.getElementById('detail-author').innerHTML = `por ${author}`;
-            const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
-            document.getElementById('detail-icon').src = iconUrl;
-            document.getElementById('detail-downloads-badge').innerHTML = `<i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('es-MX').format(mod.downloads || 0)}`;
+            document.getElementById('cf-title').textContent = mod.title;
+            document.getElementById('cf-title-main').textContent = mod.title;
+            document.getElementById('cf-author').innerHTML = `Por <i class="ph-fill ph-user"></i> ${mod.team || 'Desarrollador'}`;
+            document.getElementById('cf-icon').src = iconUrl;
+            document.getElementById('cf-banner').style.backgroundImage = `url('${bannerUrl}')`;
+            
+            document.getElementById('cf-downloads').textContent = new Intl.NumberFormat('es-MX').format(mod.downloads || 0);
+            document.getElementById('cf-published').textContent = new Date(mod.published).toLocaleDateString('es-MX');
+            document.getElementById('cf-license').textContent = mod.license?.name || "Desconocida";
 
-            document.getElementById('detail-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
+            document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
 
-            const gallery = document.getElementById('detail-gallery');
-            if(mod.gallery && mod.gallery.length > 0) {
-                mod.gallery.forEach(img => {
-                    const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.style.cursor = 'zoom-in';
-                    imgEl.onclick = () => {
-                        const lightbox = document.getElementById('image-lightbox');
-                        document.getElementById('lightbox-img').src = img.url;
-                        lightbox.classList.remove('hidden');
-                        lightbox.style.zIndex = "10030"; 
-                    };
-                    gallery.appendChild(imgEl);
-                });
-            }
+            // Renderizar Botón de Añadir Principal
+            const isAdded = window.modpackCart.some(item => item.id === mod.id);
+            const actionsDiv = document.getElementById('cf-actions');
+            actionsDiv.innerHTML = `
+                <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 12px 25px; font-size: 1.1rem; border-radius: 8px; ${isAdded ? 'background: var(--success); color: white;' : 'background: linear-gradient(135deg, var(--accent), #4f46e5); border: none;'}">
+                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Instalado' : 'Instalar'}
+                </button>
+            `;
+            
+            actionsDiv.querySelector('.btn-add-cf').addEventListener('click', function() {
+                if (!window.modpackCart.some(item => item.id === mod.id)) {
+                    let fType = mod.project_type || 'mod';
+                    if(mod.categories && mod.categories.includes('library')) fType = 'library';
+                    window.modpackCart.push({ id: mod.id, title: mod.title, type: fType, icon: iconUrl, banner: bannerUrl, categories: mod.categories });
+                    window.updateCartUI();
+                    this.innerHTML = '<i class="ph-bold ph-check"></i> Instalado';
+                    this.style.background = 'var(--success)';
+                    this.disabled = true;
+                }
+            });
 
-            const isAlreadyInCart = window.modpackCart.some(item => item.id === mod.id);
-            if (topActions) {
-                topActions.innerHTML = `
-                    <button class="btn btn-primary btn-add-top" ${isAlreadyInCart ? 'disabled' : ''} style="padding: 10px 20px; font-size: 0.9rem; ${isAlreadyInCart ? 'background: var(--success); color: white;' : ''}">
-                        <i class="ph-bold ${isAlreadyInCart ? 'ph-check' : 'ph-plus'}"></i> ${isAlreadyInCart ? 'Añadido' : 'Añadir'}
-                    </button>
-                `;
-                topActions.querySelector('.btn-add-top').addEventListener('click', function() {
-                    if (!window.modpackCart.some(item => item.id === mod.id)) {
-                        let fType = mod.project_type || 'mod';
-                        if(mod.categories && mod.categories.includes('library')) fType = 'library';
-                        window.modpackCart.push({ id: mod.id, title: mod.title, type: fType, icon: iconUrl, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0].url : iconUrl, categories: mod.categories });
-                        window.updateCartUI();
-                        this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido';
-                        this.style.background = 'var(--success)';
-                        this.disabled = true;
+            // 4. Buscar Dependencias Automáticamente
+            const depsContainer = document.getElementById('cf-dependencies');
+            try {
+                const mcVers = document.getElementById('mod-version-select').value;
+                const loader = document.getElementById('mod-loader-select').value;
+                const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                const versData = await versRes.json();
+                
+                if (versData.length > 0 && versData[0].dependencies.length > 0) {
+                    const reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+                    if (reqDeps.length > 0) {
+                        const projectIds = reqDeps.map(d => d.project_id);
+                        const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
+                        const depProjs = await depProjsRes.json();
+                        
+                        depsContainer.innerHTML = '';
+                        depProjs.forEach(dep => {
+                            const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
+                            depsContainer.innerHTML += `
+                                <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" onclick="window.openModDetailsById('${dep.id}')">
+                                    <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 32px; height: 32px; border-radius: 6px;">
+                                    <div style="flex:1;">
+                                        <div style="font-size: 0.85rem; font-weight: bold; color: #fff;">${dep.title}</div>
+                                        <div style="font-size: 0.7rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};">${isDepAdded ? 'Instalada' : 'Falta Instalar'}</div>
+                                    </div>
+                                    <i class="ph-bold ph-caret-right" style="color: var(--muted);"></i>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem;"><i class="ph-fill ph-check-circle"></i> No requiere librerías extra.</div>';
                     }
-                });
+                } else {
+                    depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem;"><i class="ph-fill ph-check-circle"></i> No requiere librerías extra.</div>';
+                }
+            } catch (e) {
+                depsContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.85rem;">Error al cargar librerías.</div>';
             }
+
         } catch (e) {
             console.error("Fallo general en openModDetailsById:", e);
         }
     };
+
+    // Auto-Cargar mod si la URL tiene el parámetro ?mod=id
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const modIdToOpen = urlParams.get('mod');
+        if (modIdToOpen) {
+            setTimeout(() => window.openModDetailsById(modIdToOpen), 500); // Pequeño retraso para que cargue la UI base
+        }
+    });
 
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
@@ -836,10 +935,12 @@ function renderRealMods(mods) {
                 const icon = item.icon || 'https://placehold.co/48x48/18181b/ffffff?text=M';
                 const banner = item.banner || item.icon || '';
 
+// (Dentro de window.updateCartUI)
                 const li = document.createElement('li');
                 li.className = 'cart-item';
                 li.innerHTML = `
                     <button class="btn-config-cart" data-id="${item.id}" data-title="${item.title}" title="Configurar .json/.toml"><i class="ph-bold ph-gear"></i></button>
+                    <button class="btn-info-cart" data-id="${item.id}" title="Ver Detalles"><i class="ph-bold ph-info"></i></button>
                     <button class="btn-remove-cart" data-index="${index}" title="Eliminar de mi Pack"><i class="ph-bold ph-trash"></i></button>
                     <div class="cart-item-banner" style="background-image: url('${banner}');"></div>
                     <img src="${icon}" class="cart-item-avatar">
@@ -851,6 +952,12 @@ function renderRealMods(mods) {
             document.querySelectorAll('.btn-remove-cart').forEach(btn => {
                 btn.addEventListener('click', function() {
                     window.modpackCart.splice(this.dataset.index, 1); window.updateCartUI(); fetchRealMods(false);
+                });
+            });
+            // (Agrega esto justo debajo de los listeners de .btn-remove-cart)
+            document.querySelectorAll('.btn-info-cart').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    window.openModDetailsById(this.dataset.id);
                 });
             });
 
@@ -876,22 +983,17 @@ function renderRealMods(mods) {
     // 11. MOTOR DE PLANTILLAS DINÁMICO (50 a 300 Mods) Y RULETA
     // ============================================================
 
-    // Nueva función: Genera plantillas dinámicas conectándose a Modrinth en tiempo real
-    async function applyDynamicTemplate(btnElement, templateName, theme) {
-        // Pedir al usuario el tamaño exacto (de 50 a 300)
-        let targetSize = prompt(`¿Cuántos mods quieres para tu pack de ${templateName}? (Elige un número entre 50 y 300)`, "150");
-        
-        // Validar que sea un número válido
+ async function applyDynamicTemplate(btnElement, templateName, theme) {
+        let targetSize = prompt(`¿Cuántos mods quieres para tu pack de ${templateName}? (Elige un número entre 50 y 300)`, "100");
         if (!targetSize || isNaN(targetSize)) return;
-        targetSize = Math.max(50, Math.min(300, parseInt(targetSize)));
+        targetSize = Math.max(20, Math.min(300, parseInt(targetSize)));
 
-        if(!confirm(`Esto vaciará tu carrito y generará un Modpack de ${templateName} con exactamente ${targetSize} mods. ¿Continuar?`)) return;
+        if(!confirm(`Se generará un Modpack de ${templateName} con ${targetSize} mods. IMPORTANTE: También se descargarán automáticamente todas las librerías necesarias, por lo que el total será mayor. ¿Continuar?`)) return;
         
         const originalHtml = btnElement.innerHTML;
         btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
         btnElement.disabled = true;
 
-        // Limpiar carrito
         window.modpackCart = []; 
         window.updateCartUI();
 
@@ -901,11 +1003,10 @@ function renderRealMods(mods) {
         const aiTerminal = document.getElementById('ai-terminal'); 
         if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Escaneando Modrinth para ${targetSize} mods de ${templateName}...<br>`; }
 
-        // Categorías en tiempo real según el tema elegido
         const themeCategories = {
             'rpg': ['adventure', 'magic', 'worldgen', 'equipment'],
             'tech': ['technology', 'storage', 'energy', 'automation'],
-            'random': ['adventure', 'technology', 'magic', 'decoration', 'worldgen'] // Ruleta caótica
+            'random': ['adventure', 'technology', 'magic', 'decoration', 'worldgen']
         };
         const categories = themeCategories[theme] || themeCategories['random'];
 
@@ -913,16 +1014,10 @@ function renderRealMods(mods) {
         let offset = 0;
 
         try {
-            // Hacemos peticiones a Modrinth hasta juntar suficientes mods
-            // Pedimos un poco más del límite para poder mezclarlos y que no siempre sean los mismos
-            while (fetchedMods.length < (targetSize * 1.5) && offset < 1000) {
+            // FASE 1: Obtener mods base
+            while (fetchedMods.length < targetSize && offset < 1000) {
                 const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-                
-                let facets = [
-                    [`versions:${mcVers}`],
-                    [`categories:${loader}`],
-                    ["project_type:mod"]
-                ];
+                let facets = [[`versions:${mcVers}`], [`categories:${loader}`], ["project_type:mod"]];
                 if (theme !== 'random') facets.push([`categories:${randomCategory}`]);
 
                 const res = await fetch(`https://api.modrinth.com/v2/search?limit=100&offset=${offset}&index=relevance&facets=${encodeURIComponent(JSON.stringify(facets))}`);
@@ -930,45 +1025,63 @@ function renderRealMods(mods) {
                 
                 if (!data.hits || data.hits.length === 0) break;
 
-                // Agregar evitando duplicados
                 const newMods = data.hits.filter(mod => !fetchedMods.some(m => m.project_id === mod.project_id));
                 fetchedMods = fetchedMods.concat(newMods);
                 offset += 100;
                 
-                if(aiTerminal) aiTerminal.innerHTML += `> Obtenidos ${fetchedMods.length} mods candidatos...<br>`;
-                if(aiTerminal) aiTerminal.scrollTop = aiTerminal.scrollHeight;
+                if(aiTerminal) { aiTerminal.innerHTML += `> Encontrados ${fetchedMods.length}/${targetSize} mods...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
             }
 
-            // Mezclar aleatoriamente y cortar al tamaño exacto pedido por el usuario
             fetchedMods = fetchedMods.sort(() => 0.5 - Math.random()).slice(0, targetSize);
 
-            // Inyectar al carrito
+            // FASE 2: Auto-Librerías (NUEVO)
+            if(aiTerminal) { aiTerminal.innerHTML += `> Analizando y añadiendo librerías requeridas (Esto puede tardar unos segundos)...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
+            
+            // Inyectamos los mods principales primero
             fetchedMods.forEach(mod => {
                 window.modpackCart.push({ 
-                    id: mod.project_id, 
-                    title: mod.title, 
-                    type: 'mod', 
-                    icon: mod.icon_url, 
-                    banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
+                    id: mod.project_id, title: mod.title, type: 'mod', 
+                    icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
                     categories: mod.display_categories
                 });
             });
 
+            // Buscamos dependencias en lotes para no saturar la API
+            let libsAdded = 0;
+            for (let mod of fetchedMods) {
+                try {
+                    const deps = await getRequiredDependencies(mod.project_id, mcVers, loader);
+                    if (deps && deps.length > 0) {
+                        deps.forEach(dep => {
+                            if (!window.modpackCart.some(item => item.id === dep.id)) {
+                                window.modpackCart.push({
+                                    id: dep.id, title: dep.title, type: 'library',
+                                    icon: dep.icon_url, banner: dep.icon_url, categories: ['library']
+                                });
+                                libsAdded++;
+                            }
+                        });
+                    }
+                } catch(e) {} // Ignorar si un mod falla
+            }
+
             window.updateCartUI();
             
-            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${fetchedMods.length} Mods!`;
+            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${fetchedMods.length} Mods + ${libsAdded} Libs!`;
             btnElement.style.background = 'var(--success)';
             btnElement.style.color = 'white';
             
-            if(aiTerminal) aiTerminal.innerHTML += `> ¡Éxito! Plantilla ${templateName} inyectada con ${fetchedMods.length} mods.<br>`;
-            if(aiTerminal) aiTerminal.scrollTop = aiTerminal.scrollHeight;
+            if(aiTerminal) { 
+                aiTerminal.innerHTML += `> ¡Éxito! Plantilla inyectada: ${fetchedMods.length} mods y ${libsAdded} librerías.<br>`;
+                aiTerminal.scrollTop = aiTerminal.scrollHeight;
+            }
 
             setTimeout(() => { 
                 btnElement.innerHTML = originalHtml; 
                 btnElement.style = ''; 
                 btnElement.disabled = false; 
                 if(aiTerminal) aiTerminal.style.display='none'; 
-            }, 4000);
+            }, 5000);
 
         } catch(e) { 
             alert(`Error conectando con la API para la plantilla ${templateName}.`); 
@@ -977,42 +1090,7 @@ function renderRealMods(mods) {
             btnElement.disabled = false;
         }
     }
-
-    // Conectar botones a la nueva función
-    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyDynamicTemplate(btnTemplateRpg, "RPG Épico", "rpg"));
-    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyDynamicTemplate(btnTemplateTech, "Industrial", "tech"));
     
-    // Ruleta de Retos (Randomizer)
-    if (btnRandomizer) btnRandomizer.addEventListener('click', () => applyDynamicTemplate(btnRandomizer, "Caos Total", "random"));
-
-    // Plantilla fija: FPS Boost (Esta se queda igual porque son mods específicos que no deben ser aleatorios)
-    if (btnFpsBoost) btnFpsBoost.addEventListener('click', async () => {
-        if(!confirm("Se añadirán los mods base de optimización. ¿Continuar?")) return;
-        const originalHtml = btnFpsBoost.innerHTML;
-        btnFpsBoost.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
-        btnFpsBoost.disabled = true;
-
-        let fpsMods = ['ferrite-core', 'entityculling', 'modernfix', 'clumps'];
-        if (loaderSelect.value === 'fabric') fpsMods.push('sodium', 'lithium', 'iris'); else fpsMods.push('embeddium', 'oculus', 'canary'); 
-        
-        try {
-            const formatIds = fpsMods.map(slug => `"${slug}"`).join(',');
-            const res = await fetch(`https://api.modrinth.com/v2/projects?ids=[${formatIds}]`);
-            const projects = await res.json();
-            let addedCount = 0;
-            projects.forEach(p => {
-                if(!window.modpackCart.some(item => item.id === p.id)) {
-                    window.modpackCart.push({ id: p.id, title: p.title, type: 'mod', icon: p.icon_url, banner: p.icon_url, categories: p.categories });
-                    addedCount++;
-                }
-            });
-            window.updateCartUI();
-            btnFpsBoost.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${addedCount} Mods Listos!`;
-            btnFpsBoost.style.background = 'var(--success)'; btnFpsBoost.style.color = 'white';
-        } catch(e) {}
-        
-        setTimeout(() => { btnFpsBoost.innerHTML = originalHtml; btnFpsBoost.style = ''; btnFpsBoost.disabled = false; }, 3000);
-    });
     // ============================================================
     // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
     // ============================================================
