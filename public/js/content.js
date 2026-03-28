@@ -686,7 +686,7 @@ function renderRealMods(mods) {
                 if (!res.ok) throw new Error("No encontrado");
                 const data = await res.json();
                 
-                // RENDERIZADO 3D USANDO skinview3d
+// RENDERIZADO 3D USANDO skinview3d
                 if (typeof skinview3d !== 'undefined') {
                     if (window.skinViewerInstance) { window.skinViewerInstance.dispose(); }
                     
@@ -694,12 +694,13 @@ function renderRealMods(mods) {
                         canvas: document.getElementById("skin_container"),
                         width: 300,
                         height: 300,
-                        skin: `https://crafatar.com/skins/${data.uuid}`
+                        // 🔥 Solución Anti-CORS: Usamos la data en Base64 directa de Ashcon
+                        skin: `data:image/png;base64,${data.textures.skin.data}`
                     });
 
                     // Añadir capa si la tiene
-                    if (data.textures && data.textures.cape) {
-                        window.skinViewerInstance.loadCape(`https://crafatar.com/capes/${data.uuid}`);
+                    if (data.textures && data.textures.cape && data.textures.cape.data) {
+                        window.skinViewerInstance.loadCape(`data:image/png;base64,${data.textures.cape.data}`);
                     }
 
                     // Controles de cámara automática y animación de caminar
@@ -1837,8 +1838,8 @@ window.checkIsLoggedIn().then(loggedIn => {
             wlList.innerHTML += `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://crafatar.com/avatars/${user.uuid}?size=30" style="width: 30px; height: 30px; border-radius: 6px; background: #27272a;">
-                        <span style="font-weight: 600; font-size: 0.95rem;">${user.name}</span>
+<img src="https://mc-heads.net/avatar/${user.uuid}/30" style="width: 30px; height: 30px; border-radius: 6px; background: #27272a;">
+<span style="font-weight: 600; font-size: 0.95rem;">${user.name}</span>
                     </div>
                     <button class="btn-remove-wl" data-index="${index}" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 5px;"><i class="ph-bold ph-trash"></i></button>
                 </div>
