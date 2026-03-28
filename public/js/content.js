@@ -376,14 +376,21 @@ window.requestBuild = async function(action = 'download_only') {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
 // ==========================================
-    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE CON URL)
+    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE REDISEÑADO)
     // ==========================================
     
-    // Configurar el botón de retroceso del navegador
+    // CSS Inyectado para que las imágenes del creador se centren y se vean bien
+    const styleCf = document.createElement('style');
+    styleCf.innerHTML = `
+        .markdown-body img { display: block; margin: 25px auto; max-width: 100%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .sidebar-title { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+    `;
+    document.head.appendChild(styleCf);
+
     window.addEventListener('popstate', (e) => {
-        if (e.state && e.state.mod) {
-            window.openModDetailsById(e.state.mod, true);
-        } else {
+        if (e.state && e.state.mod) window.openModDetailsById(e.state.mod, true);
+        else {
             document.getElementById('view-mod-details-page')?.classList.add('hidden');
             document.getElementById('view-mods')?.classList.remove('hidden');
         }
@@ -392,14 +399,12 @@ window.requestBuild = async function(action = 'download_only') {
     window.openModDetailsById = async function(modId, isPopState = false) {
         if (!modId || modId === 'undefined' || modId === 'null') return;
 
-        // 1. Cambiar la URL sin recargar la página (Magia pura)
         if (!isPopState) {
             const newUrl = new URL(window.location);
             newUrl.searchParams.set('mod', modId);
             window.history.pushState({ mod: modId }, '', newUrl);
         }
 
-        // 2. Ocultar la lista de mods y crear/mostrar la vista completa
         document.getElementById('view-mods').classList.add('hidden');
         
         let detailsPage = document.getElementById('view-mod-details-page');
@@ -407,160 +412,199 @@ window.requestBuild = async function(action = 'download_only') {
             detailsPage = document.createElement('div');
             detailsPage.id = 'view-mod-details-page';
             detailsPage.className = 'panel';
-            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: 100%; position: relative; display: flex; flex-direction: column; background: var(--bg-main); border-radius: var(--radius-lg); border: 1px solid var(--border-color);';
+            // 🔥 MARGEN SUPERIOR AÑADIDO (marginTop: 80px) PARA QUE NO SE PEGUE ARRIBA 🔥
+            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: calc(100vh - 80px); margin-top: 80px; background: var(--bg-main); border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: 1px solid var(--border-color); position: relative;';
             document.getElementById('dynamic-center-area').appendChild(detailsPage);
         }
         detailsPage.classList.remove('hidden');
 
-        // Layout estilo CurseForge (Banner gigante, Icono sobrepuesto, Columnas)
+        // 🛠️ MAQUETACIÓN HTML (IZQUIERDA: INFO / DERECHA: SIDEBAR DE HERRAMIENTAS)
         detailsPage.innerHTML = `
-            <div style="position: sticky; top: 0; z-index: 50; background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(10px); padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px;">
-                <button id="btn-back-to-mods" class="btn btn-secondary" style="padding: 8px 15px;"><i class="ph-bold ph-arrow-left"></i> Volver al Buscador</button>
-                <h2 id="cf-title" style="margin: 0; font-size: 1.2rem;">Cargando...</h2>
+            <div id="cf-banner" style="height: 250px; background: #111; background-size: cover; background-position: center; position: relative; border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main) 5%, transparent 95%);"></div>
+                <button id="btn-back-to-mods" class="btn btn-secondary" style="position: absolute; top: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);">
+                    <i class="ph-bold ph-arrow-left"></i> Volver al Buscador
+                </button>
             </div>
             
-            <div id="cf-banner" style="height: 250px; background: #27272a; background-size: cover; background-position: center; position: relative;">
-                <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main), transparent);"></div>
-            </div>
-            
-            <div style="padding: 0 40px 40px 40px; display: flex; gap: 30px; margin-top: -60px; position: relative; z-index: 10;">
+            <div style="width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 30px 40px 30px; margin-top: -80px; position: relative; z-index: 10;">
                 
-                <div style="flex: 1;">
-                    <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px;">
-                        <img id="cf-icon" src="https://placehold.co/120x120/18181b/ffffff?text=M" style="width: 120px; height: 120px; border-radius: 20px; border: 4px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-                        <div style="padding-bottom: 10px;">
-                            <h1 id="cf-title-main" style="margin: 0 0 5px 0; font-size: 2rem;">Cargando...</h1>
-                            <span id="cf-author" style="color: var(--accent); font-weight: bold;"></span>
-                        </div>
-                        <div style="margin-left: auto; padding-bottom: 10px;" id="cf-actions"></div>
-                    </div>
+                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
                     
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px;">
-                        <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><i class="ph-bold ph-file-text"></i> Descripción</h3>
-                        <div id="cf-description" class="markdown-body" style="font-size: 0.95rem; line-height: 1.6; color: #d4d4d8;">
-                            <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i></div>
+                    <div style="flex: 1; min-width: 600px;">
+                        
+                        <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px;">
+                            <img id="cf-icon" src="https://placehold.co/130x130/18181b/ffffff?text=M" style="width: 130px; height: 130px; border-radius: 20px; border: 4px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+                            <div style="padding-bottom: 5px;">
+                                <div id="cf-tags" style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;"></div>
+                                <h1 id="cf-title-main" style="margin: 0 0 5px 0; font-size: 2.2rem; color: #fff;">Cargando...</h1>
+                                <p class="muted-text" style="margin: 0; font-size: 0.95rem;">Desarrollado por <span id="cf-author" style="color: var(--accent); font-weight: bold;">...</span></p>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-panel">
+                            <h3 class="sidebar-title"><i class="ph-bold ph-file-text"></i> Descripción del Mod</h3>
+                            <div id="cf-description" class="markdown-body" style="font-size: 1rem; line-height: 1.7; color: #e4e4e7;">
+                                <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i><p>Conectando con Modrinth...</p></div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div style="width: 300px; display: flex; flex-direction: column; gap: 20px;">
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
-                        <h4 style="margin-top: 0; color: #a1a1aa;"><i class="ph-bold ph-info"></i> Información</h4>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Descargas</span> <strong id="cf-downloads">...</strong></div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Lanzamiento</span> <strong id="cf-published">...</strong></div>
-                        <div style="display: flex; justify-content: space-between;"><span>Licencia</span> <strong id="cf-license">...</strong></div>
-                    </div>
-
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
-                        <h4 style="margin-top: 0; color: #a1a1aa; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><i class="ph-bold ph-books"></i> Librerías Requeridas</h4>
-                        <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
-                            <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
+                    <div style="width: 380px; display: flex; flex-direction: column;">
+                        
+                        <div class="sidebar-panel" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
+                            <div id="cf-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                                </div>
                         </div>
+
+                        <div class="sidebar-panel">
+                            <h4 class="sidebar-title" style="color: #a1a1aa;"><i class="ph-bold ph-books"></i> Librerías Necesarias</h4>
+                            <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-panel">
+                            <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Showcase / Tutorial</h4>
+                            <div id="detail-video-container" style="display: none;">
+                                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
+                                    <iframe id="detail-video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
+                                </div>
+                                <div id="detail-video-credit" style="font-size: 0.75rem; color: var(--muted); margin-top: 8px; text-align: center;"></div>
+                            </div>
+                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.85rem;">Buscando video...</div>
+                        </div>
+
+                        <div class="sidebar-panel">
+                            <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner de Archivos (JEI)</h4>
+                            <div id="cf-jei">
+                                <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0;">Entidades 3D y Crafteos detectados:</p>
+                                <div id="jei-mobs-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px;"></div>
+                                <div id="jei-items-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;"></div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
         `;
 
         document.getElementById('btn-back-to-mods').addEventListener('click', () => {
-            window.history.pushState({}, '', window.location.pathname); // Limpiar URL
+            window.history.pushState({}, '', window.location.pathname);
             detailsPage.classList.add('hidden');
             document.getElementById('view-mods').classList.remove('hidden');
         });
 
         try {
-            // 3. Obtener Datos del Proyecto
+            // 1. OBTENER INFORMACIÓN BÁSICA DEL MOD
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            if(!res.ok) { document.getElementById('cf-description').innerHTML = "Error 404: No encontrado."; return; }
+            if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red;'>Error 404: Mod no encontrado.</p>"; return; }
             const mod = await res.json();
 
-            const iconUrl = mod.icon_url || 'https://placehold.co/120x120/18181b/ffffff?text=M';
+            const iconUrl = mod.icon_url || 'https://placehold.co/130x130/18181b/ffffff?text=M';
             const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0].url : iconUrl;
 
-            document.getElementById('cf-title').textContent = mod.title;
             document.getElementById('cf-title-main').textContent = mod.title;
-            document.getElementById('cf-author').innerHTML = `Por <i class="ph-fill ph-user"></i> ${mod.team || 'Desarrollador'}`;
+            document.getElementById('cf-author').textContent = mod.team || 'Desarrollador';
             document.getElementById('cf-icon').src = iconUrl;
             document.getElementById('cf-banner').style.backgroundImage = `url('${bannerUrl}')`;
             
-            document.getElementById('cf-downloads').textContent = new Intl.NumberFormat('es-MX').format(mod.downloads || 0);
-            document.getElementById('cf-published').textContent = new Date(mod.published).toLocaleDateString('es-MX');
-            document.getElementById('cf-license').textContent = mod.license?.name || "Desconocida";
-
+            // Renderizar Markdown
             document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
 
-            // Renderizar Botón de Añadir Principal
+            // Renderizar Tags
+            const tagsCont = document.getElementById('cf-tags');
+            (mod.display_categories || []).slice(0, 4).forEach(tag => { 
+                tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
+            });
+
+            // 2. BUSCAR VERSIONES (PARA BOTONES Y LIBRERÍAS)
+            const mcVers = document.getElementById('mod-version-select').value;
+            const loader = document.getElementById('mod-loader-select').value;
+            let primaryFile = null;
+            let reqDeps = [];
+
+            try {
+                const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                const versData = await versRes.json();
+                if (versData.length > 0) {
+                    primaryFile = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                    if(versData[0].dependencies) {
+                        reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+                    }
+                }
+            } catch(e) { console.error("Error buscando versión:", e); }
+
+            // 3. RENDERIZAR BOTONES DE ACCIÓN (Añadir y Descargar)
             const isAdded = window.modpackCart.some(item => item.id === mod.id);
             const actionsDiv = document.getElementById('cf-actions');
+            
+            let downloadBtnHtml = primaryFile 
+                ? `<a href="${primaryFile.url}" target="_blank" class="btn btn-secondary" style="padding: 12px; width: 100%; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"><i class="ph-bold ph-download-simple"></i> Descargar .JAR</a>`
+                : `<button class="btn btn-secondary" disabled style="padding: 12px; width: 100%; justify-content: center;"><i class="ph-bold ph-warning"></i> Sin versión para ${mcVers}</button>`;
+
             actionsDiv.innerHTML = `
-                <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 12px 25px; font-size: 1.1rem; border-radius: 8px; ${isAdded ? 'background: var(--success); color: white;' : 'background: linear-gradient(135deg, var(--accent), #4f46e5); border: none;'}">
-                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Instalado' : 'Instalar'}
+                <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 15px; font-size: 1.05rem; width: 100%; justify-content: center; border-radius: 8px; box-shadow: 0 4px 15px rgba(99,102,241,0.3); ${isAdded ? 'background: var(--success); color: white;' : 'background: linear-gradient(135deg, var(--accent), #4f46e5); border: none;'}">
+                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido al Modpack' : 'Añadir al Modpack'}
                 </button>
+                ${downloadBtnHtml}
             `;
             
+            // Lógica para el botón "Añadir al Modpack"
             actionsDiv.querySelector('.btn-add-cf').addEventListener('click', function() {
                 if (!window.modpackCart.some(item => item.id === mod.id)) {
                     let fType = mod.project_type || 'mod';
                     if(mod.categories && mod.categories.includes('library')) fType = 'library';
                     window.modpackCart.push({ id: mod.id, title: mod.title, type: fType, icon: iconUrl, banner: bannerUrl, categories: mod.categories });
                     window.updateCartUI();
-                    this.innerHTML = '<i class="ph-bold ph-check"></i> Instalado';
+                    this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido al Modpack';
                     this.style.background = 'var(--success)';
+                    this.style.boxShadow = 'none';
                     this.disabled = true;
                 }
             });
 
-            // 4. Buscar Dependencias Automáticamente
+            // 4. RENDERIZAR LIBRERÍAS
             const depsContainer = document.getElementById('cf-dependencies');
-            try {
-                const mcVers = document.getElementById('mod-version-select').value;
-                const loader = document.getElementById('mod-loader-select').value;
-                const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
-                const versData = await versRes.json();
+            if (reqDeps.length > 0) {
+                const projectIds = reqDeps.map(d => d.project_id);
+                const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
+                const depProjs = await depProjsRes.json();
                 
-                if (versData.length > 0 && versData[0].dependencies.length > 0) {
-                    const reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
-                    if (reqDeps.length > 0) {
-                        const projectIds = reqDeps.map(d => d.project_id);
-                        const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
-                        const depProjs = await depProjsRes.json();
-                        
-                        depsContainer.innerHTML = '';
-                        depProjs.forEach(dep => {
-                            const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
-                            depsContainer.innerHTML += `
-                                <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" onclick="window.openModDetailsById('${dep.id}')">
-                                    <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 32px; height: 32px; border-radius: 6px;">
-                                    <div style="flex:1;">
-                                        <div style="font-size: 0.85rem; font-weight: bold; color: #fff;">${dep.title}</div>
-                                        <div style="font-size: 0.7rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};">${isDepAdded ? 'Instalada' : 'Falta Instalar'}</div>
-                                    </div>
-                                    <i class="ph-bold ph-caret-right" style="color: var(--muted);"></i>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem;"><i class="ph-fill ph-check-circle"></i> No requiere librerías extra.</div>';
-                    }
-                } else {
-                    depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem;"><i class="ph-fill ph-check-circle"></i> No requiere librerías extra.</div>';
-                }
-            } catch (e) {
-                depsContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.85rem;">Error al cargar librerías.</div>';
+                depsContainer.innerHTML = '';
+                depProjs.forEach(dep => {
+                    const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
+                    depsContainer.innerHTML += `
+                        <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'" onclick="window.openModDetailsById('${dep.id}')">
+                            <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 36px; height: 36px; border-radius: 6px; background: #27272a;">
+                            <div style="flex:1;">
+                                <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
+                                <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};"><i class="ph-bold ${isDepAdded ? 'ph-check' : 'ph-warning'}"></i> ${isDepAdded ? 'En tu Modpack' : 'Requerido'}</div>
+                            </div>
+                            <i class="ph-bold ph-caret-right" style="color: var(--muted);"></i>
+                        </div>
+                    `;
+                });
+            } else {
+                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px;"><i class="ph-fill ph-check-circle"></i> Mod independiente (No necesita librerías).</div>';
+            }
+
+            // 5. CARGAR VIDEO DE YOUTUBE AUTOMÁTICO
+            if (typeof window.loadModShowcase === 'function') {
+                document.getElementById('no-video-msg').style.display = 'none';
+                // La función loadModShowcase original usa los IDs que acabamos de poner en el HTML
+                window.loadModShowcase(mod.title);
+            }
+
+            // 6. INICIAR AUTO-ESCANER JEI (Crafteos y Mobs)
+            if (typeof window.runAutoScanJEI === 'function') {
+                window.runAutoScanJEI(mod.id, mcVers, loader);
             }
 
         } catch (e) {
             console.error("Fallo general en openModDetailsById:", e);
         }
     };
-
-    // Auto-Cargar mod si la URL tiene el parámetro ?mod=id
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const modIdToOpen = urlParams.get('mod');
-        if (modIdToOpen) {
-            setTimeout(() => window.openModDetailsById(modIdToOpen), 500); // Pequeño retraso para que cargue la UI base
-        }
-    });
 
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
