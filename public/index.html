@@ -86,7 +86,45 @@
 
             <div class="main-layout">
                 <div id="dynamic-center-area" class="center-area custom-scrollbar">
-                    
+
+                    <div id="view-community" class="builder-view hidden panel" style="background: transparent; border: none; padding: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <div>
+            <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-users" style="color: #10b981;"></i> Galería de la Comunidad</h2>
+            <p class="muted-text mt-10">Explora, descarga y califica los modpacks creados por otros jugadores.</p>
+        </div>
+    </div>
+    <div id="community-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
+</div>
+
+<div id="community-modal" class="modal-overlay hidden" style="z-index: 10006;">
+    <div class="modal-content" style="max-width: 600px; padding: 30px;">
+        <h2 id="comm-modal-title" class="title">Nombre del Modpack</h2>
+        <p id="comm-modal-stats" class="muted-text text-sm mb-20"></p>
+        
+        <button id="btn-comm-download" class="btn btn-primary w-100 mb-20" style="padding: 12px;"><i class="ph-bold ph-download-simple"></i> Instalar este Pack</button>
+
+        <hr style="border-color: var(--border-color); margin: 20px 0;">
+        
+        <h3 class="mb-10"><i class="ph-bold ph-chat-centered-text"></i> Reseñas</h3>
+        
+        <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+            <select id="comm-rating" class="form-select mb-10" style="width: 150px;">
+                <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                <option value="4">⭐⭐⭐⭐ Bueno</option>
+                <option value="3">⭐⭐⭐ Regular</option>
+                <option value="2">⭐⭐ Malo</option>
+                <option value="1">⭐ Pésimo</option>
+            </select>
+            <textarea id="comm-text" class="form-input custom-scrollbar mb-10" placeholder="¿Qué te pareció este modpack?..." style="height: 80px; resize: none;"></textarea>
+            <button id="btn-comm-submit" class="btn btn-primary w-100" style="background: var(--accent);"><i class="ph-bold ph-paper-plane-tilt"></i> Enviar Reseña</button>
+        </div>
+
+        <div id="comm-list" class="custom-scrollbar" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;"></div>
+
+        <button id="btn-close-community-modal" class="btn btn-secondary w-100 mt-20">Cerrar</button>
+    </div>
+</div>
                     <div id="view-mods" class="builder-view">
                         <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(24,24,27,0) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg); padding: 40px; margin-bottom: 25px; position: relative; overflow: hidden;">
                             <i class="ph-duotone ph-puzzle-piece" style="position: absolute; right: -20px; top: -20px; font-size: 200px; color: rgba(16,185,129,0.05); transform: rotate(15deg);"></i>
