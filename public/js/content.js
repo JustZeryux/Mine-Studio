@@ -6,7 +6,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.modConfigs = {}; 
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPack = urlParams.get('pack');
+    const initialMod = urlParams.get('mod'); // <-- NUEVO: Detecta si alguien entra con ?mod=
     window.modpackCart = [];
+    window.modHistoryStack = []; // <-- NUEVO: Guarda el historial para la flecha
     let currentFilter = 'mod';
     let currentCategory = '';
     let currentOffset = 0; 
@@ -98,14 +100,16 @@ window.modpackTemplates = [
         }
     }
 
-    // ==========================================
+  // ==========================================
     // 3. NAVEGACIÓN Y VISTAS
     // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
     const views = { 
         'mods': document.getElementById('view-mods'), 
         'worlds': document.getElementById('view-worlds'), 
-        'profiles': document.getElementById('view-profiles') 
+        'profiles': document.getElementById('view-profiles'),
+        'community': document.getElementById('view-community'), // <-- Faltaban estas en tu nav
+        'tools': document.getElementById('view-tools')
     };
     
     navButtons.forEach(btn => btn.addEventListener('click', () => {
@@ -116,6 +120,14 @@ window.modpackTemplates = [
         Object.values(views).forEach(v => { if(v) v.classList.add('hidden') }); 
         if(views[btn.getAttribute('data-target')]) views[btn.getAttribute('data-target')].classList.remove('hidden');
         
+        // NUEVO: Cerrar vista del mod y limpiar la URL al navegar por el menú
+        const detailsPage = document.getElementById('view-mod-details-page');
+        if (detailsPage) detailsPage.classList.add('hidden');
+        window.modHistoryStack = [];
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('mod');
+        window.history.pushState({}, '', newUrl);
+
         if (btn.getAttribute('data-target') === 'profiles') window.loadMyProfiles();
     }));
 
@@ -479,7 +491,11 @@ window.requestBuild = async function(action = 'download_only') {
    window.openModDetailsById = async function(modId, isPopState = false) {
     if (!modId || modId === 'undefined' || modId === 'null') return;
 
-    if (!isPopState) {
+if (!isPopState) {
+        // NUEVO: Guardar en el historial solo si no es el mod que ya estamos viendo
+        if (window.modHistoryStack[window.modHistoryStack.length - 1] !== modId) {
+            window.modHistoryStack.push(modId);
+        }
         const newUrl = new URL(window.location);
         newUrl.searchParams.set('mod', modId);
         window.history.pushState({ mod: modId }, '', newUrl);
@@ -567,10 +583,24 @@ window.requestBuild = async function(action = 'download_only') {
         </div>
     `;
 
-    document.getElementById('btn-back-to-mods').addEventListener('click', () => {
-        window.history.pushState({}, '', window.location.pathname);
-        detailsPage.classList.add('hidden');
-        document.getElementById('view-mods').classList.remove('hidden');
+document.getElementById('btn-back-to-mods').addEventListener('click', () => {
+        window.modHistoryStack.pop(); // Borrar el mod actual del historial
+        const prevMod = window.modHistoryStack[window.modHistoryStack.length - 1]; // Buscar si hay uno antes
+        
+        if (prevMod) {
+            // Si venías de una librería, te regresa a ese mod
+            window.openModDetailsById(prevMod, true);
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('mod', prevMod);
+            window.history.pushState({ mod: prevMod }, '', newUrl);
+        } else {
+            // Si ya no hay historial, regresa al inicio normalmente
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('mod');
+            window.history.pushState({}, '', newUrl);
+            detailsPage.classList.add('hidden');
+            document.getElementById('view-mods').classList.remove('hidden');
+        }
     });
 
     // ==========================================
@@ -2172,7 +2202,40 @@ window.checkIsLoggedIn().then(loggedIn => {
             }
         });
     }
-    
+
+    // ==========================================
+    // ACTIVAR BOTONES DE PLANTILLAS INICIALES Y URL DIRECTA
+    // ==========================================
+    const applyQuickTemplate = async (templateName) => {
+        const template = window.modpackTemplates.find(t => t.name.includes(templateName));
+        if(!template) return;
+        
+        document.getElementById('mod-version-select').value = template.mcVersion;
+        document.getElementById('mod-loader-select').value = template.modLoader;
+        window.modpackCart = [];
+        window.updateCartUI();
+        
+        for(let modSlug of template.modsData) {
+            try {
+                const res = await fetch(`https://api.modrinth.com/v2/project/${modSlug}`);
+                if(res.ok) {
+                    const mod = await res.json();
+                    window.modpackCart.push({ id: mod.id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: mod.icon_url, categories: mod.display_categories });
+                }
+            } catch(e){}
+        }
+        window.updateCartUI();
+        alert(`Plantilla "${templateName}" cargada con éxito en el Ensamblador.`);
+    };
+
+    if(btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyQuickTemplate('RPG Adventurer PRO'));
+    if(btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyQuickTemplate('Tech Master PRO'));
+    if(btnFpsBoost) btnFpsBoost.addEventListener('click', () => applyQuickTemplate('Optimization'));
+
+    // CARGAR MOD DIRECTO DESDE LA URL (Si el usuario entró con un link)
+    if (initialMod) {
+        setTimeout(() => window.openModDetailsById(initialMod), 500);
+    }
     if (btnLoadMore) btnLoadMore.addEventListener('click', () => { if(!isFetchingMods) { currentOffset += 50; fetchRealMods(true); } });
 
     fetchRealMods(); 
