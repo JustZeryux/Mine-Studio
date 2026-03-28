@@ -717,3 +717,95 @@ body, .app-container {
     border: 1px solid rgba(255,255,255,0.08); 
 }
 .template-btn i { font-size: 38px; }
+
+/* =========================================
+   REWORK VISUAL DE SHOWCASE Y LIBRERÍAS
+   ========================================= */
+
+/* Estilo Base para Paneles de Cristal (Glassmorphism) */
+.glass-panel-dark {
+    background: rgba(15, 15, 18, 0.7) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 16px !important;
+    padding: 25px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.glass-panel-dark:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* Títulos de los paneles */
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 15px;
+}
+.panel-header i { font-size: 1.5rem; }
+.panel-header h4 { margin: 0; font-size: 1.2rem; font-weight: 700; color: #fff; }
+
+/* --- SECCIÓN VIDEO SHOWCASE --- */
+.video-wrapper-premium {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 2px solid rgba(248, 113, 113, 0.2); /* Borde neón sutil rojo */
+    box-shadow: 0 0 15px rgba(248, 113, 113, 0.1);
+}
+.video-wrapper-premium iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Estado de carga del video */
+.video-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    color: var(--muted);
+    padding: 40px 0;
+    text-align: center;
+}
+.video-loader i { font-size: 2rem; color: #f87171; }
+
+/* --- SECCIÓN LIBRERÍAS --- */
+.dep-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255,255,255,0.03);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: 0.2s;
+}
+.dep-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.15);
+}
+.dep-icon { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: rgba(0,0,0,0.3); }
+.dep-info { flex: 1; }
+.dep-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+.dep-type { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+.dep-arrow { color: var(--muted); font-size: 1.2rem; transition: 0.2s; }
+.dep-card:hover .dep-arrow { color: #fff; transform: translateX(3px); }
+
+/* Indicador de instalada o requerida */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.status-installed { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
+.status-missing { background-color: #f87171; box-shadow: 0 0 10px #f87171; }
