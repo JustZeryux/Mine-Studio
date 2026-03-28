@@ -472,6 +472,28 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 
 .cart-item-info { padding: 18px 10px 10px 10px; display: flex; flex-direction: column; }
 .cart-item-title { font-weight: 700; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Estilo para el nuevo botón de Info en el carrito */
+.btn-info-cart {
+    position: absolute;
+    top: 40px; /* Queda justo debajo del engranaje (que suele estar en top: 10px) */
+    right: 10px;
+    background: rgba(59, 130, 246, 0.15); /* Azul cristalino */
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+.btn-info-cart:hover {
+    background: rgba(59, 130, 246, 0.4);
+    transform: scale(1.1);
+}
 
 .btn-config-cart { position: absolute; top: 5px; right: 35px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 14px; opacity: 0.7; z-index: 3; }
 .btn-config-cart:hover { opacity: 1; background: var(--bg-hover); }
