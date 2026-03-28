@@ -130,41 +130,53 @@ window.modpackTemplates = [
 
         if (btn.getAttribute('data-target') === 'profiles') window.loadMyProfiles();
     }));
-
 // ==========================================
-    // 4. INSTALADOR DE MODPACKS COMPARTIDOS (NUEVO DISEÑO FULLSCREEN)
+    // 4. INSTALADOR DE MODPACKS COMPARTIDOS (LOGICA DE CARGA ASÍNCRONA)
     // ==========================================
-if (sharedPack) {
-        try {
-            let parsedItems = [];
-            let packTitle = "Pack Compartido";
-            
-            // Si el código es cortito (menos de 15 letras) y no tiene guiones, es un ID de Supabase
-            if (sharedPack.length < 15 && !sharedPack.includes('-') && !sharedPack.includes('%')) {
+    if (sharedPack) {
+        // Función interna asíncrona para no bloquear el resto del script pero asegurar el orden
+        (async () => {
+            try {
+                let parsedItems = [];
+                let packTitle = "Pack Compartido";
                 
-                const { data, error } = await window.supabaseClient
-                    .from('shared_packs')
-                    .select('*')
-                    .eq('id', sharedPack)
-                    .single();
+                // Si es un ID corto (Supabase)
+                if (sharedPack.length < 15 && !sharedPack.includes('-') && !sharedPack.includes('%')) {
+                    const { data, error } = await window.supabaseClient
+                        .from('shared_packs')
+                        .select('*')
+                        .eq('id', sharedPack)
+                        .single();
+                        
+                    if (error || !data) {
+                        console.error("Error Supabase:", error);
+                        return; // Si no hay datos, no hacemos nada
+                    }
                     
-                if (error || !data) throw new Error("Pack no encontrado o enlace caducado.");
-                
-                parsedItems = data.mods_data;
-                packTitle = data.name || "Pack Compartido";
-                
-            } else {
-                // SISTEMA VIEJO (Mantenido por si alguien entra con un link viejo tuyo)
-                if (sharedPack.startsWith('%') || sharedPack.includes('=')) {
-                    parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                    parsedItems = data.mods_data;
+                    packTitle = data.name || "Pack Compartido";
                 } else {
-                    const items = sharedPack.split('-');
-                    parsedItems = items.map(item => {
-                        const parts = item.split('_');
-                        return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
-                    });
+                    // Sistema viejo (Base64)
+                    try {
+                        parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                    } catch(e) {
+                        const items = sharedPack.split('-');
+                        parsedItems = items.map(item => {
+                            const parts = item.split('_');
+                            return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
+                        });
+                    }
                 }
+
+                if (parsedItems.length > 0) {
+                    renderSharedFullscreenPanel(parsedItems, packTitle);
+                }
+
+            } catch(e) { 
+                console.error("Error cargando el pack:", e);
             }
+        })();
+    }
 
             // Inyectamos la Burbuja Flotante
             const bubbleHtml = `
