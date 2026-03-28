@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isFetchingMods = false;
 
     // DEFINICIÓN DE PLANTILLAS OFICIALES
-    window.modpackTemplates = [
-        {window.openModDetailsById
+window.modpackTemplates = [
+        {
             name: "RPG Adventurer PRO",
             mcVersion: "1.20.1",
             modLoader: "forge",
