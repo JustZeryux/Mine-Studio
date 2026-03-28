@@ -4,7 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_URL = 'https://dndknmfpekswzgeroawu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuZGtubWZwZWtzd3pnZXJvYXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMTQxOTgsImV4cCI6MjA4OTg5MDE5OH0.7faTwRX1ueVEoy7x-76lvoBGu8GhPtJ2Ydfj4lN3aNE'; // <--- OJO AQUÍ
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // NUEVO: Exportamos una función global para que content.js sepa si hay sesión
+    window.checkIsLoggedIn = async function() {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session !== null;
+    };
 
     const profileSection = document.querySelector('.profile-section');
     const authModal = document.getElementById('auth-modal');
