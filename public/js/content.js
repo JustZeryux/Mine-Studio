@@ -1496,6 +1496,11 @@ window.checkIsLoggedIn().then(loggedIn => {
                         <div class="profile-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
                             <img src="${profileIcon}" onerror="this.src='${fallbackIcon}'" class="profile-icon" style="width: 54px; height: 54px; border-radius: 12px; border: 3px solid var(--bg-panel); background: #18181b; object-fit: cover;">
                             <div style="display: flex; gap: 6px;">
+                                <button class="btn-publish-profile" data-index="${index}" title="Publicar en Comunidad" style="background: rgba(16,185,129,0.2); border:none; color:var(--success); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-globe"></i></button>
+                                <button class="btn-edit-name" data-index="${index}" title="Renombrar" style="background: rgba(255,255,255,0.1); border:none; color:white; padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-pencil-simple"></i></button>
+                                <button class="btn-share-profile" data-index="${index}" title="Compartir Enlace Corto" style="background: rgba(99,102,241,0.2); border:none; color:var(--accent); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-link"></i></button>
+                                <button class="btn-delete-profile" data-index="${index}" title="Eliminar" style="background: rgba(239,68,68,0.2); border:none; color:var(--danger); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
+                            </div>
                                 <button class="btn-edit-name" data-index="${index}" title="Renombrar" style="background: rgba(255,255,255,0.1); border:none; color:white; padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-pencil-simple"></i></button>
                                 <button class="btn-share-profile" data-index="${index}" title="Compartir" style="background: rgba(99,102,241,0.2); border:none; color:var(--accent); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-link"></i></button>
                                 <button class="btn-delete-profile" data-index="${index}" title="Eliminar" style="background: rgba(239,68,68,0.2); border:none; color:var(--danger); padding:6px; border-radius:6px; cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
@@ -1538,7 +1543,52 @@ window.checkIsLoggedIn().then(loggedIn => {
                 }
             });
         });
+// LÓGICA PARA PUBLICAR EN LA COMUNIDAD
+        document.querySelectorAll('.btn-publish-profile').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const idx = e.currentTarget.dataset.index;
+                const profile = profiles[idx];
+                
+                if (!confirm(`🌍 ¿Quieres publicar "${profile.name}" en la Comunidad?\nTodos podrán verlo, descargarlo y calificarlo.`)) return;
 
+                const btnIcon = e.currentTarget.querySelector('i');
+                const originalClass = btnIcon.className;
+                
+                // Animación de carga
+                btnIcon.className = 'ph ph-spinner ph-spin';
+                e.currentTarget.disabled = true;
+
+                try {
+                    // Sacar el nombre del autor (de su sesión o perfil guardado)
+                    const authorName = localStorage.getItem('minepack_username') || document.getElementById('header-username')?.textContent || 'Anónimo';
+
+                    // Subir a la tabla de modpacks (Comunidad)
+                    const { error } = await window.supabaseClient
+                        .from('modpacks')
+                        .insert([{ 
+                            name: profile.name,
+                            author: authorName,
+                            mc_version: profile.mcVersion,
+                            mod_loader: profile.modLoader,
+                            mods_data: profile.modsData,
+                            is_public: true,
+                            likes: 0,
+                            downloads: 0
+                        }]);
+
+                    if (error) throw error;
+
+                    alert("🎉 ¡Tu Modpack ha sido publicado en la Comunidad con éxito!");
+                    
+                } catch (err) {
+                    console.error("Error al publicar:", err);
+                    alert("❌ Hubo un error al subir tu modpack a la comunidad.");
+                } finally {
+                    btnIcon.className = originalClass;
+                    e.currentTarget.disabled = false;
+                }
+            });
+        });
 document.querySelectorAll('.btn-share-profile').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const btnIcon = e.currentTarget.querySelector('i');
