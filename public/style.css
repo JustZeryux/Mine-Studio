@@ -588,3 +588,65 @@ body, .app-container {
     padding-bottom: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
+
+
+/* =========================================
+   1. BARRA SUPERIOR ÚNICA (Adiós doble encabezado)
+   ========================================= */
+body, .app-container {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    overflow: hidden; display: flex; flex-direction: column;
+}
+.sidebar {
+    position: relative;
+    width: 100vw; height: 60px; /* Más delgada y compacta */
+    display: flex !important; flex-direction: row !important;
+    justify-content: space-between; align-items: center;
+    z-index: 9999; background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 30px; flex-shrink: 0;
+}
+.sidebar::after { display: none; } /* Quita la pestaña verde molesta */
+.content { width: 100vw; height: calc(100vh - 60px); padding: 0; flex: 1; }
+#dynamic-center-area { height: 100%; overflow-y: auto; position: relative; }
+
+/* =========================================
+   2. HEADER DEL MOD Y SIDEBAR DERECHA "STICKY"
+   ========================================= */
+.mod-header-compact {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+/* 🔥 Esto hace que la derecha NUNCA desaparezca al hacer scroll 🔥 */
+.right-sidebar-sticky {
+    position: sticky;
+    top: 20px; /* Separación desde el techo al hacer scroll */
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+/* =========================================
+   3. VISOR DE CRAFTEOS VISUAL (ESTILO MINECRAFT)
+   ========================================= */
+.mc-crafting-container {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    background: #c6c6c6; padding: 20px; border-radius: 8px;
+    border: 3px solid #555; width: fit-content; margin: 0 auto;
+}
+.mc-grid {
+    display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); gap: 2px;
+}
+.mc-slot {
+    width: 40px; height: 40px; background: #8b8b8b;
+    border-top: 2px solid #373737; border-left: 2px solid #373737;
+    border-bottom: 2px solid #fff; border-right: 2px solid #fff;
+    display: flex; justify-content: center; align-items: center; position: relative;
+}
+.mc-slot img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; }
+.mc-slot-text { font-size: 8px; color: black; text-align: center; line-height: 1; word-wrap: break-word; overflow: hidden; padding: 2px; }
+.mc-result-slot { width: 56px; height: 56px; }
+.mc-result-slot img { width: 44px; height: 44px; }
