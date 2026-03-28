@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // DEFINICIÓN DE PLANTILLAS OFICIALES
     window.modpackTemplates = [
-        {
+        {window.openModDetailsById
             name: "RPG Adventurer PRO",
             mcVersion: "1.20.1",
             modLoader: "forge",
@@ -369,11 +369,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
-    // ==========================================
+   // ==========================================
     // FUNCIÓN CENTRAL: ABRIR DETALLES SOBREPUESTOS
     // ==========================================
     window.openModDetailsById = async function(modId) {
-        loadModShowcase(mod.title);
         const modal = document.getElementById('mod-details-modal');
         if(!modal) return;
         modal.classList.remove('hidden');
@@ -391,7 +390,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
             if(!res.ok) throw new Error("No se encontró el mod");
-            const mod = await res.json();
+            const mod = await res.json(); // ✅ AQUÍ SE DEFINE 'mod'
+
+            // ✅ AHORA SÍ, COMO YA TENEMOS EL MOD, CARGAMOS EL YOUTUBE SHOWCASE
+            if (typeof loadModShowcase === 'function') {
+                loadModShowcase(mod.title); 
+            }
 
             document.getElementById('detail-title').textContent = mod.title;
             const author = mod.team || mod.client_side || 'Desarrollador';
