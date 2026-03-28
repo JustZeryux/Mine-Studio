@@ -130,7 +130,8 @@ window.modpackTemplates = [
 
         if (btn.getAttribute('data-target') === 'profiles') window.loadMyProfiles();
     }));
-// ==========================================
+
+    // ==========================================
     // 4. INSTALADOR DE MODPACKS COMPARTIDOS (LOGICA DE CARGA ASÍNCRONA)
     // ==========================================
     if (sharedPack) {
@@ -169,126 +170,125 @@ window.modpackTemplates = [
                 }
 
                 if (parsedItems.length > 0) {
-                    renderSharedFullscreenPanel(parsedItems, packTitle);
-                }
+                    // MUDAMOS LA LÓGICA DE UI AQUÍ DENTRO PARA QUE TENGA ACCESO A packTitle y parsedItems
+
+                    // Inyectamos la Burbuja Flotante
+                    const bubbleHtml = `
+                        <button id="shared-bubble-toggle" class="shared-bubble hover-scale" title="Ver Modpack Compartido">
+                            <i class="ph-fill ph-lock-key"></i>
+                        </button>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', bubbleHtml);
+
+                    // Inyectamos el Panel Gigante Fullscreen
+                    const panelHtml = `
+                        <div id="shared-fullscreen-panel" class="shared-fullscreen-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px;">
+                                <div>
+                                    <h1 style="margin: 0; font-size: 2.5rem; color: #fff; display: flex; align-items: center; gap: 15px;">
+                                        <i class="ph-fill ph-lock-key" style="color: #6366f1;"></i> ${packTitle}
+                                    </h1>
+                                    <p style="color: var(--muted); margin: 5px 0 0 0; font-size: 1.1rem;">Vista panorámica. Clic a un mod para ver info detallada. Tienes la burbuja flotante para regresar aquí.</p>
+                                </div>
+                                <div style="display: flex; gap: 15px;">
+                                    <button id="btn-fs-install" class="btn btn-primary hover-scale" style="padding: 15px 30px; font-size: 1.1rem; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none;">
+                                        <i class="ph-bold ph-download-simple"></i> Descargar ZIP
+                                    </button>
+                                    <button id="btn-fs-close" class="btn btn-secondary hover-scale" style="padding: 15px 25px; font-size: 1.1rem; background: rgba(255,255,255,0.1); border: none;">
+                                        <i class="ph-bold ph-x"></i> Ocultar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="shared-fs-grid" class="shared-grid">
+                                <div style="grid-column: 1/-1; text-align: center; padding: 50px; font-size: 1.5rem; color: var(--muted);">
+                                    <i class="ph ph-spinner ph-spin"></i> Cargando Mods...
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', panelHtml);
+
+                    const bubbleToggle = document.getElementById('shared-bubble-toggle');
+                    const fsPanel = document.getElementById('shared-fullscreen-panel');
+                    const fsGrid = document.getElementById('shared-fs-grid');
+                    const btnInstallFs = document.getElementById('btn-fs-install');
+                    const btnCloseFs = document.getElementById('btn-fs-close');
+
+                    // Abrir automáticamente al inicio
+                    setTimeout(() => fsPanel.classList.add('active'), 100);
+
+                    // Botones de mostrar/ocultar
+                    bubbleToggle.addEventListener('click', () => fsPanel.classList.add('active'));
+                    btnCloseFs.addEventListener('click', () => fsPanel.classList.remove('active'));
+
+                    // Limpiar la URL para que no vuelva a saltar si refresca
+                    window.history.replaceState({}, document.title, window.location.pathname);
+
+                    // Obtener info de la API
+                    const ids = parsedItems.map(m => `"${m.id}"`).join(',');
+                    if(ids) {
+                        fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
+                            .then(r => r.json())
+                            .then(data => {
+                                fsGrid.innerHTML = '';
+                                const projectMap = {};
+                                data.forEach(p => projectMap[p.id] = p);
+
+                                parsedItems.forEach(item => {
+                                    const proj = projectMap[item.id];
+                                    if(proj) {
+                                        item.title = proj.title;
+                                        const icon = proj.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
+                                        let typeColor = 'var(--accent)', typeText = 'MOD', iconType = 'ph-puzzle-piece';
+                                        
+                                        if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
+                                        else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
+
+                                        fsGrid.innerHTML += `
+                                            <div class="glass-panel hover-scale" 
+                                                 onclick="document.getElementById('shared-fullscreen-panel').classList.remove('active'); window.openModDetailsById('${proj.id}')" 
+                                                 style="display: flex; flex-direction: column; align-items: center; text-align: center; background: rgba(255,255,255,0.03); padding: 25px 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative;">
+                                                
+                                                <span style="position: absolute; top: 10px; right: 10px; font-size: 0.7rem; background: ${typeColor}20; color: ${typeColor}; padding: 4px 8px; border-radius: 8px; font-weight: bold; border: 1px solid ${typeColor}40;">
+                                                    <i class="ph-fill ${iconType}"></i> ${typeText}
+                                                </span>
+                                                <img src="${icon}" onerror="this.src='https://placehold.co/80x80/18181b/ffffff?text=M'" style="width: 80px; height: 80px; border-radius: 14px; object-fit: cover; background: #27272a; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.4);">
+                                                <h4 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #fff;">${proj.title}</h4>
+                                                <span style="color: var(--muted); font-size: 0.85rem;"><i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('en-US', { notation: "compact" }).format(proj.downloads)}</span>
+                                            </div>
+                                        `;
+                                    }
+                                });
+
+                                // Lógica de Descarga ZIP Original
+                                btnInstallFs.onclick = async () => {
+                                    btnInstallFs.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
+                                    btnInstallFs.disabled = true;
+                                    try {
+                                        window.modpackCart = [];
+                                        parsedItems.forEach(pi => {
+                                            if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) window.modpackCart.push(pi);
+                                        });
+                                        window.updateCartUI();
+                                        await window.requestBuild('download_only'); // Llamamos a tu motor de ZIP
+                                        fsPanel.classList.remove('active');
+                                        alert(`✅ ¡Felicidades! Tu Modpack compartido se ha descargado correctamente.`);
+                                    } catch(e) {
+                                        alert(`❌ Hubo un error al empaquetar el ZIP: ${e.message}`);
+                                    } finally {
+                                        btnInstallFs.innerHTML = '<i class="ph-bold ph-download-simple"></i> Descargar ZIP';
+                                        btnInstallFs.disabled = false;
+                                    }
+                                };
+                            });
+                    }
+                } // fin del if (parsedItems.length > 0)
 
             } catch(e) { 
                 console.error("Error cargando el pack:", e);
+                alert("El enlace del modpack está corrupto o es inválido.");
             }
         })();
-    }
-
-            // Inyectamos la Burbuja Flotante
-            const bubbleHtml = `
-                <button id="shared-bubble-toggle" class="shared-bubble hover-scale" title="Ver Modpack Compartido">
-                    <i class="ph-fill ph-lock-key"></i>
-                </button>
-            `;
-            document.body.insertAdjacentHTML('beforeend', bubbleHtml);
-
-            // Inyectamos el Panel Gigante Fullscreen
-            const panelHtml = `
-                <div id="shared-fullscreen-panel" class="shared-fullscreen-panel">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px;">
-                        <div>
-                            <h1 style="margin: 0; font-size: 2.5rem; color: #fff; display: flex; align-items: center; gap: 15px;">
-                                <i class="ph-fill ph-lock-key" style="color: #6366f1;"></i> ${packTitle}
-                            </h1>
-                            <p style="color: var(--muted); margin: 5px 0 0 0; font-size: 1.1rem;">Vista panorámica. Clic a un mod para ver info detallada. Tienes la burbuja flotante para regresar aquí.</p>
-                        </div>
-                        <div style="display: flex; gap: 15px;">
-                            <button id="btn-fs-install" class="btn btn-primary hover-scale" style="padding: 15px 30px; font-size: 1.1rem; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none;">
-                                <i class="ph-bold ph-download-simple"></i> Descargar ZIP
-                            </button>
-                            <button id="btn-fs-close" class="btn btn-secondary hover-scale" style="padding: 15px 25px; font-size: 1.1rem; background: rgba(255,255,255,0.1); border: none;">
-                                <i class="ph-bold ph-x"></i> Ocultar
-                            </button>
-                        </div>
-                    </div>
-                    <div id="shared-fs-grid" class="shared-grid">
-                        <div style="grid-column: 1/-1; text-align: center; padding: 50px; font-size: 1.5rem; color: var(--muted);">
-                            <i class="ph ph-spinner ph-spin"></i> Cargando Mods...
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', panelHtml);
-
-            const bubbleToggle = document.getElementById('shared-bubble-toggle');
-            const fsPanel = document.getElementById('shared-fullscreen-panel');
-            const fsGrid = document.getElementById('shared-fs-grid');
-            const btnInstallFs = document.getElementById('btn-fs-install');
-            const btnCloseFs = document.getElementById('btn-fs-close');
-
-            // Abrir automáticamente al inicio
-            setTimeout(() => fsPanel.classList.add('active'), 100);
-
-            // Botones de mostrar/ocultar
-            bubbleToggle.addEventListener('click', () => fsPanel.classList.add('active'));
-            btnCloseFs.addEventListener('click', () => fsPanel.classList.remove('active'));
-
-            // Limpiar la URL para que no vuelva a saltar si refresca
-            window.history.replaceState({}, document.title, window.location.pathname);
-
-            // Obtener info de la API
-            const ids = parsedItems.map(m => `"${m.id}"`).join(',');
-            if(ids) {
-                fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
-                    .then(r => r.json())
-                    .then(data => {
-                        fsGrid.innerHTML = '';
-                        const projectMap = {};
-                        data.forEach(p => projectMap[p.id] = p);
-
-                        parsedItems.forEach(item => {
-                            const proj = projectMap[item.id];
-                            if(proj) {
-                                item.title = proj.title;
-                                const icon = proj.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
-                                let typeColor = 'var(--accent)', typeText = 'MOD', iconType = 'ph-puzzle-piece';
-                                
-                                if(item.type === 'shader') { typeColor = '#f59e0b'; typeText = 'SHADER'; iconType = 'ph-aperture'; }
-                                else if(item.type === 'resourcepack') { typeColor = '#10b981'; typeText = 'TEXTURA'; iconType = 'ph-paint-brush'; }
-
-                                fsGrid.innerHTML += `
-                                    <div class="glass-panel hover-scale" 
-                                         onclick="document.getElementById('shared-fullscreen-panel').classList.remove('active'); window.openModDetailsById('${proj.id}')" 
-                                         style="display: flex; flex-direction: column; align-items: center; text-align: center; background: rgba(255,255,255,0.03); padding: 25px 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative;">
-                                        
-                                        <span style="position: absolute; top: 10px; right: 10px; font-size: 0.7rem; background: ${typeColor}20; color: ${typeColor}; padding: 4px 8px; border-radius: 8px; font-weight: bold; border: 1px solid ${typeColor}40;">
-                                            <i class="ph-fill ${iconType}"></i> ${typeText}
-                                        </span>
-                                        <img src="${icon}" onerror="this.src='https://placehold.co/80x80/18181b/ffffff?text=M'" style="width: 80px; height: 80px; border-radius: 14px; object-fit: cover; background: #27272a; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.4);">
-                                        <h4 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #fff;">${proj.title}</h4>
-                                        <span style="color: var(--muted); font-size: 0.85rem;"><i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('en-US', { notation: "compact" }).format(proj.downloads)}</span>
-                                    </div>
-                                `;
-                            }
-                        });
-
-                        // Lógica de Descarga ZIP Original
-                        btnInstallFs.onclick = async () => {
-                            btnInstallFs.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Empaquetando ZIP...';
-                            btnInstallFs.disabled = true;
-                            try {
-                                window.modpackCart = [];
-                                parsedItems.forEach(pi => {
-                                    if(!window.modpackCart.some(cartItem => cartItem.id === pi.id)) window.modpackCart.push(pi);
-                                });
-                                window.updateCartUI();
-                                await window.requestBuild('download_only'); // Llamamos a tu motor de ZIP
-                                fsPanel.classList.remove('active');
-                                alert(`✅ ¡Felicidades! Tu Modpack compartido se ha descargado correctamente.`);
-                            } catch(e) {
-                                alert(`❌ Hubo un error al empaquetar el ZIP: ${e.message}`);
-                            } finally {
-                                btnInstallFs.innerHTML = '<i class="ph-bold ph-download-simple"></i> Descargar ZIP';
-                                btnInstallFs.disabled = false;
-                            }
-                        };
-                    });
-            }
-        } catch(e) { alert("El enlace del modpack está corrupto o es inválido."); }
     }
 
     // ==========================================
