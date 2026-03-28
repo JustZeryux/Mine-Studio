@@ -620,7 +620,7 @@ window.requestBuild = async function(action = 'download_only') {
             <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 10px 24px; border-radius: 10px; border: none; display: flex; align-items: center; gap: 8px; font-weight: 700; ${isAdded ? 'background: #059669; color: white;' : 'background: linear-gradient(135deg, #10b981, #059669); color: white;'}">
                 <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Agregado' : 'Agregar'}
             </button>
-        `; Actions...
+        `; 
         
         // ----------------------------------------------------
         // LIBRERÍAS (Hilo paralelo con nuevo diseño)
