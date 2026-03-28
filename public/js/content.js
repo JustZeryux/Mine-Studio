@@ -655,73 +655,50 @@ window.requestBuild = async function(action = 'download_only') {
             } catch (e) { depsContainer.innerHTML = '<div style="color: #f87171; text-align:center; padding: 20px;">Error al cargar.</div>'; }
         }, 0);
 
-        // ----------------------------------------------------
-        // YOUTUBE (Hilo paralelo con MOTOR AGRESIVO DE FALLBACK)
+       // ----------------------------------------------------
+        // YOUTUBE (MOTOR OFICIAL - CERO BLOQUEOS ANTI-BOTS)
         // ----------------------------------------------------
         setTimeout(async () => {
             const videoContainer = document.getElementById('video-container-premium');
             
-            async function fetchVideoWithAggressiveFallback(modTitle) {
-                // Servidores espejo por si uno falla (Añadí 2 más)
-                const instances = [
-                    "https://inv.tux.pizza", 
-                    "https://invidious.nerdvpn.de", 
-                    "https://vid.puffyan.us",
-                    "https://inv.vern.cc",
-                    "https://yewtu.be"
-                ];
-                
-                let videoData = null;
-                const searchQueries = [
-                    `${modTitle} minecraft mod showcase`, // Búsqueda específica
-                    `Minecraft ${modTitle} mod`,           // Búsqueda general
-                    `${modTitle} mod`,                     // Búsqueda muy general
-                    `Minecraft mods populares de showcase`  // Fallback definitivo
-                ];
+            // TU API KEY OFICIAL (Asegúrate de que sea la correcta)
+            const YOUTUBE_API_KEY = 'AIzaSyCu35RupyXPEyADr7PLnZra_hT64UShEYw'; 
 
-                // Intentamos cada query en cada instancia
-                for (let query of searchQueries) {
-                    const encodedQuery = encodeURIComponent(query);
-                    for (let instance of instances) {
-                        try {
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seg de espera, YouTube tarda
-                            const res = await fetch(`${instance}/api/v1/search?q=${encodedQuery}`, { signal: controller });
-                            clearTimeout(timeoutId);
-                            
-                            if (res.ok) {
-                                const data = await res.json();
-                                // Buscamos el primer video real
-                                videoData = data.find(v => v.type === 'video' && v.videoId);
-                                if (videoData) {
-                                    // Comprobación de seguridad: ¿Tiene vistas razonables? Si es demasiado bajo (< 10), ignorar
-                                    if(videoData.viewCount > 10) return videoData.videoId;
-                                    else videoData = null; // Resetear y seguir buscando
-                                }
-                            }
-                        } catch(err) { /* Servidor lento o caído, salta al siguiente */ }
+            async function fetchOfficialYouTubeVideo(modTitle) {
+                try {
+                    // Búsqueda hiper-específica del mod
+                    const query = encodeURIComponent(`Minecraft mod ${modTitle} showcase tutorial`);
+                    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${query}&type=video&key=${YOUTUBE_API_KEY}`);
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.items && data.items.length > 0) {
+                            return data.items[0].id.videoId; // Retorna el ID del video real
+                        }
+                    } else {
+                        console.error("Cuota de API de YouTube excedida o llave inválida.");
                     }
-                    if(videoData) break;
+                } catch(err) {
+                    console.error("Error de conexión con YouTube:", err);
                 }
-                // Si llegamos aquí, no se encontró NADA en 5 queries y 5 mirrors.
-                // Como "si o si" quieres un video, usaremos un tutorial genérico de instalación como fallback supremo.
-                return "20oDqO96L6U"; // Link genérico útil
+                
+                // Fallback de emergencia absoluto (Si se te acaba la cuota, muestra un video genérico de instalación)
+                return "20oDqO96L6U"; 
             }
 
-            const videoId = await fetchVideoWithAggressiveFallback(mod.title);
+            const videoId = await fetchOfficialYouTubeVideo(mod.title);
 
-            // RENDERIZADO DEL VIDEO
+            // RENDERIZADO DEL VIDEO OFICIAL
             if (videoId) {
                 videoContainer.innerHTML = `
                     <div class="video-wrapper-premium">
-                        <iframe id="detail-video-iframe" src="https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1&rel=0" allowfullscreen></iframe>
+                        <iframe id="detail-video-iframe" src="https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1&rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 12px;"></iframe>
                     </div>
                 `;
             } else {
-                videoContainer.innerHTML = `<div class="video-loader"><i class="ph-bold ph-warning" style="color:#fcd34d;"></i>Error fatal al cargar video.</div>`;
+                videoContainer.innerHTML = `<div class="video-loader"><i class="ph-bold ph-warning" style="color:#fcd34d;"></i>No se pudo cargar el Showcase.</div>`;
             }
         }, 0);
-    };
     
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
