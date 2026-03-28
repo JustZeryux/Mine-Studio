@@ -476,164 +476,208 @@ window.requestBuild = async function(action = 'download_only') {
         document.head.appendChild(style);
     }
 
-    window.openModDetailsById = async function(modId, isPopState = false) {
-        if (!modId) return;
+   window.openModDetailsById = async function(modId, isPopState = false) {
+    if (!modId || modId === 'undefined' || modId === 'null') return;
 
-        // Activar modo inmersivo en el body
-        document.body.classList.add('mod-view-open');
-        if (!document.querySelector('.nav-glow-trigger')) {
-            const tr = document.createElement('div'); tr.className = 'nav-glow-trigger';
-            document.body.appendChild(tr);
-        }
+    if (!isPopState) {
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('mod', modId);
+        window.history.pushState({ mod: modId }, '', newUrl);
+    }
 
-        if (!isPopState) {
-            const url = new URL(window.location);
-            url.searchParams.set('mod', modId);
-            window.history.pushState({ mod: modId }, '', url);
-        }
+    document.getElementById('view-mods').classList.add('hidden');
+    
+    let detailsPage = document.getElementById('view-mod-details-page');
+    if (!detailsPage) {
+        detailsPage = document.createElement('div');
+        detailsPage.id = 'view-mod-details-page';
+        detailsPage.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 50; display: flex; flex-direction: column; overflow-y: auto; border: none; margin: 0; padding: 0;';
+        document.getElementById('dynamic-center-area').appendChild(detailsPage);
+    }
+    detailsPage.classList.remove('hidden');
+    detailsPage.scrollTop = 0; 
 
-        let view = document.getElementById('view-mod-details-page');
-        if (!view) {
-            view = document.createElement('div');
-            view.id = 'view-mod-details-page';
-            view.className = 'details-wrapper';
-            document.body.appendChild(view);
-        }
-        view.classList.remove('hidden');
+    // 🔥 MAQUETACIÓN: HEADER COMPACTO MEJORADO Y BALANCEADO 🔥
+    detailsPage.innerHTML = `
+        <div class="mod-header-compact" style="position: sticky; top: 0; z-index: 100; background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            
+            <div style="display: flex; align-items: center; gap: 24px; flex: 1;">
+                <button id="btn-back-to-mods" class="btn btn-secondary" style="width: 45px; height: 45px; padding: 0; display: flex; justify-content: center; align-items: center; border-radius: 12px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.2s;">
+                    <i class="ph-bold ph-arrow-left" style="font-size: 1.2rem; color: #fff;"></i>
+                </button>
+                
+                <img id="cf-icon" src="https://placehold.co/64x64/18181b/ffffff?text=M" style="width: 64px; height: 64px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0;">
+                
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <h1 id="cf-title-main" style="margin: 0 0 4px 0; font-size: 1.5rem; font-weight: 800; color: #fff; line-height: 1;">Cargando...</h1>
+                    <span style="color: var(--muted); font-size: 0.95rem;">Por <span id="cf-author" style="color: #10b981; font-weight: 600;">...</span></span>
+                </div>
+            </div>
+            
+            <div id="cf-actions-header" style="display: flex; gap: 12px; align-items: center; flex-shrink: 0;">
+                <div style="color: var(--muted); font-size: 0.95rem;"><i class="ph ph-spinner ph-spin"></i> Cargando...</div>
+            </div>
+        </div>
 
-        // Estructura HTML Base
-        view.innerHTML = `
-            <div class="sticky-header">
-                <div style="max-width: 1600px; margin: 0 auto; display: flex; align-items: center; gap: 25px;">
-                    <img id="det-icon" src="" style="width: 80px; height: 80px; border-radius: 15px; object-fit: cover; background: #111;">
-                    <div style="flex: 1;">
-                        <h1 id="det-title" style="margin: 0; font-size: 1.8rem; color: #fff;">Cargando...</h1>
-                        <p id="det-author" style="margin: 0; color: var(--accent); font-size: 0.9rem;"></p>
+        <div style="display: flex; gap: 40px; max-width: 1600px; margin: 0 auto; width: 100%; padding: 30px 40px; position: relative;">
+            
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 30px; padding-bottom: 40px;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.3rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;"><i class="ph-bold ph-file-text"></i> Descripción Oficial</h3>
+                    <div id="cf-description" class="markdown-body" style="font-size: 1.05rem; line-height: 1.8; color: #e4e4e7;">
+                        <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 30px; color: var(--accent);"></i></div>
                     </div>
-                    <div id="det-actions" style="display: flex; gap: 12px;"></div>
-                    <button class="btn btn-secondary" onclick="closeModDetails()" style="padding: 10px;"><i class="ph-bold ph-x"></i></button>
+                </div>
+
+                <div id="jei-main-container" style="display: none; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 25px;">
+                    <div id="jei-section-mobs" style="display: none; margin-bottom: 30px;">
+                        <h3 style="color: #f59e0b; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;"><i class="ph-bold ph-skull"></i> Entidades 3D</h3>
+                        <div id="jei-mobs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 12px;"></div>
+                    </div>
+
+                    <div id="jei-section-items" style="display: none;">
+                        <h3 style="color: #10b981; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;"><i class="ph-bold ph-hammer"></i> Ítems y Crafteos</h3>
+                        <div id="jei-items-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)); gap: 8px;"></div>
+                        
+                        <div id="jei-recipe-viewer" style="display: none; margin-top: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: #10b981;"><i class="ph-bold ph-code"></i> Crafteo</h4>
+                                <button id="btn-close-recipe-dyn" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 1.3rem;"><i class="ph-bold ph-x"></i></button>
+                            </div>
+                            <div id="jei-recipe-content" class="custom-scrollbar" style="padding: 10px 0;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="main-scroll-area scrolling-area">
-                <div style="flex: 1.5;">
-                    <div id="det-description" class="markdown-body" style="background: var(--bg-panel); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color);">
-                        <div style="text-align:center; padding: 50px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i></div>
-                    </div>
-
-                    <div class="jei-section">
-                        <h3 style="margin-top: 0; color: #fff; display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                            <i class="ph-fill ph- magnifying-glass-plus" style="color: #fbbf24;"></i> Explorador de Contenido (JEI)
-                        </h3>
-                        <div class="jei-columns">
-                            <div class="jei-box">
-                                <h4><i class="ph-bold ph-ghost"></i> Entidades y Mobs 3D</h4>
-                                <div id="jei-mobs-grid" class="grid-mobs">
-                                    <p style="color: var(--muted); font-size: 0.8rem;">Ninguna entidad detectada.</p>
-                                </div>
-                            </div>
-                            <div class="jei-box">
-                                <h4><i class="ph-bold ph-cube"></i> Bloques e Items</h4>
-                                <div id="jei-items-grid" class="grid-items">
-                                    <p style="color: var(--muted); font-size: 0.8rem;">No se encontraron items.</p>
-                                </div>
-                            </div>
+            <div class="right-sidebar-sticky custom-scrollbar" style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding-right: 10px;">
+                
+                <div class="sidebar-panel">
+                    <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Showcase</h4>
+                    <div id="detail-video-container" style="display: none; flex-direction: column; gap: 15px;">
+                        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                            <iframe id="detail-video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
                         </div>
                     </div>
+                    <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.95rem; padding: 10px 0;"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
                 </div>
 
-                <div class="sidebar-sticky-right">
-                    <div class="sidebar-panel" style="padding: 15px;">
-                        <h4 class="sidebar-title" style="color: #f87171;"><i class="ph-bold ph-youtube-logo"></i> Tutorial / Showcase</h4>
-                        <div id="vid-container" style="display: none;">
-                            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 10px;">
-                                <iframe id="vid-iframe" style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe>
-                            </div>
-                            <div style="margin-top: 15px; display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px;">
-                                <img id="vid-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%;">
-                                <div style="overflow: hidden;">
-                                    <div id="vid-channel" style="font-size: 0.9rem; font-weight: bold; color: #fff; white-space: nowrap; text-overflow: ellipsis;"></div>
-                                    <div style="font-size: 0.7rem; color: var(--muted);">YouTube Creator</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="vid-loading" style="text-align: center; padding: 20px; color: var(--muted); font-size: 0.8rem;">
-                            <i class="ph ph-spinner ph-spin"></i> Buscando video...
-                        </div>
-                    </div>
-
-                    <div class="sidebar-panel">
-                        <h4 class="sidebar-title" style="color: #a1a1aa;"><i class="ph-bold ph-books"></i> Librerías Requeridas</h4>
-                        <div id="det-deps" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <div class="sidebar-panel">
+                    <h4 class="sidebar-title" style="color: #a1a1aa;"><i class="ph-bold ph-books"></i> Librerías Necesarias</h4>
+                    <div id="cf-dependencies" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Escaneando...</div>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
 
-        // Función para cerrar
-        window.closeModDetails = () => {
-            document.body.classList.remove('mod-view-open');
-            view.classList.add('hidden');
-            document.getElementById('view-mods').classList.remove('hidden');
-            window.history.pushState({}, '', window.location.pathname);
-        };
+    // Asignar evento al botón de volver (con el ID correcto)
+    document.getElementById('btn-back-to-mods').addEventListener('click', () => {
+        window.history.pushState({}, '', window.location.pathname);
+        detailsPage.classList.add('hidden');
+        document.getElementById('view-mods').classList.remove('hidden');
+    });
+
+    try {
+        // 1. INFO BÁSICA
+        const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
+        if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red;'>Error 404.</p>"; return; }
+        const mod = await res.json();
+        const iconUrl = mod.icon_url || 'https://placehold.co/150x150/18181b/ffffff?text=M';
+
+        document.getElementById('cf-title-main').textContent = mod.title;
+        document.getElementById('cf-author').textContent = mod.team || 'Independiente';
+        document.getElementById('cf-icon').src = iconUrl;
+        document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
+
+        // 2. VERSIONES
+        const mcVers = document.getElementById('mod-version-select').value;
+        const loader = document.getElementById('mod-loader-select').value;
+        let primaryFile = null, reqDeps = [];
 
         try {
-            const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            const mod = await res.json();
-
-            // Rellenar datos básicos
-            document.getElementById('det-title').textContent = mod.title;
-            document.getElementById('det-author').textContent = `por ${mod.team || 'Desarrollador'}`;
-            document.getElementById('det-icon').src = mod.icon_url;
-            document.getElementById('det-description').innerHTML = marked.parse(mod.body || mod.description);
-
-            // Botones de Acción
-            const isAdded = window.modpackCart.some(i => i.id === mod.id);
-            document.getElementById('det-actions').innerHTML = `
-                <button class="btn btn-primary" id="btn-add-det" ${isAdded ? 'disabled' : ''} style="padding: 10px 20px; ${isAdded ? 'background:var(--success)' : ''}">
-                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'En el Pack' : 'Añadir al Pack'}
-                </button>
-            `;
-
-            // Lógica de añadir
-            document.getElementById('btn-add-det').onclick = () => {
-                window.modpackCart.push({ id: mod.id, title: mod.title, type: mod.project_type, icon: mod.icon_url });
-                window.updateCartUI();
-                document.getElementById('btn-add-det').disabled = true;
-                document.getElementById('btn-add-det').innerHTML = '<i class="ph-bold ph-check"></i> En el Pack';
-                document.getElementById('btn-add-det').style.background = 'var(--success)';
-            };
-
-            // 📺 CARGAR VIDEO (Invidious API Fallback)
-            const query = encodeURIComponent(`${mod.title} minecraft mod showcase`);
-            fetch(`https://inv.tux.pizza/api/v1/search?q=${query}`).then(r => r.json()).then(data => {
-                const video = data.find(v => v.type === 'video') || data[0];
-                if (video) {
-                    document.getElementById('vid-loading').style.display = 'none';
-                    document.getElementById('vid-container').style.display = 'block';
-                    document.getElementById('vid-iframe').src = `https://www.youtube.com/embed/${video.videoId}`;
-                    document.getElementById('vid-channel').textContent = video.author;
-                    document.getElementById('vid-avatar').src = `https://ui-avatars.com/api/?name=${video.author.charAt(0)}&background=random&color=fff`;
-                } else {
-                    document.getElementById('vid-loading').textContent = "No se encontró video tutorial.";
-                }
-            }).catch(() => { document.getElementById('vid-loading').textContent = "Error al conectar con YouTube."; });
-
-            // 🛠️ INICIAR JEI (Lógica para encontrar items del mod)
-            if (window.runAutoScanJEI) {
-                const ver = document.getElementById('mod-version-select').value;
-                const load = document.getElementById('mod-loader-select').value;
-                // Limpiamos los grids antes de escanear
-                document.getElementById('jei-mobs-grid').innerHTML = '';
-                document.getElementById('jei-items-grid').innerHTML = '';
-                window.runAutoScanJEI(mod.id, ver, load);
+            const versRes = await fetch(`https://api.modrinth.com/v2/project/${mod.id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+            const versData = await versRes.json();
+            if (versData.length > 0) {
+                primaryFile = versData[0].files.find(f => f.primary) || versData[0].files[0];
+                if(versData[0].dependencies) reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
             }
+        } catch(e) {}
 
-        } catch (e) {
-            console.error("Error cargando detalles:", e);
+        // 3. BOTONES CORRECTOS (ESTILIZADOS Y BALANCEADOS)
+        const isAdded = window.modpackCart.some(item => item.id === mod.id);
+        const actionsDiv = document.getElementById('cf-actions-header');
+        
+        let downloadBtnHtml = primaryFile 
+            ? `<a href="${primaryFile.url}" target="_blank" download class="btn" style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'"><i class="ph-bold ph-download-simple" style="font-size: 1.1rem;"></i> Descargar</a>`
+            : `<button class="btn" disabled style="padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #71717a; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem;"><i class="ph-bold ph-warning" style="font-size: 1.1rem;"></i> N/A</button>`;
+
+        actionsDiv.innerHTML = `
+            ${downloadBtnHtml}
+            <button class="btn btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 10px 24px; border-radius: 10px; border: none; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); ${isAdded ? 'background: #059669; color: white;' : 'background: linear-gradient(135deg, #10b981, #059669); color: white;'}">
+                <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}" style="font-size: 1.2rem;"></i> ${isAdded ? 'Agregado' : 'Agregar'}
+            </button>
+        `;
+        
+        actionsDiv.querySelector('.btn-add-cf').addEventListener('click', function() {
+            if (!window.modpackCart.some(item => item.id === mod.id)) {
+                window.modpackCart.push({ id: mod.id, title: mod.title, type: 'mod', icon: iconUrl, categories: mod.display_categories });
+                window.updateCartUI();
+                this.innerHTML = '<i class="ph-bold ph-check" style="font-size: 1.2rem;"></i> Agregado';
+                this.style.background = '#059669';
+                this.disabled = true;
+            }
+        });
+
+        // 4. LIBRERÍAS
+        const depsContainer = document.getElementById('cf-dependencies');
+        if (reqDeps.length > 0) {
+            const projectIds = reqDeps.map(d => d.project_id);
+            const depProjsRes = await fetch(`https://api.modrinth.com/v2/projects?ids=["${projectIds.join('","')}"]`);
+            const depProjs = await depProjsRes.json();
+            
+            depsContainer.innerHTML = '';
+            depProjs.forEach(dep => {
+                const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
+                depsContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; cursor:pointer;" onclick="window.openModDetailsById('${dep.id}')">
+                        <img src="${dep.icon_url || 'https://placehold.co/36'}" style="width: 30px; height: 30px; border-radius: 6px;">
+                        <div style="flex:1;">
+                            <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
+                            <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};">${isDepAdded ? 'Instalado' : 'Requerido'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem; text-align:center;"><i class="ph-fill ph-check-circle"></i> Independiente.</div>';
         }
-    };
+
+        // 5. VIDEO YOUTUBE
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000); 
+            const ytRes = await fetch(`https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(`${mod.title} minecraft mod showcase`)}`, { signal: controller });
+            clearTimeout(timeoutId);
+            const ytData = await ytRes.json();
+            const video = ytData.find(v => v.type === 'video') || ytData[0];
+            
+            if (video && video.videoId) {
+                document.getElementById('no-video-msg').style.display = 'none';
+                document.getElementById('detail-video-container').style.display = 'flex';
+                document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${video.videoId}?autoplay=0`;
+            } else {
+                document.getElementById('no-video-msg').innerHTML = "No se encontró video.";
+            }
+        } catch (e) { document.getElementById('no-video-msg').innerHTML = "Servidor de videos offline."; }
+
+        // 6. JEI
+        if (typeof window.runAutoScanJEI === 'function') {
+            try { window.runAutoScanJEI(mod.id, mcVers, loader); } catch (e) {}
+        }
+    } catch (e) { console.error("Error crítico:", e); }
+};
     
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
