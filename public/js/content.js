@@ -645,13 +645,18 @@ card.addEventListener('click', (e) => {
                 // ESCUDO 3: Extraer el ID seguro, sea cual sea el formato que mande Modrinth
                 const safeId = mod.project_id || mod.id || mod.slug;
                 
-                if (safeId) {
+if (safeId) {
                     window.openModDetailsById(safeId);
                     if (typeof runAutoScanJEI === 'function') {
                         runAutoScanJEI(safeId, versionSelect.value, loaderSelect.value);
                     }
                 }
-            });
+            }); // Esto cierra el evento de clic de la carta
+
+            // ¡AGREGA ESTO! Es vital para que las cartas se vean en pantalla
+            if(modsGrid) modsGrid.appendChild(card);
+            
+        }); // <--- ¡ESTE ES EL CIERRE QUE FALTABA PARA EL mods.forEach!
     }
 
     function showEpicDepsModal(mainMod, missingDeps, triggerButton) {
