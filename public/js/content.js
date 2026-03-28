@@ -376,15 +376,20 @@ window.requestBuild = async function(action = 'download_only') {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
 // ==========================================
-    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE REDISEÑADO)
+    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE REDISEÑADO Y STICKY)
     // ==========================================
     
-    // CSS Inyectado para que las imágenes del creador se centren y se vean bien
+    // CSS Inyectado para que las imágenes del creador se centren, se vean bien, y scrollbar del sidebar
     const styleCf = document.createElement('style');
     styleCf.innerHTML = `
         .markdown-body img { display: block; margin: 25px auto; max-width: 100%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
         .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .sidebar-title { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        /* Custom scrollbar para el sidebar sticky */
+        .sticky-sidebar::-webkit-scrollbar { width: 6px; }
+        .sticky-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sticky-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     `;
     document.head.appendChild(styleCf);
 
@@ -413,12 +418,13 @@ window.requestBuild = async function(action = 'download_only') {
             detailsPage.id = 'view-mod-details-page';
             detailsPage.className = 'panel';
             // 🔥 MARGEN SUPERIOR AÑADIDO (marginTop: 80px) PARA QUE NO SE PEGUE ARRIBA 🔥
-            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: calc(100vh - 80px); margin-top: 80px; background: var(--bg-main); border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: 1px solid var(--border-color); position: relative;';
+            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: calc(100vh - 80px); margin-top: 80px; background: var(--bg-main); border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: 1px solid var(--border-color); position: relative; scroll-behavior: smooth;';
             document.getElementById('dynamic-center-area').appendChild(detailsPage);
         }
         detailsPage.classList.remove('hidden');
+        detailsPage.scrollTop = 0; // Mandar arriba siempre que abres uno nuevo
 
-        // 🛠️ MAQUETACIÓN HTML (IZQUIERDA: INFO / DERECHA: SIDEBAR DE HERRAMIENTAS)
+        // 🛠️ MAQUETACIÓN HTML (IZQUIERDA: INFO / DERECHA: SIDEBAR DE HERRAMIENTAS STICKY)
         detailsPage.innerHTML = `
             <div id="cf-banner" style="height: 250px; background: #111; background-size: cover; background-position: center; position: relative; border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main) 5%, transparent 95%);"></div>
@@ -429,10 +435,9 @@ window.requestBuild = async function(action = 'download_only') {
             
             <div style="width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 30px 40px 30px; margin-top: -80px; position: relative; z-index: 10;">
                 
-                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start;">
                     
                     <div style="flex: 1; min-width: 600px;">
-                        
                         <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px;">
                             <img id="cf-icon" src="https://placehold.co/130x130/18181b/ffffff?text=M" style="width: 130px; height: 130px; border-radius: 20px; border: 4px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
                             <div style="padding-bottom: 5px;">
@@ -442,7 +447,7 @@ window.requestBuild = async function(action = 'download_only') {
                             </div>
                         </div>
 
-                        <div class="sidebar-panel">
+                        <div class="sidebar-panel" style="margin-bottom: 0;">
                             <h3 class="sidebar-title"><i class="ph-bold ph-file-text"></i> Descripción del Mod</h3>
                             <div id="cf-description" class="markdown-body" style="font-size: 1rem; line-height: 1.7; color: #e4e4e7;">
                                 <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i><p>Conectando con Modrinth...</p></div>
@@ -450,11 +455,12 @@ window.requestBuild = async function(action = 'download_only') {
                         </div>
                     </div>
 
-                    <div style="width: 380px; display: flex; flex-direction: column;">
+                    <div class="sticky-sidebar" style="width: 380px; display: flex; flex-direction: column; position: sticky; top: 20px; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 10px;">
                         
                         <div class="sidebar-panel" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
                             <div id="cf-actions" style="display: flex; flex-direction: column; gap: 10px;">
-                                </div>
+                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Cargando...</div>
+                            </div>
                         </div>
 
                         <div class="sidebar-panel">
@@ -472,10 +478,10 @@ window.requestBuild = async function(action = 'download_only') {
                                 </div>
                                 <div id="detail-video-credit" style="font-size: 0.75rem; color: var(--muted); margin-top: 8px; text-align: center;"></div>
                             </div>
-                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.85rem;">Buscando video...</div>
+                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.85rem;"><i class="ph ph-spinner ph-spin"></i> Buscando video...</div>
                         </div>
 
-                        <div class="sidebar-panel">
+                        <div class="sidebar-panel" style="margin-bottom: 0;">
                             <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner de Archivos (JEI)</h4>
                             <div id="cf-jei">
                                 <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0;">Entidades 3D y Crafteos detectados:</p>
@@ -498,7 +504,7 @@ window.requestBuild = async function(action = 'download_only') {
         try {
             // 1. OBTENER INFORMACIÓN BÁSICA DEL MOD
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red;'>Error 404: Mod no encontrado.</p>"; return; }
+            if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red; text-align:center;'>Error 404: Mod no encontrado en Modrinth.</p>"; return; }
             const mod = await res.json();
 
             const iconUrl = mod.icon_url || 'https://placehold.co/130x130/18181b/ffffff?text=M';
@@ -514,8 +520,9 @@ window.requestBuild = async function(action = 'download_only') {
 
             // Renderizar Tags
             const tagsCont = document.getElementById('cf-tags');
+            tagsCont.innerHTML = '';
             (mod.display_categories || []).slice(0, 4).forEach(tag => { 
-                tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
+                tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05); text-transform: capitalize;">${window.tagIcons ? (window.tagIcons[tag] || '<i class="ph-bold ph-tag"></i>') : '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
             });
 
             // 2. BUSCAR VERSIONES (PARA BOTONES Y LIBRERÍAS)
@@ -576,7 +583,7 @@ window.requestBuild = async function(action = 'download_only') {
                     const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
                     depsContainer.innerHTML += `
                         <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'" onclick="window.openModDetailsById('${dep.id}')">
-                            <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 36px; height: 36px; border-radius: 6px; background: #27272a;">
+                            <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 36px; height: 36px; border-radius: 6px; background: #27272a; object-fit: cover;">
                             <div style="flex:1;">
                                 <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
                                 <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};"><i class="ph-bold ${isDepAdded ? 'ph-check' : 'ph-warning'}"></i> ${isDepAdded ? 'En tu Modpack' : 'Requerido'}</div>
@@ -591,21 +598,37 @@ window.requestBuild = async function(action = 'download_only') {
 
             // 5. CARGAR VIDEO DE YOUTUBE AUTOMÁTICO
             if (typeof window.loadModShowcase === 'function') {
-                document.getElementById('no-video-msg').style.display = 'none';
-                // La función loadModShowcase original usa los IDs que acabamos de poner en el HTML
-                window.loadModShowcase(mod.title);
+                try {
+                    // El mensaje se oculta/ajusta dentro de loadModShowcase
+                    document.getElementById('no-video-msg').style.display = 'none'; 
+                    window.loadModShowcase(mod.title);
+                } catch(e) {
+                    document.getElementById('no-video-msg').style.display = 'block';
+                    document.getElementById('no-video-msg').textContent = "No se pudo cargar el video.";
+                }
+            } else {
+                document.getElementById('no-video-msg').style.display = 'block';
+                document.getElementById('no-video-msg').textContent = "Buscador de videos desactivado.";
             }
 
             // 6. INICIAR AUTO-ESCANER JEI (Crafteos y Mobs)
             if (typeof window.runAutoScanJEI === 'function') {
-                window.runAutoScanJEI(mod.id, mcVers, loader);
+                try {
+                    window.runAutoScanJEI(mod.id, mcVers, loader);
+                } catch (e) {
+                    console.error("Error JEI:", e);
+                }
+            } else {
+                document.getElementById('cf-jei').innerHTML = "<span class='muted-text text-sm'>Escáner no disponible.</span>";
             }
 
         } catch (e) {
             console.error("Fallo general en openModDetailsById:", e);
+            document.getElementById('cf-title-main').textContent = "Error General";
+            document.getElementById('cf-description').innerHTML = `<p style="color:var(--danger);">Se produjo un error crítico al procesar la información del mod. Revisa la consola (F12) para más detalles.</p>`;
         }
     };
-
+    
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
     // ==========================================
