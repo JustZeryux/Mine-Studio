@@ -223,11 +223,17 @@ window.modpackTemplates = [
         modalSave.classList.remove('hidden');
     });
 
-    window.requestBuild = async function(action = 'download_only') {
+window.requestBuild = async function(action = 'download_only') {
         const isSaving = (action === 'save_only' || action === 'save_download');
         const isDownloading = (action === 'download_only' || action === 'save_download');
 
-        if (isSaving && !isLoggedIn) {
+        // NUEVO: Comprobamos el estado real en Supabase
+        let userIsLoggedIn = false;
+        if (typeof window.checkIsLoggedIn === 'function') {
+            userIsLoggedIn = await window.checkIsLoggedIn();
+        }
+
+        if (isSaving && !userIsLoggedIn) {
             alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en la nube.');
             if(authModal) authModal.classList.remove('hidden');
             modalSave.classList.add('hidden');
