@@ -1367,29 +1367,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-close-recipe')?.addEventListener('click', () => { if(recipeViewer) recipeViewer.style.display = 'none'; });
     
     async function runAutoScanJEI(modId, mcVers, loader) {
-        const itemsGrid = document.getElementById('jei-items-grid'); const mobsGrid = document.getElementById('jei-mobs-grid');
-        const leftSidebar = document.querySelector('.jei-sidebar-left'); const rightSidebar = document.querySelector('.jei-sidebar-right');
+        // 1. ESCUDO DE SEGURIDAD: Evitar que haga peticiones nulas
+        if (!modId || modId === 'undefined' || modId === 'null') {
+            console.warn("Auto-Scan cancelado: ID de mod inválido.");
+            return;
+        }
+
+        const itemsGrid = document.getElementById('jei-items-grid'); 
+        const mobsGrid = document.getElementById('jei-mobs-grid');
+        const leftSidebar = document.querySelector('.jei-sidebar-left'); 
+        const rightSidebar = document.querySelector('.jei-sidebar-right');
         
-        if(leftSidebar) leftSidebar.style.display = 'none'; if(rightSidebar) rightSidebar.style.display = 'none';
+        if(leftSidebar) leftSidebar.style.display = 'none'; 
+        if(rightSidebar) rightSidebar.style.display = 'none';
         if(!itemsGrid || !mobsGrid) return;
-        leftSidebar.style.display = 'block'; rightSidebar.style.display = 'flex'; if(recipeViewer) recipeViewer.style.display = 'none';
+        
+        leftSidebar.style.display = 'block'; 
+        rightSidebar.style.display = 'flex'; 
+        if(recipeViewer) recipeViewer.style.display = 'none';
 
         itemsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Extrayendo archivos...</div>';
         mobsGrid.innerHTML = '<div class="muted-text text-sm" style="grid-column:1/-1; padding: 20px;"><i class="ph ph-spinner ph-spin"></i> Buscando entidades...</div>';
 
         try {
             const versRes = await fetch(`https://api.modrinth.com/v2/project/${modId}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+            
+            // 2. ESCUDO CONTRA 404 (Not Found)
+            if (!versRes.ok) {
+                throw new Error("No se pudo obtener la versión para el escáner JEI.");
+            }
+
             const versData = await versRes.json();
-            if (versData.length === 0 || versData[0].files.length === 0) throw new Error("Sin archivos Java.");
+            if (!versData || versData.length === 0 || versData[0].files.length === 0) {
+                throw new Error("Sin archivos Java compatibles para esta versión.");
+            }
 
             const fileUrl = versData[0].files.find(f => f.primary)?.url || versData[0].files[0].url;
-            const fileRes = await fetch(fileUrl); const fileBlob = await fileRes.blob();
-            const zip = new JSZip(); const unzipped = await zip.loadAsync(fileBlob);
+            const fileRes = await fetch(fileUrl); 
+            const fileBlob = await fileRes.blob();
+            
+            if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip");
+            
+            const zip = new JSZip(); 
+            const unzipped = await zip.loadAsync(fileBlob);
             const allFiles = Object.keys(unzipped.files);
             
             const recipeFiles = allFiles.filter(p => p.includes('data/') && p.includes('recipes/') && p.endsWith('.json'));
             const parsedRecipes = [];
-            for (let path of recipeFiles) { try { parsedRecipes.push({ path: path, data: JSON.parse(await unzipped.files[path].async('string')) }); } catch(e) {} }
+            for (let path of recipeFiles) { 
+                try { 
+                    parsedRecipes.push({ path: path, data: JSON.parse(await unzipped.files[path].async('string')) }); 
+                } catch(e) {} 
+            }
 
             const uniqueItemNames = new Set(), uniqueMobNames = new Set(), modTexturesCache = {}; 
             let itemsHTML = '', mobsHTML = '', itemCount = 0, mobCount = 0;
@@ -1412,8 +1441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (leftSidebar) leftSidebar.style.display = mobCount === 0 ? 'none' : 'block';
             if (rightSidebar) rightSidebar.style.display = itemCount === 0 ? 'none' : 'flex';
-            if (itemsGrid) itemsGrid.innerHTML = itemCount === 0 ? '' : itemsHTML;
-            if (mobsGrid) mobsGrid.innerHTML = mobCount === 0 ? '' : mobsHTML;
+            if (itemsGrid) itemsGrid.innerHTML = itemCount === 0 ? '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;">No se encontraron ítems.</div>' : itemsHTML;
+            if (mobsGrid) mobsGrid.innerHTML = mobCount === 0 ? '<div class="muted-text text-sm" style="grid-column:1/-1; text-align:center; padding: 20px;">No se encontraron entidades 3D.</div>' : mobsHTML;
 
             window.openVisualRecipe = (rawId, prettyName) => {
                 if(!recipeViewer) return;
@@ -1431,7 +1460,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 modal.classList.remove('hidden');
             };
 
-        } catch (error) { if (leftSidebar) leftSidebar.style.display = 'none'; if (rightSidebar) rightSidebar.style.display = 'none'; }
+        } catch (error) { 
+            console.warn("JEI Auto-Scan abortado:", error.message);
+            if (leftSidebar) leftSidebar.style.display = 'none'; 
+            if (rightSidebar) rightSidebar.style.display = 'none'; 
+        }
     }
 
     // ==========================================
