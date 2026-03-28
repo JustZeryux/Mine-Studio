@@ -376,22 +376,26 @@ window.requestBuild = async function(action = 'download_only') {
     if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
 // ==========================================
-    // FUNCIÓN CENTRAL: ABRIR DETALLES (ESTILO CURSEFORGE REDISEÑADO Y STICKY)
+    // FUNCIÓN CENTRAL: ABRIR DETALLES (FULL PAGE + STICKY + VIDEO FIX)
     // ==========================================
     
-    // CSS Inyectado para que las imágenes del creador se centren, se vean bien, y scrollbar del sidebar
-    const styleCf = document.createElement('style');
-    styleCf.innerHTML = `
-        .markdown-body img { display: block; margin: 25px auto; max-width: 100%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
-        .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .sidebar-title { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        
-        /* Custom scrollbar para el sidebar sticky */
-        .sticky-sidebar::-webkit-scrollbar { width: 6px; }
-        .sticky-sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sticky-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-    `;
-    document.head.appendChild(styleCf);
+    // CSS para las imágenes, el layout y el sidebar sticky
+    if (!document.getElementById('cf-styles-custom')) {
+        const styleCf = document.createElement('style');
+        styleCf.id = 'cf-styles-custom';
+        styleCf.innerHTML = `
+            .markdown-body img { display: block; margin: 25px auto; max-width: 100%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+            .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+            .sidebar-title { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+            
+            /* Magia para que el sidebar te siga al hacer scroll */
+            .sticky-sidebar { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 5px; }
+            .sticky-sidebar::-webkit-scrollbar { width: 6px; }
+            .sticky-sidebar::-webkit-scrollbar-track { background: transparent; }
+            .sticky-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        `;
+        document.head.appendChild(styleCf);
+    }
 
     window.addEventListener('popstate', (e) => {
         if (e.state && e.state.mod) window.openModDetailsById(e.state.mod, true);
@@ -416,50 +420,50 @@ window.requestBuild = async function(action = 'download_only') {
         if (!detailsPage) {
             detailsPage = document.createElement('div');
             detailsPage.id = 'view-mod-details-page';
-            detailsPage.className = 'panel';
-            // 🔥 MARGEN SUPERIOR AÑADIDO (marginTop: 80px) PARA QUE NO SE PEGUE ARRIBA 🔥
-            detailsPage.style.cssText = 'padding: 0; overflow-y: auto; height: calc(100vh - 80px); margin-top: 80px; background: var(--bg-main); border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: 1px solid var(--border-color); position: relative; scroll-behavior: smooth;';
+            // 🔥 MODO PÁGINA COMPLETA: Sin bordes, position absolute para que cubra todo, fondo sólido
+            detailsPage.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 50; overflow-y: auto; padding: 0; margin: 0; border: none; border-radius: 0; display: flex; flex-direction: column; scroll-behavior: smooth;';
+            document.getElementById('dynamic-center-area').style.position = 'relative'; // Asegura que se ancle bien
             document.getElementById('dynamic-center-area').appendChild(detailsPage);
         }
         detailsPage.classList.remove('hidden');
-        detailsPage.scrollTop = 0; // Mandar arriba siempre que abres uno nuevo
+        detailsPage.scrollTop = 0; // Mandar arriba al abrir
 
-        // 🛠️ MAQUETACIÓN HTML (IZQUIERDA: INFO / DERECHA: SIDEBAR DE HERRAMIENTAS STICKY)
+        // 🛠️ MAQUETACIÓN HTML FULL PAGE
         detailsPage.innerHTML = `
-            <div id="cf-banner" style="height: 250px; background: #111; background-size: cover; background-position: center; position: relative; border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+            <div id="cf-banner" style="width: 100%; height: 300px; background: #111; background-size: cover; background-position: center; position: relative;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-main) 5%, transparent 95%);"></div>
-                <button id="btn-back-to-mods" class="btn btn-secondary" style="position: absolute; top: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);">
+                <button id="btn-back-to-mods" class="btn btn-secondary" style="position: absolute; top: 20px; left: 30px; z-index: 60; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px;">
                     <i class="ph-bold ph-arrow-left"></i> Volver al Buscador
                 </button>
             </div>
             
-            <div style="width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 30px 40px 30px; margin-top: -80px; position: relative; z-index: 10;">
+            <div style="width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 40px 40px 40px; margin-top: -100px; position: relative; z-index: 10;">
                 
-                <div style="display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start;">
+                <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
                     
                     <div style="flex: 1; min-width: 600px;">
-                        <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px;">
-                            <img id="cf-icon" src="https://placehold.co/130x130/18181b/ffffff?text=M" style="width: 130px; height: 130px; border-radius: 20px; border: 4px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+                        <div style="display: flex; gap: 25px; align-items: flex-end; margin-bottom: 40px;">
+                            <img id="cf-icon" src="https://placehold.co/150x150/18181b/ffffff?text=M" style="width: 150px; height: 150px; border-radius: 20px; border: 5px solid var(--bg-main); background: #18181b; object-fit: cover; box-shadow: 0 10px 25px rgba(0,0,0,0.6);">
                             <div style="padding-bottom: 5px;">
-                                <div id="cf-tags" style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;"></div>
-                                <h1 id="cf-title-main" style="margin: 0 0 5px 0; font-size: 2.2rem; color: #fff;">Cargando...</h1>
-                                <p class="muted-text" style="margin: 0; font-size: 0.95rem;">Desarrollado por <span id="cf-author" style="color: var(--accent); font-weight: bold;">...</span></p>
+                                <div id="cf-tags" style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;"></div>
+                                <h1 id="cf-title-main" style="margin: 0 0 8px 0; font-size: 2.5rem; color: #fff;">Cargando...</h1>
+                                <p class="muted-text" style="margin: 0; font-size: 1rem;">Desarrollado por <span id="cf-author" style="color: var(--accent); font-weight: bold;">...</span></p>
                             </div>
                         </div>
 
-                        <div class="sidebar-panel" style="margin-bottom: 0;">
-                            <h3 class="sidebar-title"><i class="ph-bold ph-file-text"></i> Descripción del Mod</h3>
-                            <div id="cf-description" class="markdown-body" style="font-size: 1rem; line-height: 1.7; color: #e4e4e7;">
+                        <div class="sidebar-panel" style="margin-bottom: 0; padding: 30px; background: transparent; border: none;">
+                            <h3 class="sidebar-title" style="font-size: 1.5rem; border-color: rgba(255,255,255,0.1);"><i class="ph-bold ph-file-text"></i> Descripción Oficial</h3>
+                            <div id="cf-description" class="markdown-body" style="font-size: 1.05rem; line-height: 1.8; color: #e4e4e7;">
                                 <div style="text-align:center; padding: 40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px; color: var(--accent);"></i><p>Conectando con Modrinth...</p></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="sticky-sidebar" style="width: 380px; display: flex; flex-direction: column; position: sticky; top: 20px; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 10px;">
+                    <div class="sticky-sidebar" style="width: 380px;">
                         
                         <div class="sidebar-panel" style="background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2);">
-                            <div id="cf-actions" style="display: flex; flex-direction: column; gap: 10px;">
-                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Cargando...</div>
+                            <div id="cf-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="text-align:center; color: var(--muted);"><i class="ph ph-spinner ph-spin"></i> Cargando botones...</div>
                             </div>
                         </div>
 
@@ -476,15 +480,14 @@ window.requestBuild = async function(action = 'download_only') {
                                 <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
                                     <iframe id="detail-video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen></iframe>
                                 </div>
-                                <div id="detail-video-credit" style="font-size: 0.75rem; color: var(--muted); margin-top: 8px; text-align: center;"></div>
                             </div>
-                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.85rem;"><i class="ph ph-spinner ph-spin"></i> Buscando video...</div>
+                            <div id="no-video-msg" style="text-align:center; color: var(--muted); font-size: 0.9rem; padding: 10px 0;"><i class="ph ph-spinner ph-spin"></i> Buscando video en YouTube...</div>
                         </div>
 
                         <div class="sidebar-panel" style="margin-bottom: 0;">
-                            <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner de Archivos (JEI)</h4>
+                            <h4 class="sidebar-title" style="color: #fbbf24;"><i class="ph-bold ph-scan"></i> Escáner Interno (JEI)</h4>
                             <div id="cf-jei">
-                                <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0;">Entidades 3D y Crafteos detectados:</p>
+                                <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0;">Entidades y Crafteos detectados en el .JAR:</p>
                                 <div id="jei-mobs-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px;"></div>
                                 <div id="jei-items-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;"></div>
                             </div>
@@ -502,30 +505,28 @@ window.requestBuild = async function(action = 'download_only') {
         });
 
         try {
-            // 1. OBTENER INFORMACIÓN BÁSICA DEL MOD
+            // 1. OBTENER INFO DEL MOD
             const res = await fetch(`https://api.modrinth.com/v2/project/${modId}`);
-            if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red; text-align:center;'>Error 404: Mod no encontrado en Modrinth.</p>"; return; }
+            if(!res.ok) { document.getElementById('cf-description').innerHTML = "<p style='color:red; text-align:center;'>Error 404: Mod no encontrado.</p>"; return; }
             const mod = await res.json();
 
-            const iconUrl = mod.icon_url || 'https://placehold.co/130x130/18181b/ffffff?text=M';
+            const iconUrl = mod.icon_url || 'https://placehold.co/150x150/18181b/ffffff?text=M';
             const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0].url : iconUrl;
 
             document.getElementById('cf-title-main').textContent = mod.title;
-            document.getElementById('cf-author').textContent = mod.team || 'Desarrollador';
+            document.getElementById('cf-author').textContent = mod.team || 'Desarrollador Independiente';
             document.getElementById('cf-icon').src = iconUrl;
             document.getElementById('cf-banner').style.backgroundImage = `url('${bannerUrl}')`;
             
-            // Renderizar Markdown
             document.getElementById('cf-description').innerHTML = mod.body ? marked.parse(mod.body) : `<p>${mod.description}</p>`;
 
-            // Renderizar Tags
             const tagsCont = document.getElementById('cf-tags');
             tagsCont.innerHTML = '';
             (mod.display_categories || []).slice(0, 4).forEach(tag => { 
-                tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05); text-transform: capitalize;">${window.tagIcons ? (window.tagIcons[tag] || '<i class="ph-bold ph-tag"></i>') : '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
+                tagsCont.innerHTML += `<span class="mini-tag" style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); text-transform: capitalize;">${window.tagIcons ? (window.tagIcons[tag] || '<i class="ph-bold ph-tag"></i>') : '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; 
             });
 
-            // 2. BUSCAR VERSIONES (PARA BOTONES Y LIBRERÍAS)
+            // 2. VERSIONES Y LIBRERÍAS
             const mcVers = document.getElementById('mod-version-select').value;
             const loader = document.getElementById('mod-loader-select').value;
             let primaryFile = null;
@@ -536,28 +537,25 @@ window.requestBuild = async function(action = 'download_only') {
                 const versData = await versRes.json();
                 if (versData.length > 0) {
                     primaryFile = versData[0].files.find(f => f.primary) || versData[0].files[0];
-                    if(versData[0].dependencies) {
-                        reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
-                    }
+                    if(versData[0].dependencies) reqDeps = versData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
                 }
-            } catch(e) { console.error("Error buscando versión:", e); }
+            } catch(e) {}
 
-            // 3. RENDERIZAR BOTONES DE ACCIÓN (Añadir y Descargar)
+            // 3. BOTONES DE ACCIÓN
             const isAdded = window.modpackCart.some(item => item.id === mod.id);
             const actionsDiv = document.getElementById('cf-actions');
             
             let downloadBtnHtml = primaryFile 
-                ? `<a href="${primaryFile.url}" target="_blank" class="btn btn-secondary" style="padding: 12px; width: 100%; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"><i class="ph-bold ph-download-simple"></i> Descargar .JAR</a>`
-                : `<button class="btn btn-secondary" disabled style="padding: 12px; width: 100%; justify-content: center;"><i class="ph-bold ph-warning"></i> Sin versión para ${mcVers}</button>`;
+                ? `<a href="${primaryFile.url}" target="_blank" class="btn btn-secondary" style="padding: 14px; width: 100%; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 1rem;"><i class="ph-bold ph-download-simple"></i> Descargar .JAR</a>`
+                : `<button class="btn btn-secondary" disabled style="padding: 14px; width: 100%; justify-content: center;"><i class="ph-bold ph-warning"></i> Sin versión para ${mcVers}</button>`;
 
             actionsDiv.innerHTML = `
-                <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 15px; font-size: 1.05rem; width: 100%; justify-content: center; border-radius: 8px; box-shadow: 0 4px 15px rgba(99,102,241,0.3); ${isAdded ? 'background: var(--success); color: white;' : 'background: linear-gradient(135deg, var(--accent), #4f46e5); border: none;'}">
-                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido al Modpack' : 'Añadir al Modpack'}
+                <button class="btn btn-primary btn-add-cf" ${isAdded ? 'disabled' : ''} style="padding: 16px; font-size: 1.1rem; width: 100%; justify-content: center; border-radius: 10px; box-shadow: 0 4px 15px rgba(99,102,241,0.3); ${isAdded ? 'background: var(--success); color: white;' : 'background: linear-gradient(135deg, var(--accent), #4f46e5); border: none;'}">
+                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido al Modpack' : 'Instalar en el Modpack'}
                 </button>
                 ${downloadBtnHtml}
             `;
             
-            // Lógica para el botón "Añadir al Modpack"
             actionsDiv.querySelector('.btn-add-cf').addEventListener('click', function() {
                 if (!window.modpackCart.some(item => item.id === mod.id)) {
                     let fType = mod.project_type || 'mod';
@@ -571,7 +569,7 @@ window.requestBuild = async function(action = 'download_only') {
                 }
             });
 
-            // 4. RENDERIZAR LIBRERÍAS
+            // 4. LIBRERÍAS
             const depsContainer = document.getElementById('cf-dependencies');
             if (reqDeps.length > 0) {
                 const projectIds = reqDeps.map(d => d.project_id);
@@ -582,50 +580,63 @@ window.requestBuild = async function(action = 'download_only') {
                 depProjs.forEach(dep => {
                     const isDepAdded = window.modpackCart.some(item => item.id === dep.id);
                     depsContainer.innerHTML += `
-                        <div style="display:flex; align-items:center; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'" onclick="window.openModDetailsById('${dep.id}')">
-                            <img src="${dep.icon_url || 'https://placehold.co/32x32'}" style="width: 36px; height: 36px; border-radius: 6px; background: #27272a; object-fit: cover;">
+                        <div style="display:flex; align-items:center; gap: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(0,0,0,0.25)'" onclick="window.openModDetailsById('${dep.id}')">
+                            <img src="${dep.icon_url || 'https://placehold.co/36x36'}" style="width: 40px; height: 40px; border-radius: 8px; background: #27272a; object-fit: cover;">
                             <div style="flex:1;">
-                                <div style="font-size: 0.9rem; font-weight: bold; color: #fff;">${dep.title}</div>
-                                <div style="font-size: 0.75rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};"><i class="ph-bold ${isDepAdded ? 'ph-check' : 'ph-warning'}"></i> ${isDepAdded ? 'En tu Modpack' : 'Requerido'}</div>
+                                <div style="font-size: 0.95rem; font-weight: bold; color: #fff;">${dep.title}</div>
+                                <div style="font-size: 0.8rem; color: ${isDepAdded ? 'var(--success)' : 'var(--danger)'};"><i class="ph-bold ${isDepAdded ? 'ph-check' : 'ph-warning'}"></i> ${isDepAdded ? 'En tu Modpack' : 'Requiere Instalación'}</div>
                             </div>
-                            <i class="ph-bold ph-caret-right" style="color: var(--muted);"></i>
+                            <i class="ph-bold ph-caret-right" style="color: var(--muted); font-size: 1.2rem;"></i>
                         </div>
                     `;
                 });
             } else {
-                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.9rem; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px;"><i class="ph-fill ph-check-circle"></i> Mod independiente (No necesita librerías).</div>';
+                depsContainer.innerHTML = '<div style="color: #10b981; font-size: 0.95rem; padding: 12px; background: rgba(16,185,129,0.1); border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);"><i class="ph-fill ph-check-circle"></i> Mod independiente. No necesita nada más.</div>';
             }
 
-            // 5. CARGAR VIDEO DE YOUTUBE AUTOMÁTICO
-            if (typeof window.loadModShowcase === 'function') {
-                try {
-                    // El mensaje se oculta/ajusta dentro de loadModShowcase
-                    document.getElementById('no-video-msg').style.display = 'none'; 
-                    window.loadModShowcase(mod.title);
-                } catch(e) {
-                    document.getElementById('no-video-msg').style.display = 'block';
-                    document.getElementById('no-video-msg').textContent = "No se pudo cargar el video.";
+            // 5. CARGAR VIDEO (SÚPER FIX: Consulta interna garantizada usando una API libre)
+            try {
+                // Buscamos directamente el video sin depender de funciones externas que se puedan romper
+                const videoQuery = encodeURIComponent(`${mod.title} minecraft mod showcase`);
+                const ytRes = await fetch(`https://inv.tux.pizza/api/v1/search?q=${videoQuery}`);
+                const ytData = await ytRes.json();
+                
+                if (ytData && ytData.length > 0) {
+                    const videoId = ytData[0].videoId;
+                    document.getElementById('no-video-msg').style.display = 'none';
+                    document.getElementById('detail-video-container').style.display = 'block';
+                    document.getElementById('detail-video-iframe').src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
+                } else {
+                    document.getElementById('no-video-msg').innerHTML = "No se encontraron tutoriales en YouTube.";
                 }
-            } else {
-                document.getElementById('no-video-msg').style.display = 'block';
-                document.getElementById('no-video-msg').textContent = "Buscador de videos desactivado.";
+            } catch (e) {
+                // Si la API pública falla, intentamos llamar a tu función original si es que existe
+                if (typeof window.loadModShowcase === 'function' || typeof loadModShowcase === 'function') {
+                    try {
+                        const funcToCall = window.loadModShowcase || loadModShowcase;
+                        document.getElementById('no-video-msg').style.display = 'none'; 
+                        funcToCall(mod.title);
+                    } catch(err) {
+                        document.getElementById('no-video-msg').style.display = 'block';
+                        document.getElementById('no-video-msg').textContent = "No se pudo conectar con YouTube.";
+                    }
+                } else {
+                    document.getElementById('no-video-msg').innerHTML = "Buscador de videos no disponible.";
+                }
             }
 
             // 6. INICIAR AUTO-ESCANER JEI (Crafteos y Mobs)
-            if (typeof window.runAutoScanJEI === 'function') {
+            if (typeof window.runAutoScanJEI === 'function' || typeof runAutoScanJEI === 'function') {
                 try {
-                    window.runAutoScanJEI(mod.id, mcVers, loader);
-                } catch (e) {
-                    console.error("Error JEI:", e);
-                }
-            } else {
-                document.getElementById('cf-jei').innerHTML = "<span class='muted-text text-sm'>Escáner no disponible.</span>";
+                    const funcJEI = window.runAutoScanJEI || runAutoScanJEI;
+                    funcJEI(mod.id, mcVers, loader);
+                } catch (e) {}
             }
 
         } catch (e) {
-            console.error("Fallo general en openModDetailsById:", e);
-            document.getElementById('cf-title-main').textContent = "Error General";
-            document.getElementById('cf-description').innerHTML = `<p style="color:var(--danger);">Se produjo un error crítico al procesar la información del mod. Revisa la consola (F12) para más detalles.</p>`;
+            console.error("Fallo crítico en openModDetailsById:", e);
+            document.getElementById('cf-title-main').textContent = "Error";
+            document.getElementById('cf-description').innerHTML = `<p style="color:var(--danger);">Ocurrió un error cargando el mod.</p>`;
         }
     };
     
