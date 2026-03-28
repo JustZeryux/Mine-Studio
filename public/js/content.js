@@ -699,7 +699,7 @@ window.requestBuild = async function(action = 'download_only') {
                 videoContainer.innerHTML = `<div class="video-loader"><i class="ph-bold ph-warning" style="color:#fcd34d;"></i>No se pudo cargar el Showcase.</div>`;
             }
         }, 0);
-    
+    };
     // ==========================================
     // 6. API DE MODRINTH (Buscador y Render)
     // ==========================================
