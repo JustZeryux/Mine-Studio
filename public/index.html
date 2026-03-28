@@ -46,29 +46,39 @@
 <body>
     
     <div class="app-container">
-        <aside class="sidebar">
-<div class="logo" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 25px; display: flex; align-items: center; gap: 12px;">
-                <img src="assets/logo.png" alt="CoreMod Logo" style="width: 38px; height: 38px; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.5));">
-                <h2 style="font-weight: 800; letter-spacing: -1px; margin: 0;">CoreMod</h2>
+        <aside class="sidebar" style="display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); height: 70px; width: 100vw; flex-shrink: 0; z-index: 9999;">
+            
+            <div class="logo" style="display: flex; align-items: center; gap: 10px;">
+                <img src="assets/logo.png" alt="CoreMod Logo" style="width: 32px; height: 32px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));">
+                <h2 style="font-weight: 800; letter-spacing: -1px; margin: 0; font-size: 1.3rem;">CoreMod</h2>
             </div>
             
-            <nav class="nav-menu" style="flex: 1;">
-                <button class="nav-btn active" data-target="mods"><i class="ph-bold ph-compass"></i> Explorar Mods</button>
-                <button class="nav-btn" data-target="worlds"><i class="ph-bold ph-sliders"></i> Configuración</button>
-                <button class="nav-btn" data-target="profiles"><i class="ph-bold ph-folder-open"></i> Mis Modpacks</button>
-                <button class="nav-btn" data-target="community"><i class="ph-bold ph-globe-hemisphere-west"></i> Comunidad</button>
-                <button class="nav-btn" data-target="tools"><i class="ph-bold ph-wrench"></i> Herramientas</button>
+            <nav class="nav-menu" style="display: flex; gap: 10px; align-items: center;">
+                <button class="nav-btn active" data-target="mods" style="background: transparent; border: none; padding: 8px 12px; color: white; cursor: pointer; border-radius: 8px; font-weight: 600;"><i class="ph-bold ph-compass"></i> Explorar Mods</button>
+                <button class="nav-btn" data-target="worlds" style="background: transparent; border: none; padding: 8px 12px; color: var(--muted); cursor: pointer; border-radius: 8px; font-weight: 600;"><i class="ph-bold ph-sliders"></i> Configuración</button>
+                <button class="nav-btn" data-target="profiles" style="background: transparent; border: none; padding: 8px 12px; color: var(--muted); cursor: pointer; border-radius: 8px; font-weight: 600;"><i class="ph-bold ph-folder-open"></i> Mis Modpacks</button>
+                <button class="nav-btn" data-target="community" style="background: transparent; border: none; padding: 8px 12px; color: var(--muted); cursor: pointer; border-radius: 8px; font-weight: 600;"><i class="ph-bold ph-globe-hemisphere-west"></i> Comunidad</button>
+                <button class="nav-btn" data-target="tools" style="background: transparent; border: none; padding: 8px 12px; color: var(--muted); cursor: pointer; border-radius: 8px; font-weight: 600;"><i class="ph-bold ph-wrench"></i> Herramientas</button>
             </nav>
 
-            <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
-                <button id="btn-ai-builder" class="btn w-100" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 15px; box-shadow: 0 5px 20px rgba(16, 185, 129, 0.2); font-size: 1rem;">
-                    <i class="ph-fill ph-sparkle" style="font-size: 20px;"></i> IA Modpacker
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <button id="btn-ai-builder" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    <i class="ph-fill ph-sparkle"></i> IA Modpacker
                 </button>
+
+                <div class="profile-section" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-left: 15px; border-left: 1px solid rgba(255,255,255,0.1);">
+                    <div style="text-align: right; line-height: 1.2;">
+                        <span id="header-username" style="display: block; font-weight: 700; font-size: 0.9rem; color: #fff;">X_XTheMasterX_X</span>
+                        <span style="font-size: 0.75rem; color: #10b981;"><i class="ph-fill ph-check-circle"></i> Cuenta Verificada</span>
+                    </div>
+                    <img src="https://crafatar.com/avatars/X_XTheMasterX_X?size=40" class="avatar" style="border-radius: 8px; width: 35px; height: 35px; border: 2px solid #10b981; object-fit: cover;">
+                </div>
             </div>
         </aside>
 
-        <main class="content">
-            <header class="topbar">
+        <main class="content" style="height: calc(100vh - 70px); overflow: hidden; width: 100vw; position: relative;">
+            <div class="main-layout" style="height: 100%;">
+                <div id="dynamic-center-area" class="center-area custom-scrollbar" style="height: 100%; overflow-y: auto;">
                 <div class="top-nav-actions" style="display: flex; align-items: center;">
                     <h1 style="font-size: 1.2rem; font-weight: 600; color: var(--text-main); margin-right: 15px;"><i class="ph-bold ph-layout"></i> Studio Creator</h1>
                     <button id="btn-ai-builder-mobile" class="mobile-ai-btn">
