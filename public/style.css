@@ -650,3 +650,48 @@ body, .app-container {
 .mc-slot-text { font-size: 8px; color: black; text-align: center; line-height: 1; word-wrap: break-word; overflow: hidden; padding: 2px; }
 .mc-result-slot { width: 56px; height: 56px; }
 .mc-result-slot img { width: 44px; height: 44px; }
+
+/* =========================================
+   REWORK VISUAL (GLASSMORPHISM Y ANIMACIONES)
+   ========================================= */
+
+/* Efecto cristal semitransparente para los paneles */
+.glass-panel {
+    background: rgba(24, 24, 27, 0.65) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Efecto de elevación y sombra en los botones y tarjetas al pasar el mouse */
+.hover-scale { 
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; 
+}
+.hover-scale:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+}
+
+/* Animación fluida de entrada (aparecer deslizando hacia arriba) */
+.fade-in-up { 
+    animation: fadeInUp 0.4s ease-out forwards; 
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Para que los botones de Plantillas (RPG, Tech, FPS) se vean premium */
+.template-btn { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px; 
+    padding: 25px 15px; 
+    font-size: 1.1rem; 
+    border-radius: var(--radius-md); 
+    background: rgba(255,255,255,0.03); 
+    border: 1px solid rgba(255,255,255,0.08); 
+}
+.template-btn i { font-size: 38px; }
