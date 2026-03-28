@@ -1284,7 +1284,8 @@ window.checkIsLoggedIn().then(loggedIn => {
                 }
             });
         });
-    }
+    });
+}
 
     // ==========================================
     // 14. COMPARADOR DE SHADERS
