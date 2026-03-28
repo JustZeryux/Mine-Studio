@@ -721,7 +721,7 @@ function renderRealMods(mods) {
                     if (deps && deps.length > 0) {
                         const missingDeps = deps.filter(dep => !window.modpackCart.some(item => item.id === dep.id));
                         if (missingDeps.length > 0) {
-                            showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type, iconUrl, bannerUrl, categories: mod.display_categories }, missingDeps, this);
+                            window.showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type, iconUrl, bannerUrl, categories: mod.display_categories }, missingDeps, this);
                             this.innerHTML = originalHtml; this.disabled = false; return; 
                         }
                     }
@@ -759,6 +759,53 @@ function renderRealMods(mods) {
             if(modsGrid) modsGrid.appendChild(card);
             
         }); 
+    // ==========================================
+    // MODAL ÉPICO DE DEPENDENCIAS (LIBRERÍAS)
+    // ==========================================
+    window.showEpicDepsModal = function(mainMod, missingDeps, triggerButton) {
+        const modal = document.getElementById('epic-deps-modal');
+        if(!modal) return;
+        
+        document.getElementById('epic-mod-name').textContent = mainMod.title;
+        const list = document.getElementById('epic-deps-list'); 
+        list.innerHTML = '';
+        
+        missingDeps.forEach((p, index) => {
+            let animClass = index % 2 === 0 ? 'anim-right' : 'anim-left';
+            list.innerHTML += `
+            <div class="tilt-wrapper" style="margin-bottom: 10px;">
+                <div class="tilt-card ${animClass}" style="background: var(--bg-main);">
+                    <img src="${p.icon_url || 'https://placehold.co/40x40/18181b/ffffff?text=M'}" alt="icon">
+                    <div class="dep-info" style="text-align: left;">
+                        <h4>${p.title}</h4><span>Componente central requerido</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        document.getElementById('btn-epic-add-all').onclick = () => {
+            // Añadir mod principal
+            if (!window.modpackCart.some(item => item.id === mainMod.id)) {
+                window.modpackCart.push({ id: mainMod.id, title: mainMod.title, type: mainMod.type || 'mod', icon: mainMod.iconUrl, banner: mainMod.bannerUrl, categories: mainMod.categories });
+            }
+            // Añadir todas las librerías
+            missingDeps.forEach(dep => { 
+                if (!window.modpackCart.some(item => item.id === dep.id)) {
+                    window.modpackCart.push({ id: dep.id, title: dep.title, type: 'library', icon: dep.icon_url, banner: dep.icon_url, categories: ['library'] }); 
+                }
+            });
+            
+            window.updateCartUI();
+            
+            if(triggerButton) { 
+                triggerButton.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; 
+                triggerButton.style.background = 'var(--success)'; 
+                triggerButton.disabled = true; 
+            }
+            modal.classList.add('hidden');
+        };
+        modal.classList.remove('hidden');
+    }
     }
 
     // ==========================================
