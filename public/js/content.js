@@ -866,53 +866,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(typeof window.updateRecommendations === 'function') window.updateRecommendations();
     };
 
-    // ============================================================
-    // 11. MOTOR DE PLANTILLAS PRO (+100 Mods Chidos) Y RULETA
+// ============================================================
+    // 11. MOTOR DE PLANTILLAS DINÁMICO (50 a 300 Mods) Y RULETA
     // ============================================================
 
-    // Nueva función: Genera plantillas aleatorias jalando de 50 a 200 mods de una categoría
-    async function applyRandomTemplate(btnElement, templateName, categoryFacet) {
-        if(!confirm(`Esto vaciará tu carrito y generará un Modpack aleatorio de ${templateName} (entre 50 y 200 mods). ¿Continuar?`)) return;
+    // Nueva función: Genera plantillas dinámicas conectándose a Modrinth en tiempo real
+    async function applyDynamicTemplate(btnElement, templateName, theme) {
+        // Pedir al usuario el tamaño exacto (de 50 a 300)
+        let targetSize = prompt(`¿Cuántos mods quieres para tu pack de ${templateName}? (Elige un número entre 50 y 300)`, "150");
+        
+        // Validar que sea un número válido
+        if (!targetSize || isNaN(targetSize)) return;
+        targetSize = Math.max(50, Math.min(300, parseInt(targetSize)));
+
+        if(!confirm(`Esto vaciará tu carrito y generará un Modpack de ${templateName} con exactamente ${targetSize} mods. ¿Continuar?`)) return;
         
         const originalHtml = btnElement.innerHTML;
         btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
         btnElement.disabled = true;
 
+        // Limpiar carrito
         window.modpackCart = []; 
         window.updateCartUI();
 
         const mcVers = versionSelect.value;
         const loader = loaderSelect.value;
-        const randomLimit = Math.floor(Math.random() * (200 - 50 + 1)) + 50; // 50 a 200 mods
 
         const aiTerminal = document.getElementById('ai-terminal'); 
-        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Buscando ${randomLimit} mods de ${templateName}...<br>`; }
+        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Escaneando Modrinth para ${targetSize} mods de ${templateName}...<br>`; }
+
+        // Categorías en tiempo real según el tema elegido
+        const themeCategories = {
+            'rpg': ['adventure', 'magic', 'worldgen', 'equipment'],
+            'tech': ['technology', 'storage', 'energy', 'automation'],
+            'random': ['adventure', 'technology', 'magic', 'decoration', 'worldgen'] // Ruleta caótica
+        };
+        const categories = themeCategories[theme] || themeCategories['random'];
+
+        let fetchedMods = [];
+        let offset = 0;
 
         try {
-            // Construimos los filtros (facets) para la API
-            let facets = [
-                [`versions:${mcVers}`],
-                [`categories:${loader}`],
-                ["project_type:mod"]
-            ];
-            // Si pasamos una categoría (ej. adventure), la añadimos al filtro
-            if(categoryFacet) facets.push([`categories:${categoryFacet}`]);
+            // Hacemos peticiones a Modrinth hasta juntar suficientes mods
+            // Pedimos un poco más del límite para poder mezclarlos y que no siempre sean los mismos
+            while (fetchedMods.length < (targetSize * 1.5) && offset < 1000) {
+                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                
+                let facets = [
+                    [`versions:${mcVers}`],
+                    [`categories:${loader}`],
+                    ["project_type:mod"]
+                ];
+                if (theme !== 'random') facets.push([`categories:${randomCategory}`]);
 
-            // Llamada a la API de Modrinth (ordenado por descargas para que sean buenos mods)
-            const res = await fetch(`https://api.modrinth.com/v2/search?limit=${randomLimit}&index=downloads&facets=${encodeURIComponent(JSON.stringify(facets))}`);
-            const data = await res.json();
-            
-            data.hits.forEach(mod => {
-                window.modpackCart.push({ id: mod.project_id, title: mod.title, type: 'mod', icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url });
+                const res = await fetch(`https://api.modrinth.com/v2/search?limit=100&offset=${offset}&index=relevance&facets=${encodeURIComponent(JSON.stringify(facets))}`);
+                const data = await res.json();
+                
+                if (!data.hits || data.hits.length === 0) break;
+
+                // Agregar evitando duplicados
+                const newMods = data.hits.filter(mod => !fetchedMods.some(m => m.project_id === mod.project_id));
+                fetchedMods = fetchedMods.concat(newMods);
+                offset += 100;
+                
+                if(aiTerminal) aiTerminal.innerHTML += `> Obtenidos ${fetchedMods.length} mods candidatos...<br>`;
+                if(aiTerminal) aiTerminal.scrollTop = aiTerminal.scrollHeight;
+            }
+
+            // Mezclar aleatoriamente y cortar al tamaño exacto pedido por el usuario
+            fetchedMods = fetchedMods.sort(() => 0.5 - Math.random()).slice(0, targetSize);
+
+            // Inyectar al carrito
+            fetchedMods.forEach(mod => {
+                window.modpackCart.push({ 
+                    id: mod.project_id, 
+                    title: mod.title, 
+                    type: 'mod', 
+                    icon: mod.icon_url, 
+                    banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
+                    categories: mod.display_categories
+                });
             });
 
             window.updateCartUI();
             
-            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${data.hits.length} Mods!`;
+            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${fetchedMods.length} Mods!`;
             btnElement.style.background = 'var(--success)';
             btnElement.style.color = 'white';
             
-            if(aiTerminal) aiTerminal.innerHTML += `> Plantilla ${templateName} completada con ${data.hits.length} mods.`;
+            if(aiTerminal) aiTerminal.innerHTML += `> ¡Éxito! Plantilla ${templateName} inyectada con ${fetchedMods.length} mods.<br>`;
+            if(aiTerminal) aiTerminal.scrollTop = aiTerminal.scrollHeight;
 
             setTimeout(() => { 
                 btnElement.innerHTML = originalHtml; 
@@ -929,11 +972,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Asignamos las categorías a los botones de plantillas
-    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyRandomTemplate(btnTemplateRpg, "RPG Épico", "adventure"));
-    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyRandomTemplate(btnTemplateTech, "Industrial", "technology"));
+    // Conectar botones a la nueva función
+    if (btnTemplateRpg) btnTemplateRpg.addEventListener('click', () => applyDynamicTemplate(btnTemplateRpg, "RPG Épico", "rpg"));
+    if (btnTemplateTech) btnTemplateTech.addEventListener('click', () => applyDynamicTemplate(btnTemplateTech, "Industrial", "tech"));
     
-    // Plantilla fija: FPS Boost no debe ser aleatorio, deben ser los mods exactos de optimización
+    // Ruleta de Retos (Randomizer)
+    if (btnRandomizer) btnRandomizer.addEventListener('click', () => applyDynamicTemplate(btnRandomizer, "Caos Total", "random"));
+
+    // Plantilla fija: FPS Boost (Esta se queda igual porque son mods específicos que no deben ser aleatorios)
     if (btnFpsBoost) btnFpsBoost.addEventListener('click', async () => {
         if(!confirm("Se añadirán los mods base de optimización. ¿Continuar?")) return;
         const originalHtml = btnFpsBoost.innerHTML;
@@ -961,12 +1007,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         setTimeout(() => { btnFpsBoost.innerHTML = originalHtml; btnFpsBoost.style = ''; btnFpsBoost.disabled = false; }, 3000);
     });
-
-    // Ruleta de Retos: Aleatorio total sin filtro de categoría (Cualquier cosa puede salir)
-    if (btnRandomizer) {
-        btnRandomizer.addEventListener('click', () => applyRandomTemplate(btnRandomizer, "Caos Total", null));
-    }
-
     // ============================================================
     // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
     // ============================================================
@@ -1473,6 +1513,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             aiModal.classList.remove('hidden'); aiTerminal.style.display = 'none'; aiTerminal.innerHTML = '> Esperando órdenes...<br>'; aiPrompt.value = ''; btnGenerateAiDownload.disabled = false;
         });
     }
+
+    
 
     // ==========================================
     // 18. SCROLL INFINITO Y AUTO-INICIO
