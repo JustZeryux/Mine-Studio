@@ -27,12 +27,19 @@ socket.on('download-progress', (data) => {
     const bar = document.querySelector('.progress-bar-fill'); 
     const statusText = document.querySelector('.status-text-descarga'); 
     
-    // 1. Mostrar el contenedor obligatoriamente
     if (container) container.style.display = 'block';
 
-    // 2. Actualizar el progreso
-    if (bar) bar.style.width = `${data.progress}%`;
-    if (statusText) statusText.innerText = `Procesando: ${data.currentMod} (${data.progress}%)`;
+    if (bar) {
+        bar.style.width = `${data.progress}%`;
+        // Si llegó al final, le ponemos una animación para que no parezca trabado
+        if(data.progress === 100) {
+            bar.style.background = 'linear-gradient(90deg, #10b981, #34d399, #10b981)';
+            bar.style.backgroundSize = '200% 100%';
+            bar.style.animation = 'pulse-bg 2s infinite linear';
+        }
+    }
+    
+    if (statusText) statusText.innerText = data.currentMod; // Muestra el texto tal cual
 });
 
     // DEFINICIÓN DE PLANTILLAS OFICIALES
