@@ -1121,7 +1121,6 @@ function renderRealMods(mods) {
         };
         modal.classList.remove('hidden');
     }
-    }
 
     // ==========================================
     // 8. BUSCADOR DE SKINS 3D / INFO PREMIUM
