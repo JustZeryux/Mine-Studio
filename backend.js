@@ -26,9 +26,6 @@ if (!fs.existsSync(EXPORT_DIR)) fs.mkdirSync(EXPORT_DIR, { recursive: true });
 const requireAuth = (req, res, next) => next(); // Mock Auth
 
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
 // --- API MIS MODPACKS ---
 // Guardar un Modpack
 app.post('/api/modpacks', requireAuth, async (req, res) => {
