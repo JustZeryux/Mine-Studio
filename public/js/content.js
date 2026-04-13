@@ -163,7 +163,14 @@ socket.on('download-progress', (data) => {
     // 4. LECTOR DE MODPACKS COMPARTIDOS (SUPABASE Y ENLACES CORTOS)
     // ==========================================
     if (sharedPack) {
-        (async () => {
+        const loadSharedPack = async () => {
+            // ⏳ EL ARREGLO DEL ERROR: Si Supabase no está listo, esperamos 100ms y volvemos a intentar
+            if (!window.supabaseClient) {
+                console.log("⏳ Esperando a que Supabase se inicialice...");
+                setTimeout(loadSharedPack, 100);
+                return; // Detenemos la ejecución aquí hasta que exista
+            }
+
             try {
                 let parsedItems = [];
                 let packTitle = "Pack Compartido";
@@ -313,7 +320,10 @@ socket.on('download-progress', (data) => {
                 console.error("Error cargando el pack:", e);
                 alert("El enlace del modpack está corrupto o es inválido.");
             }
-        })();
+        };
+
+        // Arrancamos la función de carga
+        loadSharedPack();
     }
 
     // ==========================================
