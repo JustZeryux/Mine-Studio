@@ -159,48 +159,30 @@ socket.on('download-progress', (data) => {
         if (btn.getAttribute('data-target') === 'profiles') window.loadMyProfiles();
     }));
 
-    // ==========================================
-    // 4. INSTALADOR DE MODPACKS COMPARTIDOS (LOGICA DE CARGA ASÍNCRONA)
+// ==========================================
+    // 4. LECTOR DE MODPACKS COMPARTIDOS (SIN BASE DE DATOS)
     // ==========================================
     if (sharedPack) {
-        // Función interna asíncrona para no bloquear el resto del script pero asegurar el orden
         (async () => {
             try {
-                let parsedItems = [];
-                let packTitle = "Pack Compartido";
+                // 1. Recuperamos el título de la URL (si existe)
+                let packTitle = new URLSearchParams(window.location.search).get('name') || "Pack Compartido";
                 
-                // Si es un ID corto (Supabase)
-                if (sharedPack.length < 15 && !sharedPack.includes('-') && !sharedPack.includes('%')) {
-                    const { data, error } = await window.supabaseClient
-                        .from('shared_packs')
-                        .select('*')
-                        .eq('id', sharedPack)
-                        .single();
-                        
-                    if (error || !data) {
-                        console.error("Error Supabase:", error);
-                        return; // Si no hay datos, no hacemos nada
-                    }
-                    
-                    parsedItems = data.mods_data;
-                    packTitle = data.name || "Pack Compartido";
-                } else {
-                    // Sistema viejo (Base64)
-                    try {
-                        parsedItems = JSON.parse(atob(decodeURIComponent(sharedPack)));
-                    } catch(e) {
-                        const items = sharedPack.split('-');
-                        parsedItems = items.map(item => {
-                            const parts = item.split('_');
-                            return { id: parts[0], title: 'Cargando...', type: parts[1] || 'mod' };
-                        });
-                    }
-                }
+                // 2. Desencriptamos la URL secreta directamente
+                const decoded = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                
+                // 3. Restauramos los items a un formato que el código entienda
+                const parsedItems = decoded.map(item => ({ 
+                    id: item.i, 
+                    title: 'Cargando...', 
+                    type: item.t || 'mod' 
+                }));
 
                 if (parsedItems.length > 0) {
-                    // MUDAMOS LA LÓGICA DE UI AQUÍ DENTRO PARA QUE TENGA ACCESO A packTitle y parsedItems
+                    // Limpiamos la URL visualmente para que no sea larguísima
+                    window.history.replaceState({}, document.title, window.location.pathname);
 
-                    // Inyectamos la Burbuja Flotante
+                    // --- AQUÍ EMPIEZA TU UI ORIGINAL INTACTA ---
                     const bubbleHtml = `
                         <button id="shared-bubble-toggle" class="shared-bubble hover-scale" title="Ver Modpack Compartido">
                             <i class="ph-fill ph-lock-key"></i>
@@ -208,7 +190,6 @@ socket.on('download-progress', (data) => {
                     `;
                     document.body.insertAdjacentHTML('beforeend', bubbleHtml);
 
-                    // Inyectamos el Panel Gigante Fullscreen
                     const panelHtml = `
                         <div id="shared-fullscreen-panel" class="shared-fullscreen-panel">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px;">
@@ -216,7 +197,7 @@ socket.on('download-progress', (data) => {
                                     <h1 style="margin: 0; font-size: 2.5rem; color: #fff; display: flex; align-items: center; gap: 15px;">
                                         <i class="ph-fill ph-lock-key" style="color: #6366f1;"></i> ${packTitle}
                                     </h1>
-                                    <p style="color: var(--muted); margin: 5px 0 0 0; font-size: 1.1rem;">Vista panorámica. Clic a un mod para ver info detallada. Tienes la burbuja flotante para regresar aquí.</p>
+                                    <p style="color: var(--muted); margin: 5px 0 0 0; font-size: 1.1rem;">Vista panorámica. Clic a un mod para ver info detallada.</p>
                                 </div>
                                 <div style="display: flex; gap: 15px;">
                                     <button id="btn-fs-install" class="btn btn-primary hover-scale" style="padding: 15px 30px; font-size: 1.1rem; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none;">
@@ -245,14 +226,10 @@ socket.on('download-progress', (data) => {
                     // Abrir automáticamente al inicio
                     setTimeout(() => fsPanel.classList.add('active'), 100);
 
-                    // Botones de mostrar/ocultar
                     bubbleToggle.addEventListener('click', () => fsPanel.classList.add('active'));
                     btnCloseFs.addEventListener('click', () => fsPanel.classList.remove('active'));
 
-                    // Limpiar la URL para que no vuelva a saltar si refresca
-                    window.history.replaceState({}, document.title, window.location.pathname);
-
-                    // Obtener info de la API
+                    // Obtener info de la API de Modrinth
                     const ids = parsedItems.map(m => `"${m.id}"`).join(',');
                     if(ids) {
                         fetch(`https://api.modrinth.com/v2/projects?ids=[${ids}]`)
@@ -310,7 +287,7 @@ socket.on('download-progress', (data) => {
                                 };
                             });
                     }
-                } // fin del if (parsedItems.length > 0)
+                }
 
             } catch(e) { 
                 console.error("Error cargando el pack:", e);
@@ -1663,47 +1640,33 @@ window.checkIsLoggedIn().then(loggedIn => {
             });
         });
 document.querySelectorAll('.btn-share-profile').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const btnIcon = e.currentTarget.querySelector('i');
-                const originalClass = btnIcon.className;
-                
-                // Animación de carga en el botón
-                btnIcon.className = 'ph ph-spinner ph-spin';
-                e.currentTarget.disabled = true;
+    btn.addEventListener('click', async (e) => {
+        const btnIcon = e.currentTarget.querySelector('i');
+        const originalClass = btnIcon.className;
+        btnIcon.className = 'ph ph-spinner ph-spin';
+        e.currentTarget.disabled = true;
 
-                try {
-                    const profile = profiles[e.currentTarget.dataset.index];
-                    
-                    // Generar un ID corto único (ej: 8aF4xP)
-                    const shortId = Math.random().toString(36).substring(2, 8);
-                    
-                    // Subir el Modpack completo a Supabase
-                    const { error } = await window.supabaseClient
-                        .from('shared_packs')
-                        .insert([{ 
-                            id: shortId, 
-                            name: profile.name,
-                            mc_version: profile.mcVersion,
-                            mod_loader: profile.modLoader,
-                            mods_data: profile.modsData 
-                        }]);
-
-                    if (error) throw error;
-
-                    // Crear y copiar el enlace limpio
-                    const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${shortId}`;
-                    await navigator.clipboard.writeText(shareUrl);
-                    alert(`🔗 ¡Enlace corto copiado!\n${shareUrl}`);
-                    
-                } catch (err) {
-                    console.error("Error al compartir:", err);
-                    alert("❌ Hubo un error al generar el enlace de compartir.");
-                } finally {
-                    btnIcon.className = originalClass;
-                    e.currentTarget.disabled = false;
-                }
-            });
-        });
+        try {
+            const profile = profiles[e.currentTarget.dataset.index];
+            
+            // MAGIA: Comprimimos solo lo esencial para que la URL sea segura y rápida
+            const miniData = profile.modsData.map(m => ({ i: m.id, t: m.type }));
+            const base64Pack = btoa(JSON.stringify(miniData));
+            
+            // Creamos la URL con los datos
+            const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${encodeURIComponent(base64Pack)}&name=${encodeURIComponent(profile.name)}`;
+            
+            await navigator.clipboard.writeText(shareUrl);
+            alert(`🔗 ¡Enlace copiado!\nYa puedes pasárselo a tus amigos.`);
+            
+        } catch (err) {
+            alert("❌ Hubo un error al generar el enlace de compartir.");
+        } finally {
+            btnIcon.className = originalClass;
+            e.currentTarget.disabled = false;
+        }
+    });
+});
 
         document.querySelectorAll('.btn-delete-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -2059,69 +2022,110 @@ document.querySelectorAll('.btn-share-profile').forEach(btn => {
     // Registrar la vista
     views['community'] = viewCommunity;
 
-    window.loadCommunityGallery = async function() {
-        if(!communityGrid) return;
-        communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Conectando con Supabase...</p></div>';
+   // ============================================================
+// REWORK: GALERÍA DE COMUNIDAD (HERMOSA Y SIN BUGS)
+// ============================================================
+window.loadCommunityGallery = async function() {
+    if(!communityGrid) return;
+    communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><i class="ph ph-spinner ph-spin" style="font-size: 40px;"></i><p>Conectando con la Comunidad...</p></div>';
+    
+    try {
+        const { data: publicPacks, error } = await window.supabaseClient
+            .from('modpacks')
+            .select('*')
+            .eq('is_public', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!publicPacks || publicPacks.length === 0) {
+            communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><p>No hay modpacks públicos todavía. ¡Sé el primero!</p></div>';
+            return;
+        }
+
+        // GUARDAMOS LOS PACKS EN MEMORIA PARA NO ROMPER EL HTML
+        window.currentCommunityPacks = publicPacks;
+        communityGrid.innerHTML = '';
         
-        try {
-            // Llamada real a tu base de datos Supabase
-            // Reemplaza 'window.supabaseClient' por la variable que uses para supabase
-            const { data: publicPacks, error } = await window.supabaseClient
-                .from('modpacks')
-                .select('*')
-                .eq('is_public', true)
-                .order('created_at', { ascending: false });
+        publicPacks.forEach((pack, index) => {
+            const modsCount = pack.mods_data ? pack.mods_data.length : 0;
+            
+            // Extraer iconos para la preview (Igual que en Perfiles)
+            let modsPreviewHtml = '';
+            let profileBanner = 'https://placehold.co/400x150/18181b/6366f1?text=Community+Pack';
+            let profileIcon = 'https://placehold.co/64x64/18181b/6366f1?text=Pack';
 
-            if (error) throw error;
-
-            if (!publicPacks || publicPacks.length === 0) {
-                communityGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;"><p>No hay modpacks públicos todavía. ¡Sé el primero en compartir el tuyo!</p></div>';
-                return;
+            if(pack.mods_data && pack.mods_data.length > 0) {
+                profileIcon = pack.mods_data[0].icon || profileIcon;
+                profileBanner = pack.mods_data[0].banner || profileIcon;
+                
+                const maxPreview = 6;
+                const previewMods = pack.mods_data.slice(0, maxPreview);
+                previewMods.forEach((mod, i) => {
+                    const icon = (mod.icon && mod.icon.startsWith('http')) ? mod.icon : 'https://placehold.co/32x32/27272a/ffffff?text=M';
+                    modsPreviewHtml += `<img src="${icon}" title="${mod.title}" onerror="this.src='https://placehold.co/32x32/27272a/ffffff?text=M'" style="z-index: ${maxPreview - i}; width:32px; height:32px; border-radius:50%; border:2px solid var(--bg-panel); margin-left:-10px; object-fit:cover; background:#27272a;">`;
+                });
+                if(modsCount > maxPreview) {
+                    modsPreviewHtml += `<div class="profile-mods-extra" style="width:32px; height:32px; border-radius:50%; background:var(--bg-hover); border:2px solid var(--bg-panel); display:flex; justify-content:center; align-items:center; font-size:0.7rem; font-weight:bold; margin-left:-10px; z-index:1; color:var(--text-muted);">+${modsCount - maxPreview}</div>`;
+                }
+            } else {
+                modsPreviewHtml = '<span class="muted-text text-sm">Sin mods visibles</span>';
             }
 
-            communityGrid.innerHTML = '';
-            
-            publicPacks.forEach(pack => {
-                const modsCount = pack.mods_data ? pack.mods_data.length : 0;
-                
-                communityGrid.innerHTML += `
-                    <div class="profile-card panel" style="border: 1px solid var(--border-color); background: var(--bg-panel); padding: 20px;">
-                        <h3 style="margin-top: 0; font-size: 1.3rem;">${pack.name}</h3>
-                        <p class="muted-text text-sm mb-10">Por: <strong style="color: white;">${pack.author}</strong></p>
-                        
-                        <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
-                            <span class="p-badge" style="background: rgba(16,185,129,0.1); color: var(--success);"><i class="ph-bold ph-game-controller"></i> ${pack.mc_version}</span>
-                            <span class="p-badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;"><i class="ph-bold ph-hammer"></i> ${pack.mod_loader}</span>
-                            <span class="p-badge" style="background: rgba(255,255,255,0.1); color: white;"><i class="ph-bold ph-puzzle-piece"></i> ${modsCount} Mods</span>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
-                            <span style="font-size: 0.9rem; color: #fbbf24;"><i class="ph-fill ph-star"></i> ${pack.likes} | <i class="ph-bold ph-download-simple" style="color:var(--accent);"></i> ${pack.downloads}</span>
-                            <button class="btn btn-primary btn-open-comm-pack" data-pack='${JSON.stringify(pack)}' style="padding: 6px 15px; font-size: 0.85rem;">Detalles</button>
+            // TARJETA DE COMUNIDAD PREMIUM
+            communityGrid.innerHTML += `
+                <div class="profile-card panel" style="padding:0; overflow:hidden; display:flex; flex-direction:column; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: var(--radius-lg); background: var(--bg-panel);">
+                    <div class="profile-banner" style="background-image: url('${profileBanner}'); height: 100px; background-size: cover; background-position: center; position: relative;">
+                        <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, var(--bg-panel));"></div>
+                        <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; color: #fbbf24; border: 1px solid rgba(255,255,255,0.1);">
+                            <i class="ph-fill ph-star"></i> ${pack.likes || 0} | <i class="ph-bold ph-download-simple"></i> ${pack.downloads || 0}
                         </div>
                     </div>
-                `;
-            });
+                    <div class="profile-content" style="padding: 15px; position: relative; z-index: 2; margin-top: -40px; display: flex; flex-direction: column; flex: 1;">
+                        <div class="profile-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                            <img src="${profileIcon}" class="profile-icon" style="width: 54px; height: 54px; border-radius: 12px; border: 3px solid var(--bg-panel); background: #18181b; object-fit: cover;">
+                        </div>
+                        <div class="profile-title" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 2px;">${pack.name}</div>
+                        <p class="muted-text text-sm mb-10" style="margin-top: 0;">Por <strong style="color: var(--accent);">${pack.author}</strong></p>
+                        
+                        <div class="profile-badges" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
+                            <span class="p-badge" style="background:rgba(16,185,129,0.1); color:var(--success); padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-game-controller"></i> ${pack.mc_version}</span>
+                            <span class="p-badge" style="background:rgba(245,158,11,0.1); color:#f59e0b; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;"><i class="ph-bold ph-hammer"></i> ${pack.mod_loader}</span>
+                        </div>
 
-            // Listeners para abrir el modal
-            document.querySelectorAll('.btn-open-comm-pack').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const pack = JSON.parse(e.target.dataset.pack);
-                    currentCommunityPack = pack;
-                    
-                    document.getElementById('comm-modal-title').textContent = pack.name;
-                    document.getElementById('comm-modal-stats').innerHTML = `${pack.mc_version} | ${pack.mod_loader} | ${pack.mods_data.length} Mods`;
-                    
-                    commModal.classList.remove('hidden');
-                    loadCommentsForPack(pack.id);
-                });
-            });
+                        <div class="profile-mods-preview" style="display: flex; margin-bottom: 20px; align-items: center; padding-left: 10px;">
+                            ${modsPreviewHtml}
+                        </div>
+                        
+                        <div class="profile-actions" style="display: flex; gap: 10px; margin-top: auto;">
+                            <button class="btn btn-primary btn-open-comm-pack" data-index="${index}" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; font-weight:bold;">
+                                <i class="ph-bold ph-magnifying-glass-plus"></i> Ver Detalles
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
 
-        } catch (error) {
-            console.error("Error cargando comunidad:", error);
-            communityGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error al conectar con la comunidad.</div>';
-        }
-    };
+        // NUEVO LISTENER A PRUEBA DE ERRORES HTML
+        document.querySelectorAll('.btn-open-comm-pack').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = e.currentTarget.dataset.index;
+                const pack = window.currentCommunityPacks[idx]; 
+                currentCommunityPack = pack;
+                
+                document.getElementById('comm-modal-title').textContent = pack.name;
+                document.getElementById('comm-modal-stats').innerHTML = `${pack.mc_version} | ${pack.mod_loader} | ${pack.mods_data.length} Mods`;
+                
+                commModal.classList.remove('hidden');
+                loadCommentsForPack(pack.id);
+            });
+        });
+
+    } catch (error) {
+        communityGrid.innerHTML = '<div style="grid-column: 1/-1; color: var(--danger); text-align:center;">Error de Base de Datos. Asegúrate de tener conexión.</div>';
+    }
+};
 
     // Botón de instalación
     document.getElementById('btn-comm-download')?.addEventListener('click', async () => {
