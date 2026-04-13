@@ -13,6 +13,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentCategory = '';
     let currentOffset = 0; 
     let isFetchingMods = false;
+    // Asegúrate de usar la URL que te dio Railway (sin el /api/export al final)
+const socket = io('https://mine-studio-production.up.railway.app'); 
+let currentSocketId;
+
+socket.on('connect', () => {
+    console.log("Conectado al servidor de progreso con ID:", socket.id);
+    currentSocketId = socket.id;
+});
+
+    socket.on('download-progress', (data) => {
+    // Reemplaza estos IDs por los que usaste en tu HTML/Tailwind
+    const bar = document.querySelector('.progress-bar-fill'); 
+    const statusText = document.querySelector('.status-text-descarga'); 
+    
+    if (bar) bar.style.width = `${data.progress}%`;
+    if (statusText) statusText.innerText = `Procesando: ${data.currentMod} (${data.progress}%)`;
+});
 
     // DEFINICIÓN DE PLANTILLAS OFICIALES
     window.modpackTemplates = [
@@ -397,6 +414,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const exportData = {
                         mcVersion: mcVersion,
                         modLoader: loader,
+                        socketId: currentSocketId,
                         mods: window.modpackCart,
                         worldSettings: {
                             gamemode: document.getElementById('world-gamemode')?.value || 'survival',
@@ -407,19 +425,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     };
 
-                    try {
-                        const response = await fetch('https://backendminecraft-production.up.railway.app/api/export', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(exportData)
-                        });
+try {
+    const response = await fetch('https://backendminecraft-production.up.railway.app/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(exportData)
+    });
 
-                        if (!response.ok) throw new Error("El servidor rechazó la conexión.");
+    if (!response.ok) throw new Error("El servidor rechazó la conexión.");
 
-                        if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Descargando ZIP...';
+    // Una vez que el servidor termina de armar el ZIP, empieza la descarga real al PC
+    if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-download"></i> Transfiriendo archivo...';
 
-                        // Convertimos la respuesta del servidor en un archivo descargable (Blob)
-                        const blob = await response.blob();
+    const blob = await response.blob();
                         const url = window.URL.createObjectURL(blob);
                         
                         const a = document.createElement('a'); 
