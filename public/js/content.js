@@ -307,156 +307,140 @@ window.modpackTemplates = [
     });
 
 window.requestBuild = async function(action = 'download_only') {
-        const isSaving = (action === 'save_only' || action === 'save_download');
-        const isDownloading = (action === 'download_only' || action === 'save_download');
+    const isSaving = (action === 'save_only' || action === 'save_download');
+    const isDownloading = (action === 'download_only' || action === 'save_download');
 
-        // NUEVO: Comprobamos el estado real en Supabase
-        let userIsLoggedIn = false;
-        if (typeof window.checkIsLoggedIn === 'function') {
-            userIsLoggedIn = await window.checkIsLoggedIn();
-        }
+    // Comprobamos el estado real en Supabase
+    let userIsLoggedIn = false;
+    if (typeof window.checkIsLoggedIn === 'function') {
+        userIsLoggedIn = await window.checkIsLoggedIn();
+    }
 
-        if (isSaving && !userIsLoggedIn) {
-            alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en la nube.');
-            if(authModal) authModal.classList.remove('hidden');
-            modalSave.classList.add('hidden');
-            return;
-        }
+    if (isSaving && !userIsLoggedIn) {
+        alert('¡Alto! Necesitas Iniciar Sesión para guardar perfiles en la nube.');
+        if(authModal) authModal.classList.remove('hidden');
+        modalSave.classList.add('hidden');
+        return;
+    }
 
-        try {
-            const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
-            const mcVersion = versionSelect.value;
-            const loader = loaderSelect.value;
-            const isServerPack = document.getElementById('export-server-pack')?.checked;
-            const isMrPack = document.getElementById('export-mrpack')?.checked;
+    try {
+        const packName = (packNameInput && packNameInput.value.trim() !== '') ? packNameInput.value.trim() : 'Mi_Modpack';
+        const mcVersion = versionSelect.value;
+        const loader = loaderSelect.value;
+        const isServerPack = document.getElementById('export-server-pack')?.checked;
+        const isMrPack = document.getElementById('export-mrpack')?.checked;
 
-            let activeBtn = btnJustDownload;
-            if(action === 'save_only') activeBtn = btnJustSave;
-            if(action === 'save_download') activeBtn = btnSaveAndDownload;
+        let activeBtn = btnJustDownload;
+        if(action === 'save_only') activeBtn = btnJustSave;
+        if(action === 'save_download') activeBtn = btnSaveAndDownload;
 
-            if(activeBtn) { activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; activeBtn.disabled = true; }
+        if(activeBtn) { activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...'; activeBtn.disabled = true; }
 
-            // Lógica de Guardado (Local -> Nube) - [BUG 1 ARREGLADO: COPIA PROFUNDA]
-            if (isSaving) {
-                const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
-                // Copia profunda para evitar bucles infinitos al editar
-                const cartCopy = JSON.parse(JSON.stringify(window.modpackCart)); 
-                profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: cartCopy, iconBase64: null });
-                localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
-                window.loadMyProfiles();
+        // Lógica de Guardado (Local -> Nube) - Intacta
+        if (isSaving) {
+            const profiles = JSON.parse(localStorage.getItem('mis_modpacks_guardados') || '[]');
+            const cartCopy = JSON.parse(JSON.stringify(window.modpackCart)); 
+            profiles.push({ name: packName, mcVersion: mcVersion, modLoader: loader, modsData: cartCopy, iconBase64: null });
+            localStorage.setItem('mis_modpacks_guardados', JSON.stringify(profiles)); 
+            window.loadMyProfiles();
 
-                if(action === 'save_only') {
-                    alert('✅ Perfil guardado correctamente en "Mis Modpacks".');
-                    modalSave.classList.add('hidden');
-                    if(activeBtn) { activeBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Guardar Nube'; activeBtn.disabled = false; }
-                    return; 
-                }
+            if(action === 'save_only') {
+                alert('✅ Perfil guardado correctamente en "Mis Modpacks".');
+                modalSave.classList.add('hidden');
+                if(activeBtn) { activeBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Guardar Nube'; activeBtn.disabled = false; }
+                return; 
             }
+        }
 
-            // Lógica de Descarga y Ensamblado ZIP
-            if (isDownloading) {
+        // Lógica de Descarga
+        if (isDownloading) {
+            
+            // Si elige MRPack, usamos JSZip porque no pesa nada y no consume RAM
+            if (isMrPack) {
                 if (typeof JSZip === 'undefined') throw new Error("Falta la librería JSZip.");
                 const zip = new JSZip();
-
-                if(Object.keys(window.modConfigs).length > 0) {
-                    const confFolder = zip.folder("config");
-                    for (const modId in window.modConfigs) { confFolder.file(window.modConfigs[modId].filename, window.modConfigs[modId].content); }
-                }
-
                 let procesados = 0;
                 const totalMods = window.modpackCart.length;
 
-                if (isMrPack) {
-                    if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando MRPack...`;
-                    const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
-                    
-                    await Promise.all(window.modpackCart.map(async (item) => {
-                        try {
-                            const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                            const versData = await versRes.json();
-                            if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                                const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
-                                let envData = { client: "required", server: "required" };
-                                if (isServerPack) { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') return; }
-                                let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
-                                mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
-                            }
-                        } catch(e) {}
-                        finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Indexando (${procesados}/${totalMods})...`; }
-                    }));
-                    zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
+                if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Generando MRPack...`;
+                const mrpackIndex = { formatVersion: 1, game: "minecraft", versionId: packName, name: packName, dependencies: { minecraft: mcVersion, [loader]: "*" }, files: [] };
+                
+                await Promise.all(window.modpackCart.map(async (item) => {
+                    try {
+                        const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
+                        const versData = await versRes.json();
+                        if (versData && versData.length > 0 && versData[0].files.length > 0) {
+                            const f = versData[0].files.find(fi => fi.primary) || versData[0].files[0];
+                            let envData = { client: "required", server: "required" };
+                            if (isServerPack) { const pRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const pData = await pRes.json(); if(pData.server_side === 'unsupported') return; }
+                            let targetFolder = "mods"; if(item.type === 'shader') targetFolder = "shaderpacks"; else if(item.type === 'resourcepack') targetFolder = "resourcepacks";
+                            mrpackIndex.files.push({ path: `${targetFolder}/${f.filename}`, hashes: { sha1: f.hashes.sha1, sha512: f.hashes.sha512 }, downloads: [f.url], fileSize: f.size, env: envData });
+                        }
+                    } catch(e) {}
+                    finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Indexando (${procesados}/${totalMods})...`; }
+                }));
+                zip.file("modrinth.index.json", JSON.stringify(mrpackIndex, null, 4));
 
-                } else {
-                    const modsFolder = zip.folder("mods"); const shadersFolder = zip.folder("shaderpacks"); const resourceFolder = zip.folder("resourcepacks");
-                    
-                    // Extraer Configuración Extendida del Mundo Vanilla
-                    const wGamemode = document.getElementById('world-gamemode')?.value || 'survival';
-                    const wDifficulty = document.getElementById('world-difficulty')?.value || 'normal';
-                    const wHardcore = document.getElementById('world-hardcore')?.checked ? 'true' : 'false';
-                    const wPvp = document.getElementById('world-pvp')?.checked ? 'true' : 'false';
-                    const wMaxPlayers = document.getElementById('world-max-players')?.value || '20';
-                    const wStructures = document.getElementById('world-structures')?.checked ? 'true' : 'false';
-                    const wMotd = document.getElementById('world-motd')?.value || 'Servidor Mine-Studio';
-
-                    let propsContent = `# Generado por MinePack Studio\nmotd=${wMotd}\ngamemode=${wGamemode}\ndifficulty=${wDifficulty}\nhardcore=${wHardcore}\npvp=${wPvp}\nmax-players=${wMaxPlayers}\ngenerate-structures=${wStructures}\n`;
-                    const wSeed = document.getElementById('world-seed-input')?.value; if (wSeed && wSeed.trim() !== '') propsContent += `level-seed=${wSeed}\n`;
-                    zip.file("server.properties", propsContent);
-
-                    if (isServerPack) {
-                        zip.file("eula.txt", "eula=true\n");
-                        zip.file("iniciar_servidor.bat", "@echo off\ncolor 0a\ntitle Servidor CoreMod\necho Iniciando servidor con 4GB de RAM...\njava -Xms4G -Xmx4G -jar server.jar nogui\npause");
-                        zip.file("iniciar_servidor.sh", "#!/bin/bash\njava -Xms4G -Xmx4G -jar server.jar nogui");
-                        zip.file("LEER_IMPORTANTE.txt", "=== TU SERVER PACK ESTA LISTO ===\n1. Descarga el archivo de Forge/Fabric y mételo aquí.\n2. Renómbralo a 'server.jar'.\n3. Ejecuta iniciar_servidor.bat\n¡Mods listos en la carpeta /mods!");
-                    }
-
-                    const batchSize = 10;
-                    for (let i = 0; i < totalMods; i += batchSize) {
-                        const batch = window.modpackCart.slice(i, i + batchSize);
-                        await Promise.all(batch.map(async (item) => {
-                            try {
-                                if (isServerPack && (item.type === 'shader' || item.type === 'resourcepack')) return; 
-                                if (isServerPack) { const projRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}`); const projData = await projRes.json(); if (projData.server_side === 'unsupported') return; }
-                                
-                                const versRes = await fetch(`https://api.modrinth.com/v2/project/${item.id}/version?game_versions=["${mcVersion}"]`);
-                                const versData = await versRes.json();
-                                if (versData && versData.length > 0 && versData[0].files.length > 0) {
-                                    const fileObj = versData[0].files.find(f => f.primary) || versData[0].files[0];
-                                    const fileRes = await fetch(fileObj.url);
-                                    const fileBlob = await fileRes.blob();
-                                    if (!isServerPack && item.type === 'shader') shadersFolder.file(fileObj.filename, fileBlob); else if (!isServerPack && item.type === 'resourcepack') resourceFolder.file(fileObj.filename, fileBlob); else modsFolder.file(fileObj.filename, fileBlob);
-                                }
-                            } catch(err) {} 
-                            finally { procesados++; if(activeBtn) activeBtn.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Descarga Turbo (${procesados}/${totalMods})...`; }
-                        }));
-                    }
-                }
-
-                if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Finalizando ZIP...';
                 const zipContent = await zip.generateAsync({ type: "blob", compression: "STORE" });
                 const url = window.URL.createObjectURL(zipContent);
                 const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                
                 const cleanName = packName.replace(/\s+/g, '_');
-                let ext = isMrPack ? "mrpack" : "zip";
-                let suffix = isServerPack ? "_SERVER" : "";
-                a.download = cleanName + suffix + "_" + mcVersion + "." + ext;
-                
+                a.download = cleanName + "_" + mcVersion + ".mrpack";
                 document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
                 modalSave.classList.add('hidden');
+
+            } 
+            // NUEVO: SI ELIGE ZIP NORMAL (Pesado), ENVIAMOS LOS DATOS A RAILWAY
+            else {
+                if(activeBtn) activeBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Conectando al servidor...';
+
+                const exportData = {
+                    mcVersion: mcVersion,
+                    modLoader: loader,
+                    mods: window.modpackCart,
+                    worldSettings: {
+                        gamemode: document.getElementById('world-gamemode')?.value || 'survival',
+                        difficulty: document.getElementById('world-difficulty')?.value || 'normal',
+                        seed: document.getElementById('world-seed-input')?.value || '',
+                        structures: document.getElementById('world-structures')?.checked !== false,
+                        hardcore: document.getElementById('world-hardcore')?.checked === true
+                    }
+                };
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                // 👇👇👇 CAMBIA ESTO POR TU URL DE RAILWAY 👇👇👇
+                form.action = 'backendminecraft-production.up.railway.app'; 
+                form.style.display = 'none';
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'exportData';
+                input.value = JSON.stringify(exportData);
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+
+                // Activa la descarga en el disco duro evadiendo la RAM
+                form.submit();
+
+                setTimeout(() => { document.body.removeChild(form); }, 1000);
+                modalSave.classList.add('hidden');
             }
-
-        } catch (error) { 
-            alert("Error al procesar: " + error.message); 
-        } finally {
-            if(btnJustSave) { btnJustSave.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> Guardar Nube'; btnJustSave.disabled = false; }
-            if(btnJustDownload) { btnJustDownload.innerHTML = '<i class="ph-bold ph-file-zip"></i> Solo Bajar'; btnJustDownload.disabled = false; }
-            if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = '<i class="ph-bold ph-download-simple"></i> Guardar y Descargar'; btnSaveAndDownload.disabled = false; }
         }
-    };
 
-    if(btnJustSave) btnJustSave.addEventListener('click', () => window.requestBuild('save_only'));
-    if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
-    if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
+    } catch (error) { 
+        alert("Error al procesar: " + error.message); 
+    } finally {
+        if(btnJustSave) { btnJustSave.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> Guardar Nube'; btnJustSave.disabled = false; }
+        if(btnJustDownload) { btnJustDownload.innerHTML = '<i class="ph-bold ph-file-zip"></i> Solo Bajar'; btnJustDownload.disabled = false; }
+        if(btnSaveAndDownload) { btnSaveAndDownload.innerHTML = '<i class="ph-bold ph-download-simple"></i> Guardar y Descargar'; btnSaveAndDownload.disabled = false; }
+    }
+};
+
+if(btnJustSave) btnJustSave.addEventListener('click', () => window.requestBuild('save_only'));
+if(btnJustDownload) btnJustDownload.addEventListener('click', () => window.requestBuild('download_only'));
+if(btnSaveAndDownload) btnSaveAndDownload.addEventListener('click', () => window.requestBuild('save_download'));
 
 // ==========================================
     // FUNCIÓN CENTRAL: ABRIR DETALLES (LAYOUT DEFINITIVO + HEADER STICKY + VIDEO PRO)
