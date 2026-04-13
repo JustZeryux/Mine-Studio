@@ -954,6 +954,9 @@ function renderRealMods(mods) {
             mod.display_categories.slice(0, 3).forEach(tag => { tagsHtml += `<span class="mini-tag">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; });
         }
 
+        // Limpiamos el título por si tiene comillas simples que rompan el HTML (Ej: Biomes O' Plenty)
+        const safeTitle = mod.title.replace(/'/g, "\\'");
+
         card.innerHTML = `
             <div class="mod-banner" style="background-image: url('${bannerUrl}'); pointer-events: none;"></div>
             <div class="mod-info" style="pointer-events: none;">
@@ -972,6 +975,11 @@ function renderRealMods(mods) {
                 <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 1; font-size: 0.85rem; ${isAdded ? 'background: rgba(16,185,129,0.2); color: var(--success); border: 1px solid var(--success);' : ''}">
                     <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
                 </button>
+                
+                <button class="btn btn-secondary btn-config-mod" onclick="openModConfig('${mod.project_id}', '${safeTitle}')" title="Configurar Mod" style="padding: 0 12px; border-color: rgba(99, 102, 241, 0.5); color: #818cf8; cursor: pointer;">
+                    <i class="ph-bold ph-gear" style="font-size: 16px;"></i>
+                </button>
+
                 <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="padding: 0 12px; border-color: rgba(139, 92, 246, 0.5); color: #a78bfa;">
                     <i class="ph-bold ph-download-simple" style="font-size: 16px;"></i>
                 </button>
@@ -1049,7 +1057,8 @@ function renderRealMods(mods) {
 
         // Evento para abrir detalles al hacer clic en la tarjeta
         card.addEventListener('click', (e) => {
-            if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar')) return; 
+            // Se agregó '.btn-config-mod' para ignorar el clic en la tuerquita
+            if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar') || e.target.closest('.btn-config-mod')) return; 
             
             const safeId = mod.project_id || mod.id || mod.slug;
             
