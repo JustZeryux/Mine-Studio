@@ -450,10 +450,21 @@ const response = await fetch('https://backendminecraft-production.up.railway.app
                         
                         const cleanName = packName.replace(/\s+/g, '_');
                         const suffix = isServerPack ? "_SERVER" : "";
-                        a.download = cleanName + suffix + "_" + mcVersion + ".zip";
-                        
-                        document.body.appendChild(a); 
-                        a.click(); 
+a.download = cleanName + suffix + "_" + mcVersion + ".zip";
+document.body.appendChild(a); 
+a.click(); 
+
+// Limpieza
+window.URL.revokeObjectURL(url);
+document.body.removeChild(a);
+modalSave.classList.add('hidden');
+
+// --- NUEVO: OCULTAR Y RESETEAR LA BARRA ---
+const progContainer = document.getElementById('download-progress-container');
+const progBar = document.querySelector('.progress-bar-fill');
+if (progContainer) progContainer.style.display = 'none';
+if (progBar) progBar.style.width = '0%';
+// ------------------------------------------ 
                         
                         // Limpieza
                         window.URL.revokeObjectURL(url);
