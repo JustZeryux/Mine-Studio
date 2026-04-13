@@ -942,75 +942,94 @@ if (progBar) progBar.style.width = '0%';
     if(lightbox) lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
 function renderRealMods(mods) {
-        mods.forEach(mod => {
-            const card = document.createElement('div'); card.className = 'mod-card';
-            const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
-            const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : iconUrl;
-            
-            const isAdded = window.modpackCart.some(item => item.id === mod.project_id);
-            
-            let tagsHtml = '';
-            if(mod.display_categories) {
-                mod.display_categories.slice(0, 3).forEach(tag => { tagsHtml += `<span class="mini-tag">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; });
-            }
+    mods.forEach(mod => {
+        const card = document.createElement('div'); card.className = 'mod-card';
+        const iconUrl = mod.icon_url || 'https://placehold.co/80x80/18181b/ffffff?text=M';
+        const bannerUrl = (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : iconUrl;
+        
+        const isAdded = window.modpackCart.some(item => item.id === mod.project_id);
+        
+        let tagsHtml = '';
+        if(mod.display_categories) {
+            mod.display_categories.slice(0, 3).forEach(tag => { tagsHtml += `<span class="mini-tag">${tagIcons[tag] || '<i class="ph-bold ph-tag"></i>'} ${tag}</span>`; });
+        }
 
-            card.innerHTML = `
-                <div class="mod-banner" style="background-image: url('${bannerUrl}'); pointer-events: none;"></div>
-                <div class="mod-info" style="pointer-events: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                        <img src="${iconUrl}" class="mod-avatar">
-                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding-bottom: 5px;">
-                            <i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(mod.downloads || 0)}
-                        </span>
-                    </div>
-                    <h3 class="mod-title">${mod.title}</h3>
-                    <div class="mod-tags-container">${tagsHtml}</div>
-                    <p class="mod-desc">${mod.description.substring(0, 75)}...</p>
+        card.innerHTML = `
+            <div class="mod-banner" style="background-image: url('${bannerUrl}'); pointer-events: none;"></div>
+            <div class="mod-info" style="pointer-events: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <img src="${iconUrl}" class="mod-avatar">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding-bottom: 5px;">
+                        <i class="ph-bold ph-download-simple"></i> ${new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(mod.downloads || 0)}
+                    </span>
                 </div>
-                
-                <div style="padding: 0 15px 15px 15px; z-index: 10; margin-top: auto; display: flex; gap: 8px;">
-                    <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 1; font-size: 0.85rem; ${isAdded ? 'background: rgba(16,185,129,0.2); color: var(--success); border: 1px solid var(--success);' : ''}">
-                        <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
-                    </button>
-                    <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="padding: 0 12px; border-color: rgba(139, 92, 246, 0.5); color: #a78bfa;">
-                        <i class="ph-bold ph-download-simple" style="font-size: 16px;"></i>
-                    </button>
-                </div>
-            `;
+                <h3 class="mod-title">${mod.title}</h3>
+                <div class="mod-tags-container">${tagsHtml}</div>
+                <p class="mod-desc">${mod.description.substring(0, 75)}...</p>
+            </div>
+            
+            <div style="padding: 0 15px 15px 15px; z-index: 10; margin-top: auto; display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-add-mod" data-id="${mod.project_id}" data-title="${mod.title}" data-type="${mod.project_type}" ${isAdded ? 'disabled' : ''} style="flex: 1; font-size: 0.85rem; ${isAdded ? 'background: rgba(16,185,129,0.2); color: var(--success); border: 1px solid var(--success);' : ''}">
+                    <i class="ph-bold ${isAdded ? 'ph-check' : 'ph-plus'}"></i> ${isAdded ? 'Añadido' : 'Añadir'}
+                </button>
+                <button class="btn btn-secondary btn-download-jar" data-id="${mod.project_id}" data-title="${mod.title}" title="Descargar .jar directo" style="padding: 0 12px; border-color: rgba(139, 92, 246, 0.5); color: #a78bfa;">
+                    <i class="ph-bold ph-download-simple" style="font-size: 16px;"></i>
+                </button>
+            </div>
+        `;
 
-            const addBtn = card.querySelector('.btn-add-mod');
-            addBtn.addEventListener('click', async function(e) {
-                e.stopPropagation(); 
-                const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...'; this.disabled = true;
+        const addBtn = card.querySelector('.btn-add-mod');
+        addBtn.addEventListener('click', async function(e) {
+            e.stopPropagation(); 
+            const originalHtml = this.innerHTML; this.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Escaneando...'; this.disabled = true;
 
-                if (this.dataset.type === 'mod') {
-                    try {
-                        const versRes = await fetch(`https://api.modrinth.com/v2/project/${this.dataset.id}/version?game_versions=["${versionSelect.value}"]&loaders=["${loaderSelect.value}"]`);
-                        const versData = await versRes.json();
-                        if (versData.length > 0) {
-                            const incompDeps = versData[0].dependencies.filter(d => d.dependency_type === 'incompatible' && d.project_id);
-                            const conflict = incompDeps.find(dep => window.modpackCart.some(item => item.id === dep.project_id));
-                            if(conflict) {
-                                const conflictingItem = window.modpackCart.find(item => item.id === conflict.project_id);
-                                alert(`🚨 ALERTA DE CRASHEO:\nEste mod es incompatible con "${conflictingItem.title}".`);
-                                this.innerHTML = originalHtml; this.disabled = false; return;
-                            }
+            if (this.dataset.type === 'mod') {
+                // 1. Chequeo de Incompatibilidades (Alerta de Crasheo)
+                try {
+                    const versRes = await fetch(`https://api.modrinth.com/v2/project/${this.dataset.id}/version?game_versions=["${versionSelect.value}"]&loaders=["${loaderSelect.value}"]`);
+                    const versData = await versRes.json();
+                    if (versData.length > 0) {
+                        const incompDeps = versData[0].dependencies.filter(d => d.dependency_type === 'incompatible' && d.project_id);
+                        const conflict = incompDeps.find(dep => window.modpackCart.some(item => item.id === dep.project_id));
+                        if(conflict) {
+                            const conflictingItem = window.modpackCart.find(item => item.id === conflict.project_id);
+                            alert(`🚨 ALERTA DE CRASHEO:\nEste mod es incompatible con "${conflictingItem.title}".`);
+                            this.innerHTML = originalHtml; this.disabled = false; return;
                         }
-                    } catch(err) {}
+                    }
+                } catch(err) {}
 
-                    const deps = await getRequiredDependencies(this.dataset.id, versionSelect.value, loaderSelect.value);
-                    if (deps && deps.length > 0) {
-                        const missingDeps = deps.filter(dep => !window.modpackCart.some(item => item.id === dep.id));
-                        if (missingDeps.length > 0) {
+                // 2. Chequeo de Dependencias Faltantes
+                const deps = await getRequiredDependencies(this.dataset.id, versionSelect.value, loaderSelect.value);
+                if (deps && deps.length > 0) {
+                    const missingDeps = deps.filter(dep => !window.modpackCart.some(item => item.id === dep.id));
+                    if (missingDeps.length > 0) {
+                        // 🔥 Fusión Híbrida: Si NO existe StudioPro o la opción Auto-Dep está apagada, salta el Modal original
+                        if (!window.StudioPro || !window.StudioPro.settings.autoDependencies) {
                             window.showEpicDepsModal({ id: this.dataset.id, title: this.dataset.title, type: this.dataset.type, iconUrl, bannerUrl, categories: mod.display_categories }, missingDeps, this);
                             this.innerHTML = originalHtml; this.disabled = false; return; 
                         }
+                        // Si la opción ESTÁ prendida, ignoramos el modal y dejamos que el código siga hacia abajo
                     }
                 }
+            }
 
-                let fType = mod.project_type || 'mod';
-                if(mod.display_categories && mod.display_categories.includes('library')) fType = 'library';
+            let fType = mod.project_type || 'mod';
+            if(mod.display_categories && mod.display_categories.includes('library')) fType = 'library';
 
+            // 🔥 LA NUEVA FORMA PRO (Con un salvavidas de seguridad)
+            if (window.StudioPro) {
+                // Usa el sistema inteligente para agregar (y auto-descargar libs si está prendido)
+                window.StudioPro.smartAddToCart({ 
+                    id: mod.project_id, 
+                    title: mod.title, 
+                    type: fType, 
+                    icon: iconUrl, 
+                    banner: bannerUrl, 
+                    categories: mod.display_categories 
+                });
+            } else {
+                // Salvavidas: Si por algún motivo "studio-extras.js" no cargó, usamos tu método normal
                 window.modpackCart.push({ 
                     id: mod.project_id, 
                     title: mod.title, 
@@ -1019,27 +1038,33 @@ function renderRealMods(mods) {
                     banner: bannerUrl, 
                     categories: mod.display_categories 
                 });
-
                 window.updateCartUI();
-                this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; this.style.background = 'var(--success)'; this.style.color = 'white';
-            });
+            }
 
-            card.addEventListener('click', (e) => {
-                if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar')) return; 
-                
-                const safeId = mod.project_id || mod.id || mod.slug;
-                
-                if (safeId) {
-                    window.openModDetailsById(safeId);
-                    if (typeof runAutoScanJEI === 'function') {
-                        runAutoScanJEI(safeId, versionSelect.value, loaderSelect.value);
-                    }
-                }
-            });
+            // Cambiamos el botón a estado verde/añadido
+            this.innerHTML = '<i class="ph-bold ph-check"></i> Añadido'; 
+            this.style.background = 'var(--success)'; 
+            this.style.color = 'white';
+        });
 
-            if(modsGrid) modsGrid.appendChild(card);
+        // Evento para abrir detalles al hacer clic en la tarjeta
+        card.addEventListener('click', (e) => {
+            if(e.target.closest('.btn-add-mod') || e.target.closest('.btn-download-jar')) return; 
             
-        }); 
+            const safeId = mod.project_id || mod.id || mod.slug;
+            
+            if (safeId) {
+                window.openModDetailsById(safeId);
+                if (typeof runAutoScanJEI === 'function') {
+                    runAutoScanJEI(safeId, versionSelect.value, loaderSelect.value);
+                }
+            }
+        });
+
+        if(modsGrid) modsGrid.appendChild(card);
+        
+    });
+}
     // ==========================================
     // MODAL ÉPICO DE DEPENDENCIAS (LIBRERÍAS)
     // ==========================================
