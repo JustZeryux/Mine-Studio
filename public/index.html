@@ -1,4 +1,7 @@
-<meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <title>CoreMod</title>
@@ -34,13 +37,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/skinview3d@3.0.0-alpha.1/bundles/skinview3d.bundle.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -83,81 +86,53 @@
                 <div id="dynamic-center-area" class="center-area custom-scrollbar" style="height: 100%; overflow-y: auto;">
 
                     <div id="view-tools" class="builder-view hidden panel" style="background: transparent; border: none; padding: 0;">
-    <div style="margin-bottom: 25px;">
-        <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-wrench" style="color: #a855f7;"></i> Herramientas de Servidor</h2>
-        <p class="muted-text mt-10">Gestiona accesos y analiza errores como un profesional.</p>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-        
-        <div class="panel" style="background: var(--bg-panel); border: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 10px;"><i class="ph-fill ph-warning-circle" style="color: var(--danger);"></i> Analizador de Crash Logs</h3>
-            <p class="muted-text text-sm mb-20">¿Tu juego o servidor explotó? Sube el archivo crash-report.txt y te diremos por qué.</p>
-            
-            <div id="crash-dropzone" style="border: 2px dashed rgba(255,255,255,0.2); padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; background: rgba(0,0,0,0.2); transition: 0.3s;">
-                <i class="ph-bold ph-upload-simple" style="font-size: 30px; color: var(--text-muted); margin-bottom: 10px;"></i>
-                <p style="margin: 0; font-size: 0.9rem;">Haz clic o arrastra tu crash-report.txt aquí</p>
-                <input type="file" id="crash-input" accept=".txt" style="display: none;">
-            </div>
-            
-            <div id="crash-result" style="margin-top: 15px; display: none; padding: 15px; border-radius: 8px;"></div>
-        </div>
+                        <div style="margin-bottom: 25px;">
+                            <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-wrench" style="color: #a855f7;"></i> Herramientas de Servidor</h2>
+                            <p class="muted-text mt-10">Gestiona accesos y analiza errores como un profesional.</p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            
+                            <div class="panel" style="background: var(--bg-panel); border: 1px solid var(--border-color);">
+                                <h3 style="margin-bottom: 10px;"><i class="ph-fill ph-warning-circle" style="color: var(--danger);"></i> Analizador de Crash Logs</h3>
+                                <p class="muted-text text-sm mb-20">¿Tu juego o servidor explotó? Sube el archivo crash-report.txt y te diremos por qué.</p>
+                                
+                                <div id="crash-dropzone" style="border: 2px dashed rgba(255,255,255,0.2); padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; background: rgba(0,0,0,0.2); transition: 0.3s;">
+                                    <i class="ph-bold ph-upload-simple" style="font-size: 30px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                                    <p style="margin: 0; font-size: 0.9rem;">Haz clic o arrastra tu crash-report.txt aquí</p>
+                                    <input type="file" id="crash-input" accept=".txt" style="display: none;">
+                                </div>
+                                
+                                <div id="crash-result" style="margin-top: 15px; display: none; padding: 15px; border-radius: 8px;"></div>
+                            </div>
 
-        <div class="panel" style="background: var(--bg-panel); border: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 10px;"><i class="ph-fill ph-users-three" style="color: var(--accent);"></i> Gestor de Whitelist</h3>
-            <p class="muted-text text-sm mb-20">Añade jugadores seguros a tu servidor y genera el archivo JSON.</p>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input type="text" id="wl-input" class="form-input" placeholder="Nombre premium (Ej: Zeryux)">
-                <button id="btn-wl-add" class="btn btn-primary"><i class="ph-bold ph-plus"></i></button>
-            </div>
-            
-            <div id="wl-list" class="custom-scrollbar" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-                </div>
-            
-            <button id="btn-wl-export" class="btn btn-secondary w-100"><i class="ph-bold ph-download-simple"></i> Descargar whitelist.json</button>
-        </div>
-    </div>
-</div>
+                            <div class="panel" style="background: var(--bg-panel); border: 1px solid var(--border-color);">
+                                <h3 style="margin-bottom: 10px;"><i class="ph-fill ph-users-three" style="color: var(--accent);"></i> Gestor de Whitelist</h3>
+                                <p class="muted-text text-sm mb-20">Añade jugadores seguros a tu servidor y genera el archivo JSON.</p>
+                                
+                                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                    <input type="text" id="wl-input" class="form-input" placeholder="Nombre premium (Ej: Zeryux)">
+                                    <button id="btn-wl-add" class="btn btn-primary"><i class="ph-bold ph-plus"></i></button>
+                                </div>
+                                
+                                <div id="wl-list" class="custom-scrollbar" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                                    </div>
+                                
+                                <button id="btn-wl-export" class="btn btn-secondary w-100"><i class="ph-bold ph-download-simple"></i> Descargar whitelist.json</button>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="view-community" class="builder-view hidden panel" style="background: transparent; border: none; padding: 0;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <div>
-            <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-users" style="color: #10b981;"></i> Galería de la Comunidad</h2>
-            <p class="muted-text mt-10">Explora, descarga y califica los modpacks creados por otros jugadores.</p>
-        </div>
-    </div>
-    <div id="community-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
-</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <div>
+                                <h2 style="font-size: 2rem; font-weight: 800;"><i class="ph-fill ph-users" style="color: #10b981;"></i> Galería de la Comunidad</h2>
+                                <p class="muted-text mt-10">Explora, descarga y califica los modpacks creados por otros jugadores.</p>
+                            </div>
+                        </div>
+                        <div id="community-grid" class="profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
+                    </div>
 
-<div id="community-modal" class="modal-overlay hidden" style="z-index: 10006;">
-    <div class="modal-content" style="max-width: 600px; padding: 30px;">
-        <h2 id="comm-modal-title" class="title">Nombre del Modpack</h2>
-        <p id="comm-modal-stats" class="muted-text text-sm mb-20"></p>
-        
-        <button id="btn-comm-download" class="btn btn-primary w-100 mb-20" style="padding: 12px;"><i class="ph-bold ph-download-simple"></i> Instalar este Pack</button>
-
-        <hr style="border-color: var(--border-color); margin: 20px 0;">
-        
-        <h3 class="mb-10"><i class="ph-bold ph-chat-centered-text"></i> Reseñas</h3>
-        
-        <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
-            <select id="comm-rating" class="form-select mb-10" style="width: 150px;">
-                <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
-                <option value="4">⭐⭐⭐⭐ Bueno</option>
-                <option value="3">⭐⭐⭐ Regular</option>
-                <option value="2">⭐⭐ Malo</option>
-                <option value="1">⭐ Pésimo</option>
-            </select>
-            <textarea id="comm-text" class="form-input custom-scrollbar mb-10" placeholder="¿Qué te pareció este modpack?..." style="height: 80px; resize: none;"></textarea>
-            <button id="btn-comm-submit" class="btn btn-primary w-100" style="background: var(--accent);"><i class="ph-bold ph-paper-plane-tilt"></i> Enviar Reseña</button>
-        </div>
-
-        <div id="comm-list" class="custom-scrollbar" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;"></div>
-
-        <button id="btn-close-community-modal" class="btn btn-secondary w-100 mt-20">Cerrar</button>
-    </div>
-</div>
                     <div id="view-mods" class="builder-view">
                         <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(24,24,27,0) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg); padding: 40px; margin-bottom: 25px; position: relative; overflow: hidden;">
                             <i class="ph-duotone ph-puzzle-piece" style="position: absolute; right: -20px; top: -20px; font-size: 200px; color: rgba(16,185,129,0.05); transform: rotate(15deg);"></i>
@@ -430,7 +405,7 @@
                             <span id="detail-downloads-badge" class="downloads-badge"><i class="ph-bold ph-download-simple"></i> 0</span>
                         </div>
                     </div>
-<div id="detail-top-actions" style="display: flex; gap: 10px; align-items: center;"></div>
+                    <div id="detail-top-actions" style="display: flex; gap: 10px; align-items: center;"></div>
                 </div>
 
                 <div id="detail-video-container" style="display: none; padding: 20px 30px 0 30px;">
@@ -512,8 +487,47 @@
                     <button class="btn btn-secondary" id="btn-just-save" style="flex: 1; border-color: var(--accent); color: var(--accent);"><i class="ph-bold ph-cloud-arrow-up"></i> Guardar Nube</button>
                     <button class="btn btn-secondary" id="btn-just-download" style="flex: 1;"><i class="ph-bold ph-file-zip"></i> Solo Bajar</button>
                 </div>
+                
+                <div id="download-progress-container" style="display: none; margin-top: 15px; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 0.85rem; color: #a1a1aa; font-weight: 500;"><i class="ph-bold ph-download-simple"></i> Procesando archivos...</span>
+                        <span class="status-text-descarga" style="font-size: 0.85rem; color: #10b981; font-weight: bold;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.4); border-radius: 10px; overflow: hidden; position: relative;">
+                        <div class="progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.3s ease; position: absolute; top: 0; left: 0;"></div>
+                    </div>
+                </div>
                 <button class="btn btn-text w-100 mt-10" onclick="document.getElementById('save-pack-modal').classList.add('hidden')">Cancelar Operación</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="community-modal" style="z-index: 10006;">
+        <div class="modal-content" style="max-width: 600px; padding: 30px;">
+            <h2 id="comm-modal-title" class="title">Nombre del Modpack</h2>
+            <p id="comm-modal-stats" class="muted-text text-sm mb-20"></p>
+            
+            <button id="btn-comm-download" class="btn btn-primary w-100 mb-20" style="padding: 12px;"><i class="ph-bold ph-download-simple"></i> Instalar este Pack</button>
+
+            <hr style="border-color: var(--border-color); margin: 20px 0;">
+            
+            <h3 class="mb-10"><i class="ph-bold ph-chat-centered-text"></i> Reseñas</h3>
+            
+            <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                <select id="comm-rating" class="form-select mb-10" style="width: 150px;">
+                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                    <option value="4">⭐⭐⭐⭐ Bueno</option>
+                    <option value="3">⭐⭐⭐ Regular</option>
+                    <option value="2">⭐⭐ Malo</option>
+                    <option value="1">⭐ Pésimo</option>
+                </select>
+                <textarea id="comm-text" class="form-input custom-scrollbar mb-10" placeholder="¿Qué te pareció este modpack?..." style="height: 80px; resize: none;"></textarea>
+                <button id="btn-comm-submit" class="btn btn-primary w-100" style="background: var(--accent);"><i class="ph-bold ph-paper-plane-tilt"></i> Enviar Reseña</button>
+            </div>
+
+            <div id="comm-list" class="custom-scrollbar" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;"></div>
+
+            <button id="btn-close-community-modal" class="btn btn-secondary w-100 mt-20">Cerrar</button>
         </div>
     </div>
 
@@ -620,7 +634,7 @@
         </div>
     </div>
 
-<div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000; backdrop-filter: blur(10px);">
+    <div class="modal-overlay hidden" id="auth-modal" style="z-index: 10000; backdrop-filter: blur(10px);">
         <div class="modal-content custom-scrollbar" style="max-width: 450px; text-align: center; position: relative; max-height: 90vh; overflow-y: auto; padding: 30px; border-radius: 20px;">
             <button class="btn-icon-danger" onclick="document.getElementById('auth-modal').classList.add('hidden')" style="position: absolute; top: 15px; right: 15px;"><i class="ph-bold ph-x"></i></button>
             
@@ -634,7 +648,7 @@
                     <input type="password" id="auth-password" class="form-input" placeholder="Contraseña" required>
                     <button type="submit" class="btn btn-primary w-100" id="btn-auth-submit" style="padding: 15px; font-size: 1rem;"><i class="ph-bold ph-sign-in"></i> Entrar</button>
                 </form>
-<div class="h-captcha" data-sitekey="e6d821ea-6bae-49d4-99a6-de1a440abbd8" style="margin-bottom: 10px; display: none;" id="captcha-container"></div>
+                <div class="h-captcha" data-sitekey="e6d821ea-6bae-49d4-99a6-de1a440abbd8" style="margin-bottom: 10px; display: none;" id="captcha-container"></div>
                 <p class="muted-text text-sm mb-10">¿No tienes cuenta? <a href="#" id="toggle-auth-mode" style="color: var(--accent);">Regístrate aquí</a></p>
 
                 <div style="display: flex; align-items: center; margin: 15px 0;">
