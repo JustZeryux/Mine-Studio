@@ -160,29 +160,49 @@ socket.on('download-progress', (data) => {
     }));
 
 // ==========================================
-    // 4. LECTOR DE MODPACKS COMPARTIDOS (SIN BASE DE DATOS)
+    // 4. LECTOR DE MODPACKS COMPARTIDOS (SUPABASE Y ENLACES CORTOS)
     // ==========================================
     if (sharedPack) {
         (async () => {
             try {
-                // 1. Recuperamos el título de la URL (si existe)
-                let packTitle = new URLSearchParams(window.location.search).get('name') || "Pack Compartido";
+                let parsedItems = [];
+                let packTitle = "Pack Compartido";
                 
-                // 2. Desencriptamos la URL secreta directamente
-                const decoded = JSON.parse(atob(decodeURIComponent(sharedPack)));
-                
-                // 3. Restauramos los items a un formato que el código entienda
-                const parsedItems = decoded.map(item => ({ 
-                    id: item.i, 
-                    title: 'Cargando...', 
-                    type: item.t || 'mod' 
-                }));
+                // Si es un ID corto de Supabase (ej: 5jrghb)
+                if (sharedPack.length < 15 && !sharedPack.includes('-') && !sharedPack.includes('%')) {
+                    const { data, error } = await window.supabaseClient
+                        .from('shared_packs')
+                        .select('*')
+                        .eq('id', sharedPack)
+                        .single();
+                        
+                    if (error || !data) throw new Error("No se encontró el pack en la base de datos.");
+                    
+                    packTitle = data.name || "Pack Compartido";
+                    
+                    // 🔥 EL ARREGLO MÁGICO PARA LA BASE DE DATOS 🔥
+                    if (typeof data.mods_data === 'string') {
+                        parsedItems = JSON.parse(data.mods_data);
+                    } else {
+                        parsedItems = data.mods_data;
+                    }
+                    
+                } else {
+                    // Por si alguien todavía usa un enlace viejo Base64 directamente en la URL
+                    const decoded = JSON.parse(atob(decodeURIComponent(sharedPack)));
+                    packTitle = new URLSearchParams(window.location.search).get('name') || "Pack Compartido";
+                    parsedItems = decoded.map(item => ({ 
+                        id: item.i || item.id, 
+                        title: item.title || 'Cargando...', 
+                        type: item.t || item.type || 'mod' 
+                    }));
+                }
 
-                if (parsedItems.length > 0) {
+                // --- AQUÍ EMPIEZA TU UI ORIGINAL INTACTA ---
+                if (parsedItems && parsedItems.length > 0) {
                     // Limpiamos la URL visualmente para que no sea larguísima
                     window.history.replaceState({}, document.title, window.location.pathname);
 
-                    // --- AQUÍ EMPIEZA TU UI ORIGINAL INTACTA ---
                     const bubbleHtml = `
                         <button id="shared-bubble-toggle" class="shared-bubble hover-scale" title="Ver Modpack Compartido">
                             <i class="ph-fill ph-lock-key"></i>
@@ -1639,35 +1659,60 @@ window.checkIsLoggedIn().then(loggedIn => {
                 }
             });
         });
+// ==========================================
+// CREADOR DE ENLACES CORTOS (COMPARTIR)
+// ==========================================
 document.querySelectorAll('.btn-share-profile').forEach(btn => {
     btn.addEventListener('click', async (e) => {
         const btnIcon = e.currentTarget.querySelector('i');
         const originalClass = btnIcon.className;
+        
+        // Animación de carga
         btnIcon.className = 'ph ph-spinner ph-spin';
         e.currentTarget.disabled = true;
 
         try {
             const profile = profiles[e.currentTarget.dataset.index];
             
-            // MAGIA: Comprimimos solo lo esencial para que la URL sea segura y rápida
-            const miniData = profile.modsData.map(m => ({ i: m.id, t: m.type }));
-            const base64Pack = btoa(JSON.stringify(miniData));
+            // Generar un ID corto único (ej: 8aF4xP)
+            const shortId = Math.random().toString(36).substring(2, 8);
             
-            // Creamos la URL con los datos
-            const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${encodeURIComponent(base64Pack)}&name=${encodeURIComponent(profile.name)}`;
-            
+            // 🔥 Aseguramos que guarde bien en Supabase 🔥
+            // Guardamos todo limpio para evitar sobrecargar la BD
+            const cleanModsData = profile.modsData.map(m => ({
+                id: m.id,
+                title: m.title,
+                type: m.type,
+                icon: m.icon || '',
+                banner: m.banner || ''
+            }));
+
+            const { error } = await window.supabaseClient
+                .from('shared_packs')
+                .insert([{ 
+                    id: shortId, 
+                    name: profile.name,
+                    mc_version: profile.mcVersion,
+                    mod_loader: profile.modLoader,
+                    mods_data: JSON.stringify(cleanModsData) // Lo forzamos a JSON string para que no falle el insert
+                }]);
+
+            if (error) throw error;
+
+            // Crear y copiar el enlace corto
+            const shareUrl = `${window.location.origin}${window.location.pathname}?pack=${shortId}`;
             await navigator.clipboard.writeText(shareUrl);
-            alert(`🔗 ¡Enlace copiado!\nYa puedes pasárselo a tus amigos.`);
+            alert(`🔗 ¡Enlace copiado al portapapeles!\n${shareUrl}`);
             
         } catch (err) {
-            alert("❌ Hubo un error al generar el enlace de compartir.");
+            console.error("Error al compartir:", err);
+            alert("❌ Hubo un error al generar el enlace. Revisa la conexión a tu base de datos.");
         } finally {
             btnIcon.className = originalClass;
             e.currentTarget.disabled = false;
         }
     });
 });
-
         document.querySelectorAll('.btn-delete-profile').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if(confirm("¿Eliminar perfil?")) { 
