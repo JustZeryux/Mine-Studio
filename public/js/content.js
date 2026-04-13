@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentCategory = '';
     let currentOffset = 0; 
     let isFetchingMods = false;
-    // Asegúrate de usar la URL que te dio Railway (sin el /api/export al final)
-const socket = io('https://mine-studio-production.up.railway.app'); 
+// Asegúrate de usar la URL que te dio Railway (sin el /api/export al final)
+const socket = io('https://backendminecraft-production.up.railway.app');
 let currentSocketId;
 
 socket.on('connect', () => {
@@ -426,10 +426,10 @@ socket.on('connect', () => {
                     };
 
 try {
-    const response = await fetch('https://backendminecraft-production.up.railway.app/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(exportData)
+const response = await fetch('https://backendminecraft-production.up.railway.app/api/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(exportData)
     });
 
     if (!response.ok) throw new Error("El servidor rechazó la conexión.");
