@@ -22,11 +22,15 @@ socket.on('connect', () => {
     currentSocketId = socket.id;
 });
 
-    socket.on('download-progress', (data) => {
-    // Reemplaza estos IDs por los que usaste en tu HTML/Tailwind
+socket.on('download-progress', (data) => {
+    const container = document.getElementById('download-progress-container');
     const bar = document.querySelector('.progress-bar-fill'); 
     const statusText = document.querySelector('.status-text-descarga'); 
     
+    // 1. Mostrar el contenedor obligatoriamente
+    if (container) container.style.display = 'block';
+
+    // 2. Actualizar el progreso
     if (bar) bar.style.width = `${data.progress}%`;
     if (statusText) statusText.innerText = `Procesando: ${data.currentMod} (${data.progress}%)`;
 });
