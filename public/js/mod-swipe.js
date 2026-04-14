@@ -1,17 +1,27 @@
 // ==========================================
-// 2. MOD SWIPE (mod-swipe.js)
+// 2. MOD SWIPE (mod-swipe.js) - Conectado a la Ruleta
 // ==========================================
 window.ModSwipe = {
     currentMods: [],
     currentIndex: 0,
 
     init: function() {
-        console.log("🔥 Mod Swipe iniciado");
-        this.injectButton();
+        console.log("🔥 Mod Swipe (Ruleta) iniciado");
+        this.bindExistingButton();
         this.injectModal();
     },
 
-    injectButton: function() {
+    bindExistingButton: function() {
+        // En lugar de inyectar uno nuevo, usamos tu botón "Ruleta de Retos" que ya existe en tu HTML
+        const btnRuleta = document.getElementById('btn-randomizer');
+        if (btnRuleta) {
+            btnRuleta.onclick = () => this.startSwipe();
+        } else {
+            console.warn("No se encontró el botón de la Ruleta (#btn-randomizer).");
+        }
+    },
+
+    injectModal: function() {
         const btn = `<button id="btn-open-swipe" class="btn btn-primary" style="margin-left: 10px; background: linear-gradient(135deg, #ec4899, #f43f5e); border:none;"><i class="ph-bold ph-cards"></i> Descubrir Mods</button>`;
         // Inyectar en la barra superior (junto a los filtros)
         const topBar = document.querySelector('.search-bar') || document.body;
