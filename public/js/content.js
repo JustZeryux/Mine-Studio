@@ -1339,118 +1339,6 @@ function renderRealMods(mods) {
         
         if(typeof window.updateRecommendations === 'function') window.updateRecommendations();
     };
-
-// ============================================================
-    // 11. MOTOR DE PLANTILLAS DINÁMICO (50 a 300 Mods) Y RULETA
-    // ============================================================
-
- async function applyDynamicTemplate(btnElement, templateName, theme) {
-        let targetSize = prompt(`¿Cuántos mods quieres para tu pack de ${templateName}? (Elige un número entre 50 y 300)`, "100");
-        if (!targetSize || isNaN(targetSize)) return;
-        targetSize = Math.max(20, Math.min(300, parseInt(targetSize)));
-
-        if(!confirm(`Se generará un Modpack de ${templateName} con ${targetSize} mods. IMPORTANTE: También se descargarán automáticamente todas las librerías necesarias, por lo que el total será mayor. ¿Continuar?`)) return;
-        
-        const originalHtml = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
-        btnElement.disabled = true;
-
-        window.modpackCart = []; 
-        window.updateCartUI();
-
-        const mcVers = versionSelect.value;
-        const loader = loaderSelect.value;
-
-        const aiTerminal = document.getElementById('ai-terminal'); 
-        if(aiTerminal) { aiTerminal.style.display = 'block'; aiTerminal.innerHTML = `> Escaneando Modrinth para ${targetSize} mods de ${templateName}...<br>`; }
-
-        const themeCategories = {
-            'rpg': ['adventure', 'magic', 'worldgen', 'equipment'],
-            'tech': ['technology', 'storage', 'energy', 'automation'],
-            'random': ['adventure', 'technology', 'magic', 'decoration', 'worldgen']
-        };
-        const categories = themeCategories[theme] || themeCategories['random'];
-
-        let fetchedMods = [];
-        let offset = 0;
-
-        try {
-            // FASE 1: Obtener mods base
-            while (fetchedMods.length < targetSize && offset < 1000) {
-                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-                let facets = [[`versions:${mcVers}`], [`categories:${loader}`], ["project_type:mod"]];
-                if (theme !== 'random') facets.push([`categories:${randomCategory}`]);
-
-                const res = await fetch(`https://api.modrinth.com/v2/search?limit=100&offset=${offset}&index=relevance&facets=${encodeURIComponent(JSON.stringify(facets))}`);
-                const data = await res.json();
-                
-                if (!data.hits || data.hits.length === 0) break;
-
-                const newMods = data.hits.filter(mod => !fetchedMods.some(m => m.project_id === mod.project_id));
-                fetchedMods = fetchedMods.concat(newMods);
-                offset += 100;
-                
-                if(aiTerminal) { aiTerminal.innerHTML += `> Encontrados ${fetchedMods.length}/${targetSize} mods...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
-            }
-
-            fetchedMods = fetchedMods.sort(() => 0.5 - Math.random()).slice(0, targetSize);
-
-            // FASE 2: Auto-Librerías (NUEVO)
-            if(aiTerminal) { aiTerminal.innerHTML += `> Analizando y añadiendo librerías requeridas (Esto puede tardar unos segundos)...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
-            
-            // Inyectamos los mods principales primero
-            fetchedMods.forEach(mod => {
-                window.modpackCart.push({ 
-                    id: mod.project_id, title: mod.title, type: 'mod', 
-                    icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
-                    categories: mod.display_categories
-                });
-            });
-
-            // Buscamos dependencias en lotes para no saturar la API
-            let libsAdded = 0;
-            for (let mod of fetchedMods) {
-                try {
-                    const deps = await getRequiredDependencies(mod.project_id, mcVers, loader);
-                    if (deps && deps.length > 0) {
-                        deps.forEach(dep => {
-                            if (!window.modpackCart.some(item => item.id === dep.id)) {
-                                window.modpackCart.push({
-                                    id: dep.id, title: dep.title, type: 'library',
-                                    icon: dep.icon_url, banner: dep.icon_url, categories: ['library']
-                                });
-                                libsAdded++;
-                            }
-                        });
-                    }
-                } catch(e) {} // Ignorar si un mod falla
-            }
-
-            window.updateCartUI();
-            
-            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡${fetchedMods.length} Mods + ${libsAdded} Libs!`;
-            btnElement.style.background = 'var(--success)';
-            btnElement.style.color = 'white';
-            
-            if(aiTerminal) { 
-                aiTerminal.innerHTML += `> ¡Éxito! Plantilla inyectada: ${fetchedMods.length} mods y ${libsAdded} librerías.<br>`;
-                aiTerminal.scrollTop = aiTerminal.scrollHeight;
-            }
-
-            setTimeout(() => { 
-                btnElement.innerHTML = originalHtml; 
-                btnElement.style = ''; 
-                btnElement.disabled = false; 
-                if(aiTerminal) aiTerminal.style.display='none'; 
-            }, 5000);
-
-        } catch(e) { 
-            alert(`Error conectando con la API para la plantilla ${templateName}.`); 
-            btnElement.innerHTML = originalHtml;
-            btnElement.style = '';
-            btnElement.disabled = false;
-        }
-    }
     
     // ============================================================
     // 12. MOTOR DE TOGGLE DEL CARRITO (Estilo "App" para Escritorio)
@@ -2328,49 +2216,92 @@ window.loadCommunityGallery = async function() {
         reader.readAsText(file);
     }
 
-    function analyzeCrashLog(text) {
-        crashResult.style.display = 'block';
-        crashResult.style.background = 'var(--bg-main)';
-        crashResult.style.border = 'none';
-        crashResult.innerHTML = '<div style="text-align:center;"><i class="ph ph-spinner ph-spin"></i> Escaneando trazas de código...</div>';
-        
-        setTimeout(() => {
-            let culprit = "Origen Desconocido";
-            let reason = "Posible conflicto general, corrupción del mundo o falta de memoria profunda.";
-            let color = "#f87171"; // Rojo por defecto
-            
-            // Heurísticas de análisis
-            if (text.includes("java.lang.OutOfMemoryError")) {
-                culprit = "Falta de RAM Asignada"; 
-                reason = "Tu servidor o juego se quedó sin memoria física. Asigna más GB de RAM."; 
-                color = "#fbbf24";
-            } else if (text.match(/Suspected Mods:\s*(.+)/)) {
-                // Fabric y Forge modernos suelen decir qué mod es el sospechoso
-                culprit = text.match(/Suspected Mods:\s*(.+)/)[1].trim();
-                reason = "El modloader detectó directamente que este mod o sus dependencias causaron el crasheo crítico.";
-            } else if (text.includes("Multiple entries with same key")) {
-                culprit = "Conflicto de Registros (IDs)"; 
-                reason = "Dos mods están intentando registrar el mismo ítem, bioma o bloque. Quita los mods más recientes.";
-            } else if (text.includes("java.lang.NoSuchMethodError")) {
-                culprit = "Versión Incorrecta"; 
-                reason = "Un mod está intentando ejecutar código que no existe. Esto ocurre por usar mods de otra versión (ej. un mod 1.19 en 1.20) o falta de una librería.";
-            } else {
-                // Buscar paquetes de java sospechosos que no sean de minecraft vanilla
-                const traceMatch = text.match(/at ([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)/);
-                if (traceMatch && !traceMatch[1].startsWith("net.minecraft") && !traceMatch[1].startsWith("java.")) {
-                    culprit = traceMatch[1] + " (Paquete de Código)";
-                    reason = "El error reventó en esta línea de código. Revisa en tu lista de mods a quién le pertenece este paquete.";
-                }
-            }
+ // ============================================================
+// 20. HERRAMIENTAS PRO: ANALIZADOR INTELIGENTE DE CRASH LOGS
+// ============================================================
+function analyzeCrashLog(text) {
+    const crashResult = document.getElementById('crash-result');
+    if(!crashResult) return;
 
-            crashResult.style.background = 'rgba(239, 68, 68, 0.1)';
-            crashResult.style.border = `1px solid ${color}`;
-            crashResult.innerHTML = `
-                <h4 style="color: ${color}; margin: 0 0 5px 0;"><i class="ph-fill ph-warning"></i> Causa probable: ${culprit}</h4>
-                <p style="font-size: 0.85rem; margin: 0; color: #fff;">${reason}</p>
-            `;
-        }, 1200);
-    }
+    crashResult.style.display = 'block';
+    crashResult.style.background = 'var(--bg-main)';
+    crashResult.style.border = 'none';
+    crashResult.innerHTML = '<div style="text-align:center;"><i class="ph ph-spinner ph-spin"></i> Escaneando trazas de Mixins y Registros...</div>';
+    
+    setTimeout(() => {
+        let culprit = "Origen Desconocido";
+        let reason = "Posible conflicto general, corrupción del mundo o error interno. Revisa la línea 'Caused by:' en tu log.";
+        let color = "#f87171"; // Rojo
+
+        const textLower = text.toLowerCase();
+
+        // 1. Detección de Mixins (Colisiones graves como el de ArmorTip)
+        const mixinRegex = /Mixin \[(.*?)\.mixins\.json.*?\] FAILED during APPLY/i;
+        const mixinMatch = text.match(mixinRegex);
+        
+        // 2. Detección de Librerías Faltantes
+        const missingDepRegex = /missing (?:mandatory )?dependencies: (.*?)(?:\n|$)/i;
+        const missingMatch = text.match(missingDepRegex);
+        const classNotFoundRegex = /java\.lang\.NoClassDefFoundError: (.*?)(?:\n|$)/i;
+        const classMatch = text.match(classNotFoundRegex);
+
+        // --- HEURÍSTICAS DE EVALUACIÓN ---
+        
+        if (mixinMatch) {
+            const modName = mixinMatch[1].replace(/_/g, ' ').toUpperCase();
+            culprit = `Colisión de Mixin (${modName})`;
+            reason = `El mod "${modName}" intentó inyectar código pero falló. Estás usando la versión de NeoForge/Fabric en Forge (o viceversa), o choca con otro mod de optimización. ¡Elimínalo o cambia su versión!`;
+            color = "#ef4444";
+        } 
+        else if (missingMatch) {
+            culprit = "Falta una Librería/API";
+            reason = `Te falta instalar el mod/librería base: ${missingMatch[1]}. Instálalo para que el juego inicie.`;
+            color = "#f97316"; // Naranja
+        }
+        else if (classMatch) {
+            let className = classMatch[1].replace(/\//g, '.');
+            culprit = "Clase Java Ausente (Librería Faltante)";
+            reason = `Un mod intentó buscar el archivo "${className}" pero no existe. Revisa las dependencias obligatorias de tus mods instalados recientemente.`;
+            color = "#f97316";
+        }
+        else if (text.includes("java.lang.OutOfMemoryError")) {
+            culprit = "Falta de RAM Asignada"; 
+            reason = "Tu juego se quedó sin memoria física al cargar texturas o mods. Asigna al menos 2GB o 4GB más en tu Launcher."; 
+            color = "#fbbf24"; // Amarillo
+        } 
+        else if (textLower.includes("unsupportedclassversionerror")) {
+            culprit = "Versión de Java Obsoleta";
+            reason = "Tienes instalado un Java muy viejo para esta versión de Minecraft. Descarga e instala Java 17 o Java 21.";
+            color = "#3b82f6"; // Azul
+        }
+        else if (text.match(/Suspected Mods:\s*(.+)/)) {
+            culprit = text.match(/Suspected Mods:\s*(.+)/)[1].trim();
+            reason = "El Modloader detectó automáticamente que este mod es el culpable del cierre crítico.";
+        } 
+        else if (text.includes("Multiple entries with same key")) {
+            culprit = "Conflicto de Registros (IDs)"; 
+            reason = "Dos mods intentan usar el mismo ID de bloque o bioma. Quita los mods de contenido que añadiste recientemente.";
+        } 
+        else {
+            // Rastreo genérico de paquetes fallidos
+            const traceMatch = text.match(/at ([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)/);
+            if (traceMatch && !traceMatch[1].startsWith("net.minecraft") && !traceMatch[1].startsWith("java.")) {
+                culprit = traceMatch[1] + " (Línea de Código)";
+                reason = "El error reventó en esta ruta de código interno. Busca en Modrinth de qué mod proviene esa ruta.";
+            }
+        }
+
+        // --- RENDERIZADO DEL RESULTADO ---
+        crashResult.style.background = 'rgba(239, 68, 68, 0.1)';
+        crashResult.style.border = `1px solid ${color}`;
+        crashResult.innerHTML = `
+            <h4 style="color: ${color}; margin: 0 0 8px 0; font-size: 1.1rem;">
+                <i class="ph-fill ph-warning"></i> Causa probable: ${culprit}
+            </h4>
+            <p style="font-size: 0.9rem; margin: 0; color: #ddd; line-height: 1.4;">${reason}</p>
+        `;
+    }, 1500); // Simulamos análisis para efecto visual
+}
 
     // --- GESTOR VISUAL DE WHITELIST ---
     let whitelistArray = [];
@@ -2519,118 +2450,180 @@ window.loadCommunityGallery = async function() {
         });
     }
 
-    // 3. Tu función original Restaurada y Mejorada
-    async function applyDynamicTemplate(btnElement, templateName, theme) {
-        let targetSize = await askForModCount(
-            `Pack: ${templateName}`, 
-            `¿Cuántos mods base quieres? (Entre 20 y 300). Las librerías requeridas se descargarán automáticamente solas.`
-        );
-        
-        if (!targetSize || isNaN(targetSize)) return;
-        targetSize = Math.max(20, Math.min(300, targetSize));
+// ============================================================
+// 11. MOTOR DE PLANTILLAS DINÁMICO (RPG INTELIGENTE + FASE SILENCIOSA)
+// ============================================================
 
-        const originalHtml = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
-        btnElement.disabled = true;
+async function applyDynamicTemplate(btnElement, templateName, theme) {
+    // 1. Usamos tu UI personalizada para preguntar la cantidad
+    let targetSize = await askForModCount(
+        `Pack: ${templateName}`, 
+        `¿Cuántos mods base quieres? (Entre 20 y 300). Las librerías requeridas se descargarán automáticamente solas.`
+    );
+    
+    if (!targetSize || isNaN(targetSize)) return;
+    targetSize = Math.max(20, Math.min(300, targetSize));
 
-        window.modpackCart = []; 
-        window.updateCartUI();
+    const originalHtml = btnElement.innerHTML;
+    btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ensamblando...';
+    btnElement.disabled = true;
 
-        const mcVers = document.getElementById('mod-version-select')?.value || "1.20.1";
-        const loader = document.getElementById('mod-loader-select')?.value || "forge";
+    window.modpackCart = []; 
+    window.updateCartUI();
 
-        const aiTerminal = document.getElementById('ai-terminal'); 
-        if(aiTerminal) { 
-            aiTerminal.style.display = 'block'; 
-            aiTerminal.innerHTML = `> Escaneando Modrinth para ${targetSize} mods de ${templateName}...<br>`; 
+    const mcVers = document.getElementById('mod-version-select')?.value || "1.20.1";
+    const loader = document.getElementById('mod-loader-select')?.value || "forge";
+
+    const aiTerminal = document.getElementById('ai-terminal'); 
+    if(aiTerminal) { 
+        aiTerminal.style.display = 'block'; 
+        aiTerminal.innerHTML = `> Bloqueando loaders incompatibles. Buscando solo ${loader.toUpperCase()} ${mcVers}...<br>`; 
+    }
+
+    // 🛡️ LA LISTA NEGRA: Palabras prohibidas que rompen la inmersión
+    const blacklist = ["cobblemon", "pixelmon", "pokemon", "fnaf", "naruto", "one piece", "dragon block", "gun", "modern"];
+
+    // 🧠 DISTRIBUCIÓN INTELIGENTE: Subtemas para rotar y no saturar el pack
+    const themeConfig = {
+        'rpg': [
+            { type: 'category', val: 'adventure' }, // Dungeons y exploración
+            { type: 'category', val: 'mobs' },      // Jefes y monstruos
+            { type: 'category', val: 'magic' },     // Magia y hechizos
+            { type: 'category', val: 'equipment' }, // Armas/Armaduras
+            { type: 'query', val: 'animation' }     // Animaciones (Better combat, etc)
+        ],
+        'tech': [
+            { type: 'category', val: 'technology' },
+            { type: 'category', val: 'storage' },
+            { type: 'category', val: 'energy' }
+        ],
+        'fps': [
+            { type: 'category', val: 'optimization' }
+        ],
+        'random': [
+            { type: 'category', val: 'adventure' },
+            { type: 'category', val: 'technology' },
+            { type: 'category', val: 'decoration' }
+        ]
+    };
+    const categories = themeConfig[theme] || themeConfig['random'];
+
+    let fetchedMods = [];
+    let offset = 0;
+    let roundIndex = 0;
+
+    try {
+        // --- FASE 1: DESCARGA INTELIGENTE (Sin Mixteo) ---
+        while (fetchedMods.length < targetSize && offset < 1000) {
+            const subTheme = categories[roundIndex % categories.length];
+
+            // REGLA 1: NO MIXTEO (Candado en la API)
+            let facets = [
+                [`versions:${mcVers}`], 
+                [`categories:${loader}`], 
+                ["project_type:mod"]
+            ];
+
+            let fetchUrl = `https://api.modrinth.com/v2/search?limit=50&offset=${offset}&index=relevance`;
+
+            if (subTheme.type === 'category') {
+                facets.push([`categories:${subTheme.val}`]);
+            } else if (subTheme.type === 'query') {
+                fetchUrl += `&query=${subTheme.val}`;
+            }
+            fetchUrl += `&facets=${encodeURIComponent(JSON.stringify(facets))}`;
+
+            const res = await fetch(fetchUrl);
+            const data = await res.json();
+            
+            if (data.hits && data.hits.length > 0) {
+                // REGLA 2: APLICAR LISTA NEGRA Y EVITAR DUPLICADOS
+                const newMods = data.hits.filter(mod => {
+                    const modText = (mod.title + " " + mod.description).toLowerCase();
+                    const isBlacklisted = blacklist.some(badWord => modText.includes(badWord));
+                    const isDuplicate = fetchedMods.some(m => m.project_id === mod.project_id);
+                    return !isBlacklisted && !isDuplicate;
+                });
+
+                fetchedMods = fetchedMods.concat(newMods);
+            }
+            
+            offset += 50;
+            roundIndex++; 
+            
+            if(aiTerminal) { 
+                let textTopic = subTheme.val === 'optimization' ? 'optimización' : subTheme.val;
+                aiTerminal.innerHTML += `> Extrayendo ${textTopic}: ${fetchedMods.length}/${targetSize} mods limpios...<br>`; 
+                aiTerminal.scrollTop = aiTerminal.scrollHeight; 
+            }
         }
 
-        const themeCategories = {
-            'rpg': ['adventure', 'magic', 'worldgen', 'equipment'],
-            'tech': ['technology', 'storage', 'energy', 'automation'],
-            'fps': ['optimization']
-        };
-        const categories = themeCategories[theme] || ['adventure', 'technology'];
+        // Cortamos exacto al número que pidió el usuario
+        fetchedMods = fetchedMods.slice(0, targetSize);
 
-        let fetchedMods = [];
-        let offset = 0;
-
-        try {
-            // Fase 1: Descargar
-            while (fetchedMods.length < targetSize && offset < 1000) {
-                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-                let facets = [[`versions:${mcVers}`], [`categories:${loader}`], ["project_type:mod"]];
-                facets.push([`categories:${randomCategory}`]);
-
-                const res = await fetch(`https://api.modrinth.com/v2/search?limit=100&offset=${offset}&index=relevance&facets=${encodeURIComponent(JSON.stringify(facets))}`);
-                const data = await res.json();
-                
-                if (!data.hits || data.hits.length === 0) break;
-
-                const newMods = data.hits.filter(mod => !fetchedMods.some(m => m.project_id === mod.project_id));
-                fetchedMods = fetchedMods.concat(newMods);
-                offset += 100;
-                
-                if(aiTerminal) { aiTerminal.innerHTML += `> Encontrados ${fetchedMods.length}/${targetSize} mods...<br>`; aiTerminal.scrollTop = aiTerminal.scrollHeight; }
-            }
-
-            fetchedMods = fetchedMods.sort(() => 0.5 - Math.random()).slice(0, targetSize);
-
-            // Fase 2: Aplicar al UI
-            if(aiTerminal) { aiTerminal.innerHTML += `> Analizando librerías en segundo plano...<br>`; }
-            
-            fetchedMods.forEach(mod => {
-                window.modpackCart.push({ 
-                    id: mod.project_id, title: mod.title, type: 'mod', 
-                    icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
-                    categories: mod.display_categories
-                });
+        // --- FASE 2: APLICAR AL UI DE INMEDIATO ---
+        if(aiTerminal) { aiTerminal.innerHTML += `> Aplicando al carrito y analizando librerías en segundo plano...<br>`; }
+        
+        fetchedMods.forEach(mod => {
+            window.modpackCart.push({ 
+                id: mod.project_id, title: mod.title, type: 'mod', 
+                icon: mod.icon_url, banner: (mod.gallery && mod.gallery.length > 0) ? mod.gallery[0] : mod.icon_url,
+                categories: mod.display_categories
             });
+        });
 
-            window.updateCartUI();
-            
-            btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡Pack Listo!`;
-            btnElement.style.background = 'var(--success)';
-            btnElement.style.color = 'white';
-            
-            if(aiTerminal) aiTerminal.innerHTML += `> ¡Éxito! Plantilla inyectada.<br>`;
+        window.updateCartUI();
+        
+        btnElement.innerHTML = `<i class="ph-bold ph-check-circle"></i> ¡Pack Listo!`;
+        btnElement.style.background = 'var(--success)';
+        btnElement.style.color = 'white';
+        
+        if(aiTerminal) {
+            aiTerminal.innerHTML += `> ¡Éxito! Plantilla inyectada (0% Mixteo, 0% Cobblemon).<br>`;
+            aiTerminal.scrollTop = aiTerminal.scrollHeight;
+        }
 
-            setTimeout(() => { 
-                btnElement.innerHTML = originalHtml; 
-                btnElement.style = ''; 
-                btnElement.disabled = false; 
-                if(aiTerminal) aiTerminal.style.display='none'; 
-            }, 5000);
+        setTimeout(() => { 
+            btnElement.innerHTML = originalHtml; 
+            btnElement.style = ''; 
+            btnElement.disabled = false; 
+            if(aiTerminal) aiTerminal.style.display='none'; 
+        }, 5000);
 
-            // Fase 3 Silenciosa: Descargar dependencias
-            fetchedMods.forEach(async (mod) => {
-                try {
-                    const vRes = await fetch(`https://api.modrinth.com/v2/project/${mod.project_id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
-                    const vData = await vRes.json();
-                    if(vData.length > 0 && vData[0].dependencies) {
-                        const reqDeps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
-                        for (let d of reqDeps) {
-                            if (!window.modpackCart.some(item => item.id === d.project_id)) {
-                                const pRes = await fetch(`https://api.modrinth.com/v2/project/${d.project_id}`);
-                                const pData = await pRes.json();
-                                window.modpackCart.push({
-                                    id: pData.id, title: pData.title, type: 'library',
-                                    icon: pData.icon_url, banner: pData.icon_url, categories: ['library']
-                                });
-                                window.updateCartUI();
-                            }
+        // --- FASE 3 SILENCIOSA: DESCARGA DE LIBRERÍAS (Tu código original) ---
+        // Esto busca en segundo plano para que el usuario ya pueda ir viendo los mods.
+        fetchedMods.forEach(async (mod) => {
+            try {
+                // Candado de versión también en la librería para evitar Mixteo indirecto
+                const vRes = await fetch(`https://api.modrinth.com/v2/project/${mod.project_id}/version?game_versions=["${mcVers}"]&loaders=["${loader}"]`);
+                const vData = await vRes.json();
+                
+                if(vData.length > 0 && vData[0].dependencies) {
+                    const reqDeps = vData[0].dependencies.filter(d => d.dependency_type === 'required' && d.project_id);
+                    
+                    for (let d of reqDeps) {
+                        if (!window.modpackCart.some(item => item.id === d.project_id)) {
+                            const pRes = await fetch(`https://api.modrinth.com/v2/project/${d.project_id}`);
+                            const pData = await pRes.json();
+                            
+                            window.modpackCart.push({
+                                id: pData.id, title: pData.title, type: 'library',
+                                icon: pData.icon_url, banner: pData.icon_url, categories: ['library']
+                            });
+                            window.updateCartUI();
                         }
                     }
-                } catch(e) {}
-            });
+                }
+            } catch(e) {}
+        });
 
-        } catch(e) { 
-            alert(`Error de conexión con la API.`); 
-            btnElement.innerHTML = originalHtml;
-            btnElement.style = '';
-            btnElement.disabled = false;
-        }
+    } catch(e) { 
+        alert(`Error de conexión con la API.`); 
+        btnElement.innerHTML = originalHtml;
+        btnElement.style = '';
+        btnElement.disabled = false;
     }
+}
 
     // 4. Conectar los botones del HTML al motor
     const btnRpg = document.getElementById('btn-template-rpg');
